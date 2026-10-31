@@ -29,8 +29,14 @@ const BROWSER_FILES = [
   "components/eye/EyeSources.tsx",
   "components/shell/sources/SourceRowView.tsx",
   "components/shell/sources/SourceSection.tsx",
+  "components/eye/EyeSearch.tsx",
+  "components/eye/EyeCompass.tsx",
+  "components/eye/EyeFilmFrame.tsx",
+  "components/eye/HudIcons.tsx",
+  "components/eye/hudHooks.ts",
   "lib/eye/sources.ts",
-  "lib/eye/pins.ts",
+  "lib/eye/search.ts",
+  "lib/eye/compass.ts",
   "lib/eye/skin.ts",
 ];
 

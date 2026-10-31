@@ -3,18 +3,18 @@ import { expect, test, type Page } from "@playwright/test";
 /**
  * The God's eye view's control hint (/eye), held to what the plan promised.
  *
- *   - A mouse desktop gets the mouse plate under the controls at top right, with Ctrl
+ *   - A mouse desktop gets the mouse plate beside the sidebar's foot, with Ctrl
  *     (never the Command key), and the plate never takes a press meant for the map.
  *   - It fades about 5 s after the first move the person makes; the x closes it at once;
- *     Turn's orbit does not count as a move.
- *   - A phone gets the finger words just above the bar, never over it, and the Places
- *     sheet closes it.
+ *     Auto-turn's orbit does not count as a move.
+ *   - A phone gets the finger words just above the compass, never over it, and the Sources
+ *     tray closes it.
  *   - The first touch on a mouse desktop swaps it for "It appears you're using touch
  *     controls." and the finger words, once per visit.
  *   - Nothing on a recording; with reduced motion the plate still shows and still goes.
- *   - The "?" beside the clock (left of it on a wide screen, under it on a phone) hides the
- *     plate and brings it back: a mouse or the keyboard gets the mouse words, a finger the
- *     finger words without Leon's line. A plate brought back fades 5 s after the next move.
+ *   - The sidebar's Controls row (behind the menu on a phone) hides the plate and brings it
+ *     back: a mouse or the keyboard gets the mouse words, a finger the finger words without
+ *     Leon's line. A plate brought back fades 5 s after the next move.
  *   - The plate reserves no room: it costs the view no camera card, on a phone or a desktop.
  *
  * THE TOUCH-ON-A-DESKTOP CASE uses CDP touch input in a PLAIN desktop context.
@@ -30,12 +30,11 @@ import { expect, test, type Page } from "@playwright/test";
 
 const ready = (page: Page) => page.waitForSelector('main[data-eye-state="ready"]', { timeout: 90_000 });
 const plateOf = (page: Page) => page.getByRole("complementary", { name: "How to move the view" });
-const barOf = (page: Page) => page.getByRole("navigation", { name: "View controls" });
-const toggleOf = (page: Page) => page.getByRole("button", { name: "How to move the view" });
-const clockOf = (page: Page) => page.getByLabel("Time now, UTC");
-/** The ledger's camera figure: the cards placed. */
-const camsOf = async (page: Page) =>
-  Number(await page.locator('section[aria-label="What this view shows"] p[data-k="cam"] b').textContent());
+const toggleOf = (page: Page) => page.locator('[data-rail="eye"] [data-rail-entry="controls"]');
+const menuOf = (page: Page) => page.locator('[data-rail="eye"] [data-rail-menu]');
+const compassOf = (page: Page) => page.locator("[data-eye-compass]");
+/** The cards placed. */
+const camsOf = (page: Page) => page.locator('a[href^="/camera/"]').count();
 const PLACE = "/eye?place=westminster";
 const TOUCH_LINE = "It appears you're using touch controls.";
 
@@ -53,7 +52,7 @@ async function dragMap(page: Page) {
   await page.mouse.up();
 }
 
-test("a mouse desktop gets the mouse plate under the controls, with Ctrl and never the Command key", async ({ page }) => {
+test("a mouse desktop gets the mouse plate beside the sidebar, with Ctrl and never the Command key", async ({ page }) => {
   await open(page, 1440, 900);
   const plate = plateOf(page);
   await expect(plate).toBeVisible();
@@ -63,9 +62,22 @@ test("a mouse desktop gets the mouse plate under the controls, with Ctrl and nev
   await expect(plate).not.toContainText("It appears");
 
   const box = (await plate.boundingBox())!;
-  const bar = (await barOf(page).boundingBox())!;
-  expect(box.y).toBeGreaterThanOrEqual(bar.y + bar.height);
-  expect(Math.abs(box.x + box.width - (1440 - 26))).toBeLessThanOrEqual(30);
+  expect(Math.round(box.x)).toBe(88);
+  expect(Math.round(900 - (box.y + box.height))).toBe(12);
+  // It does not reach the compass in the middle of the bottom edge.
+  const compass = (await compassOf(page).boundingBox())!;
+  expect(box.x + box.width).toBeLessThanOrEqual(compass.x);
+});
+
+test("with the sidebar open the plate stands above the compass, and moves with the column", async ({ page }) => {
+  await open(page, 1440, 900);
+  await menuOf(page).click();
+  const plate = plateOf(page);
+  await expect.poll(async () => Math.round((await plate.boundingBox())!.x)).toBe(256);
+  await page.waitForTimeout(250);
+  const box = (await plate.boundingBox())!;
+  const compass = (await compassOf(page).boundingBox())!;
+  expect(box.y + box.height).toBeLessThanOrEqual(compass.y);
 });
 
 test("the plate never takes a press meant for the map", async ({ page }) => {
@@ -90,12 +102,12 @@ test("a move of the view fades it about 5 s later", async ({ page }) => {
   await expect(plate).toHaveCount(0, { timeout: 7000 });
 });
 
-test("Turn's orbit does not count as a move", async ({ page }) => {
+test("Auto-turn's orbit does not count as a move", async ({ page }) => {
   await open(page, 1440, 900);
   const plate = plateOf(page);
   const bearing = () => page.evaluate(() => (window as unknown as { __map: { getBearing(): number } }).__map.getBearing());
   const before = await bearing();
-  await page.getByRole("button", { name: "Turn" }).click();
+  await page.getByRole("switch", { name: "Auto-turn" }).click();
   await page.waitForTimeout(6500);
   // The view really turned, and the plate is still there.
   expect(Math.abs((await bearing()) - before)).toBeGreaterThan(3);
@@ -109,7 +121,7 @@ test("the x closes it at once", async ({ page }) => {
   await expect(plateOf(page)).toHaveCount(0, { timeout: 1000 });
 });
 
-test("a phone gets the finger words just above the bar, and Places closes them", async ({ browser }) => {
+test("a phone gets the finger words just above the compass, and the Sources tray closes them", async ({ browser }) => {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
   const page = await ctx.newPage();
   try {
@@ -123,11 +135,12 @@ test("a phone gets the finger words just above the bar, and Places closes them",
     await expect(plate).not.toContainText("Ctrl");
 
     const box = (await plate.boundingBox())!;
-    const bar = (await barOf(page).boundingBox())!;
-    expect(box.y + box.height).toBeLessThanOrEqual(bar.y);
-    expect(bar.y).toBeGreaterThan((844 * 2) / 3);
+    const compass = (await compassOf(page).boundingBox())!;
+    expect(box.y + box.height).toBeLessThanOrEqual(compass.y);
+    expect(compass.y).toBeGreaterThan((844 * 2) / 3);
 
-    await page.getByRole("button", { name: "Places" }).tap();
+    await menuOf(page).tap();
+    await page.locator('[data-rail="eye"] [data-rail-entry="sources"]').tap();
     await expect(plate).toHaveCount(0, { timeout: 2000 });
   } finally {
     await ctx.close();
@@ -175,17 +188,12 @@ test("there is nothing in a recording", async ({ page }) => {
   await expect(toggleOf(page)).toHaveCount(0);
 });
 
-test("desktop: the ? sits left of the clock and opens and closes the plate", async ({ page }) => {
+test("desktop: the sidebar's Controls row opens and closes the plate", async ({ page }) => {
   await open(page, 1440, 900);
   const toggle = toggleOf(page);
   await expect(toggle).toBeVisible();
+  await expect(toggle).toHaveText(/Controls/);
   await expect(toggle).toHaveAttribute("aria-expanded", "true");
-  const t = (await toggle.boundingBox())!;
-  const c = (await clockOf(page).boundingBox())!;
-  expect(t.x + t.width).toBeLessThanOrEqual(c.x);
-  expect(Math.abs(t.y + t.height / 2 - (c.y + c.height / 2))).toBeLessThanOrEqual(6);
-  expect(Math.abs(t.width - 32)).toBeLessThanOrEqual(1);
-  expect(Math.abs(t.height - 32)).toBeLessThanOrEqual(1);
 
   await page.getByRole("button", { name: "Close this hint" }).click();
   await expect(plateOf(page)).toHaveCount(0, { timeout: 1000 });
@@ -226,52 +234,48 @@ test("desktop: the keyboard brings it back with the mouse words", async ({ page 
   await expect(toggle).toBeFocused();
 });
 
-test("phone: the ? is under the clock, in the header, and brings the finger words back", async ({ browser }) => {
+test("phone: Controls is behind the menu, closes the sheet and brings the finger words back", async ({ browser }) => {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
   const page = await ctx.newPage();
   try {
     await page.goto(PLACE);
     await ready(page);
-    const toggle = toggleOf(page);
-    await expect(toggle).toBeVisible();
-    const t = (await toggle.boundingBox())!;
-    const c = (await clockOf(page).boundingBox())!;
-    const h = (await page.locator("header").first().boundingBox())!;
-    expect(t.width).toBeGreaterThanOrEqual(44);
-    expect(t.height).toBeGreaterThanOrEqual(44);
-    expect(Math.abs(t.x + t.width - (c.x + c.width))).toBeLessThanOrEqual(1);
-    expect(t.y).toBeGreaterThanOrEqual(c.y + c.height - 1);
-    expect(t.y + t.height).toBeLessThanOrEqual(h.y + h.height + 0.5);
-
     await page.getByRole("button", { name: "Close this hint" }).tap();
     await expect(plateOf(page)).toHaveCount(0, { timeout: 1000 });
+    const toggle = toggleOf(page);
+    await expect(toggle).toBeHidden();
+    await menuOf(page).tap();
+    const t = (await toggle.boundingBox())!;
+    expect(t.height).toBeGreaterThanOrEqual(44);
     await toggle.tap();
+    await expect(menuOf(page)).toHaveAttribute("aria-expanded", "false");
     const plate = plateOf(page);
     await expect(plate).toBeVisible();
     await expect(plate).toContainText("Pinch");
     await expect(plate).not.toContainText("It appears");
     const box = (await plate.boundingBox())!;
-    const bar = (await barOf(page).boundingBox())!;
-    expect(box.y + box.height).toBeLessThanOrEqual(bar.y);
+    const compass = (await compassOf(page).boundingBox())!;
+    expect(box.y + box.height).toBeLessThanOrEqual(compass.y);
   } finally {
     await ctx.close();
   }
 });
 
-test("phone: the ? closes the Places sheet", async ({ browser }) => {
+test("phone: Controls closes the Sources tray", async ({ browser }) => {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
   const page = await ctx.newPage();
   try {
     await page.goto(PLACE);
     await ready(page);
-    const places = page.getByRole("button", { name: "Places" });
-    await places.tap();
+    await menuOf(page).tap();
+    await page.locator('[data-rail="eye"] [data-rail-entry="sources"]').tap();
     await expect(plateOf(page)).toHaveCount(0, { timeout: 2000 });
-    await expect(page.getByRole("link", { name: "Tower Bridge" })).toBeVisible();
+    const tray = page.locator("[data-eye-tray]");
+    await expect(tray).toBeVisible();
+    await menuOf(page).tap();
     await toggleOf(page).tap();
     await expect(plateOf(page)).toBeVisible();
-    await expect(page.getByRole("navigation", { name: "Places" })).toHaveCount(0);
-    await expect(places).toHaveAttribute("aria-expanded", "false");
+    await expect(tray).toHaveCount(0);
   } finally {
     await ctx.close();
   }
@@ -313,7 +317,7 @@ test("the plate costs the view no camera card, on a phone or a desktop", async (
   }
 });
 
-test("a first touch that lands on the ? gives the finger words, not Leon's line", async ({ browser }) => {
+test("a first touch that lands on Controls gives the finger words, not Leon's line", async ({ browser }) => {
   // A plain desktop context, as the touch-on-a-desktop case above: it keeps the fine pointer
   // and still accepts CDP touch input, which arrives as pointerType "touch".
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });

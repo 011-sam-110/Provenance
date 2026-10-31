@@ -7,7 +7,7 @@ import { streetsBody } from "@/lib/eye/streets";
 /**
  * The God's eye view's road notices (/eye), held to the two rules of the road layer:
  *
- *   - Every time says whose it is. The ledger (and the phone's bottom band) names TfL's
+ *   - Every time says whose it is. The Sources tray (and a film's ledger) names TfL's
  *     newest change and the time the server asked TfL, apart, in UTC, and says how long
  *     ago once the server's answer is old.
  *   - Closed is per street. Only the stretch TfL marks Closed gets the closure paint;
@@ -49,7 +49,7 @@ async function answerStreets(page: Page, opts: { changedAgo: number; fetchedAgo:
   return times;
 }
 
-test("the ledger names TfL's newest change and the fetch apart", async ({ page }) => {
+test("the Sources tray names TfL's newest change and the fetch apart", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(String(e)));
   await page.setViewportSize({ width: 1440, height: 900 });
@@ -57,11 +57,12 @@ test("the ledger names TfL's newest change and the fetch apart", async ({ page }
   await page.goto(A12);
   await ready(page);
 
-  const ledger = page.locator("main");
-  await expect(ledger).toContainText(`TfL's newest change ${hhmm(t.changedAt)} UTC`);
-  await expect(ledger).toContainText(`fetched ${hhmm(t.fetchedAt)} UTC`);
-  await expect(ledger).toContainText("Powered by TfL Open Data");
-  await expect(ledger).not.toContainText("every 2 min");
+  await page.locator('[data-rail="eye"] [data-rail-entry="sources"]').click();
+  const tray = page.locator("[data-eye-tray]");
+  await expect(tray).toContainText(`TfL's newest change ${hhmm(t.changedAt)} UTC`);
+  await expect(tray).toContainText(`fetched ${hhmm(t.fetchedAt)} UTC`);
+  await expect(tray).toContainText("Powered by TfL Open Data");
+  await expect(tray).not.toContainText("every 2 min");
   expect(errors).toEqual([]);
 });
 
@@ -70,13 +71,14 @@ test("an old answer says how old it is", async ({ page }) => {
   const t = await answerStreets(page, { changedAgo: 30 * MIN, fetchedAgo: 22 * MIN });
   await page.goto(A12);
   await ready(page);
-  await expect(page.locator("main")).toContainText(`fetched ${hhmm(t.fetchedAt)} UTC, 22 min ago`);
+  await page.locator('[data-rail="eye"] [data-rail-entry="sources"]').click();
+  await expect(page.locator("[data-eye-tray]")).toContainText(`fetched ${hhmm(t.fetchedAt)} UTC, 22 min ago`);
 });
 
-test("the phone's bottom band carries the same two times", async ({ page }) => {
+test("a film's bottom band on a phone carries the same two times", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 693 });
   const t = await answerStreets(page, { changedAgo: 10 * MIN, fetchedAgo: MIN });
-  await page.goto(A12);
+  await page.goto(`${A12}&record=1`);
   await ready(page);
   await expect(page.locator("main")).toContainText(
     `No open road-speed feed for London · TfL notices: newest change ${hhmm(t.changedAt)} UTC · fetched ${hhmm(t.fetchedAt)} UTC`,

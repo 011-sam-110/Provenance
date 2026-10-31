@@ -1,18 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { EYE_CONSOLE_LAYERS, consoleHref, hasSavedBoard } from "@/lib/eye/places";
-import { railSourceCount } from "@/lib/eye/railCount";
-import { fullMapName, sourcesName } from "@/lib/eye/wording";
 import { SOURCES_PARAM, wantsSourcesOpen, withoutArrivalFlags } from "@/lib/console/sourcesLink";
 import { ACTIVE_LAYERS } from "@/lib/layers";
 import { decodeViewState } from "@/lib/share/url";
 import { PERSIST_KEY } from "@/lib/variants/store";
-import { RAIL_SOURCES } from "@/lib/console/sources/railSources";
-import { buildSourceSections } from "@/lib/console/sources/sections";
 
 /**
- * God's eye view's Sources button (components/eye/EyeHud.tsx) and the landing page's
- * "All sources" open the console with its Sources rail open. These are the rules
- * behind that link, held without a browser.
+ * The landing page's "All sources" opens the console with its Sources rail open. These are the
+ * rules behind that link, held without a browser. God's eye view's "Exit to dashboard" is the
+ * same link without the flag (tests/unit/eye-exit.test.ts).
  */
 
 const VIEW = { lat: 51.50135, lon: -0.1218, zoom: 15.9 };
@@ -103,18 +99,5 @@ describe("sources=open on the console", () => {
       "/app?lat=51.5&lon=-0.08&z=15.7&layers=livecams%2Cplanes&base=satellite#map",
     );
     expect(withoutArrivalFlags("/app", `?eye=${back}`)).toBe("/app");
-  });
-});
-
-describe("the way out in the Sources tray", () => {
-  it("counts the rows the Sources rail draws, from the rail's own list", () => {
-    const rows = buildSourceSections(RAIL_SOURCES).flatMap((s) => s.rows);
-    expect(railSourceCount()).toBe(rows.length);
-    expect(railSourceCount()).toBeGreaterThan(20);
-  });
-
-  it("names the button, and says where the link goes", () => {
-    expect(sourcesName()).toBe("Sources");
-    expect(fullMapName(55)).toBe("Open the full map with all 55 sources");
   });
 });

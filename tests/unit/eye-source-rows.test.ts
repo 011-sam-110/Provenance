@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import { RAIL_SOURCES } from "@/lib/console/sources/railSources";
 import { SECTIONS, buildSourceSections } from "@/lib/console/sources/sections";
 import type { CatalogSource } from "@/lib/sources/catalog";
-import { railSourceCount } from "@/lib/eye/railCount";
 import { eyeLeftOut, eyeSourceRows, leftOutCounts, precisionOf } from "@/lib/eye/sourceRows";
 import { EYE_OWN_IDS } from "@/lib/eye/sources";
 import { MAP_SIGNALS } from "@/lib/signals/registry";
@@ -23,7 +22,7 @@ describe("the rows", () => {
     const expected = railRows.filter((r) => !r.widgetOnly && precisionOf(r.id) !== "country").map((r) => r.id);
     expect(rows.map((r) => r.id).sort()).toEqual([...expected].sort());
     expect(rows.length + left.length).toBe(railRows.length);
-    expect(rows.length + left.length).toBe(railSourceCount());
+    expect(railRows.length).toBeGreaterThan(20);
   });
 
   it("start with this view's own seven, in order", () => {
@@ -92,7 +91,7 @@ describe("what is left out", () => {
     expect(left.some((l) => l.id === "news" && l.reason === "widget")).toBe(true);
   });
 
-  it("is counted by reason for the tray's foot", () => {
+  it("is counted by reason, which the tray's foot says in words", () => {
     const c = leftOutCounts(left);
     expect(c.widget + c.country).toBe(left.length);
     expect(c.widget).toBe(left.filter((l) => l.reason === "widget").length);

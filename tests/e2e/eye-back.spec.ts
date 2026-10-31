@@ -3,7 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 /**
  * The way back to God's eye view from the console (components/console/EyeReturn.tsx).
  *
- *   - From /eye, Sources opens the console; the console's map then shows "God's eye
+ *   - From /eye, Exit to dashboard opens the console; the console's map then shows "God's eye
  *     view / Back to <place>" at its top left, and one click returns to the same place,
  *     heading and tilt, wherever the console map has been moved to since.
  *   - It is there only after arriving from /eye: a console opened directly has none,
@@ -18,14 +18,13 @@ import { expect, test, type Page } from "@playwright/test";
 const ready = (page: Page) => page.waitForSelector('main[data-eye-state="ready"]', { timeout: 90_000 });
 const consoleMap = (page: Page) => page.waitForSelector("main .maplibregl-canvas, .tn-cw-stage .maplibregl-canvas", { timeout: 90_000 });
 
-/** "Heading 247°  Tilt 48°" on /eye's frame, as numbers. */
+/** The heading on /eye's compass and the map's tilt, as whole numbers. */
 async function readout(page: Page): Promise<{ heading: number; tilt: number }> {
-  const text = (await page.locator("header p").first().textContent()) ?? "";
-  const heading = /Heading\s*(\d+)/.exec(text);
-  const tilt = /Tilt\s*(\d+)/.exec(text);
+  const text = (await page.locator("[data-compass-chip]").textContent()) ?? "";
+  const heading = /^(\d+)°/.exec(text);
   expect(heading, text).not.toBeNull();
-  expect(tilt, text).not.toBeNull();
-  return { heading: Number(heading![1]), tilt: Number(tilt![1]) };
+  const tilt = await page.evaluate(() => (window as unknown as { __map: { getPitch(): number } }).__map.getPitch());
+  return { heading: Number(heading![1]), tilt: Math.round(tilt) };
 }
 
 /**
@@ -42,18 +41,27 @@ async function moveTheView(page: Page) {
   await page.waitForTimeout(500);
 }
 
-/** Open the Sources tray, focus its way to the console (it takes its address on focus) and follow it. */
-async function openSources(page: Page) {
-  await page.getByRole("button", { name: /^Sources/ }).click();
-  const sources = page.getByRole("link", { name: /^Open the full map/ });
-  await sources.focus();
-  await sources.click();
+/** Focus the way to the console (it takes its address on focus) and follow it. */
+async function exitToDashboard(page: Page) {
+  if ((page.viewportSize()?.width ?? 0) <= 900) await page.locator('[data-rail="eye"] [data-rail-menu]').click();
+  const exit = page.locator("[data-eye-exit]");
+  await exit.focus();
+  await exit.click();
   await page.waitForURL(/\/app/);
+}
+
+/** The same address with the console's Sources rail open, as the landing page's "All sources" asks. */
+async function exitWithSourcesOpen(page: Page) {
+  if ((page.viewportSize()?.width ?? 0) <= 900) await page.locator('[data-rail="eye"] [data-rail-menu]').click();
+  const exit = page.locator("[data-eye-exit]");
+  await exit.focus();
+  const href = (await exit.getAttribute("href"))!;
+  await page.goto(href.replace("&eye=", "&sources=open&eye="));
 }
 
 const plate = (page: Page, place: string) => page.getByRole("link", { name: `God's eye view: back to ${place}` });
 
-test("the way back: Tower Bridge, turned, Sources, a source changed, and one click to the same view", async ({ page }) => {
+test("the way back: Tower Bridge, turned, the dashboard, a source changed, and one click to the same view", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(String(e)));
   await page.setViewportSize({ width: 1440, height: 900 });
@@ -63,7 +71,7 @@ test("the way back: Tower Bridge, turned, Sources, a source changed, and one cli
   const left = await readout(page);
   expect(left.heading).not.toBe(292); // the preset's own heading: it did turn
 
-  await openSources(page);
+  await exitWithSourcesOpen(page);
   await expect(plate(page, "Tower Bridge")).toBeVisible({ timeout: 60_000 });
   // Both arrival flags have left the address.
   await expect.poll(() => new URL(page.url()).searchParams.has("eye")).toBe(false);
@@ -110,7 +118,7 @@ test("with the HUD readout on, the way back sits below it", async ({ page }) => 
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/eye?place=tower-bridge");
   await ready(page);
-  await openSources(page);
+  await exitToDashboard(page);
 
   const back = plate(page, "Tower Bridge");
   await expect(back).toBeVisible({ timeout: 60_000 });
@@ -128,7 +136,7 @@ test("on a phone the way back is on the map, clear of the Sources sheet, and not
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/eye?place=westminster");
   await ready(page);
-  await openSources(page);
+  await exitWithSourcesOpen(page);
 
   const back = plate(page, "Westminster");
   await expect(back).toBeVisible({ timeout: 60_000 });

@@ -1,363 +1,331 @@
-/* The God's eye view's Sources tray and pins (EyeSources.tsx).
+/* The God's eye view's Sources tray (EyeSources.tsx): the design's pop-over, beside the sidebar.
  *
- * THE TRAY IS THE CONSOLE'S RAIL, not a second design of it. It is a `.tn-rail` in a
- * `.tn-terminal` token scope, its header is `.tn-rail-header` with `.tn-rail-tabs` and
- * `.tn-rail-collapse`, and its rows are SourceRowView's, so app/globals.css styles all of
- * it: surface, edge, 14 px corners, shadow, the two-column rows, the dots and switches. In
- * this view that is always the console's DARK mode (lib/eye/skin.ts sets the attribute),
- * which is why nothing here names a colour: every colour below is a `--tn-*` token that the
- * console's dark rules already remap.
+ * THE ROWS ARE THE CONSOLE'S (`.tn-src-*`, app/globals.css), which read the `--tn-*` tokens. This
+ * file remaps those tokens to the HUD's palette on the tray, and lays each row out as a name with a
+ * detail line under it. The tray does not sit in `.tn-terminal`, so the console's dark-skin rules
+ * for those rows do not reach it. Sizes and colours are the contract's.
  *
- * WHAT THIS FILE HOLDS is placement and the few pieces only this view has:
- *   - where the tray stands (top right on a wide screen, a pop-up above the bar on a phone),
- *     written with a doubled class (.tray.tray) so it beats `.tn-rail` and its <=768 px
- *     bottom-sheet rules, which are the console's own and are not edited;
- *   - the Sources button and the pins, which are the console's `.tn-rail-fab` with its
- *     fixed top-left placement taken off;
- *   - the section strip (a second `.tn-rail-tabs`), the phone's grip and 44 px hit boxes,
- *     the pin bar's phone strip, the drag ghost, the drop mark and the pin menu.
- * The `.tn-terminal` wrapper adds no box of its own (display: contents). */
+ * THE TOP IS MEASURED. --tray-top is set from the title's bottom edge (EyeSources.tsx), so a title
+ * on two lines is not covered. The foot stops above the compass, which is 100 px off the bottom. */
 
-.scope {
-  display: contents;
-}
+.tray {
+  --tn-text: #e8ecf0;
+  --tn-text-muted: #a9b4bf;
+  --tn-text-faint: #8e9aa6;
+  --tnx-ink: #8e9aa6;
+  --tn-surface-2: rgba(255, 255, 255, 0.06);
+  --tn-surface-solid: #0c0f13;
+  --tn-border: rgba(255, 255, 255, 0.1);
+  --tn-border-strong: rgba(255, 255, 255, 0.16);
+  --tn-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  --tn-accent: #e8ecf0;
+  --tn-srx-edge: rgba(255, 255, 255, 0.28);
+  --tn-toggle-off: #3a444e;
+  --tnx-fs-sm: 12px;
+  --tnx-fs-md: 11px;
 
-/* ── The tray ───────────────────────────────────────────────────────────── */
-
-.tray.tray {
-  position: fixed;
-  top: 116px;
-  right: 26px;
-  bottom: auto;
-  left: auto;
-  z-index: 40;
-  /* 600 px is deliberate: `.tn-src-sec` is a container and its rows go two-column only at
-     562 px of content, as in the console. */
-  width: min(600px, calc(100vw - 52px));
-  max-height: min(680px, calc(100dvh - 140px));
+  position: absolute;
+  top: var(--tray-top, 120px);
+  left: calc(var(--rail-w, 64px) + 24px);
+  z-index: 12;
+  box-sizing: border-box;
+  width: 340px;
+  max-height: calc(100% - var(--tray-top, 120px) - 112px);
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  padding: 0;
-  border: 1px solid var(--tn-border);
-  border-radius: 14px;
-  box-shadow: var(--tn-shadow);
-  animation: none;
+  background: #0c0f13;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  color: #e8ecf0;
+  font-size: 12px;
   pointer-events: auto;
-  font-weight: 400;
   text-shadow: none;
-}
-/* The console's bottom-sheet grab handle (<= 768 px) is not wanted on a pop-up. */
-.tray.tray::before {
-  display: none;
+  transition: left 0.18s ease;
 }
 
-.strip.strip {
+.head {
   flex: none;
-  margin: 0 12px 10px;
-  overflow-x: auto;
-  overscroll-behavior-x: contain;
-  scrollbar-width: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 8px 4px 10px;
 }
-.strip::-webkit-scrollbar {
-  display: none;
+
+.tabs,
+.strip {
+  display: flex;
+  gap: 2px;
 }
-.strip :global(.tn-rail-tab) {
+
+.strip {
   flex: none;
-  padding: 4px 10px 5px;
+  flex-wrap: wrap;
+  padding: 2px 10px 6px;
+}
+
+.tab {
+  appearance: none;
+  min-height: 28px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #a9b4bf;
+  font: inherit;
   font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
 }
-.stripN {
-  margin-left: 4px;
-  color: var(--tn-text-faint);
+.tab:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #e8ecf0;
+}
+.tab[aria-selected="true"] {
+  background: rgba(255, 255, 255, 0.1);
+  color: #e8ecf0;
+}
+/* The strip is one level under the two views, so it gets no plate of its own: an underline. */
+.strip .tab {
+  border-radius: 0;
   font-weight: 500;
 }
-.strip :global(.tn-rail-tab[aria-selected="true"]) .stripN {
-  color: var(--tn-text-muted);
+.strip .tab:hover {
+  background: transparent;
+}
+.strip .tab[aria-selected="true"] {
+  background: transparent;
+  box-shadow: inset 0 -2px 0 #e8ecf0;
+}
+.tab:focus-visible,
+.close:focus-visible,
+.search:focus-visible {
+  outline: 2px solid #e8ecf0;
+  outline-offset: -2px;
 }
 
-.search.search {
-  display: block;
+.close {
+  appearance: none;
   flex: none;
-  width: calc(100% - 24px);
-  margin: 2px 12px 10px;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #a9b4bf;
+  cursor: pointer;
+}
+.close:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: #e8ecf0;
+}
+.close svg {
+  width: 15px;
+  height: 15px;
 }
 
-.body.body {
+.search {
+  flex: none;
+  box-sizing: border-box;
+  width: calc(100% - 20px);
+  height: 32px;
+  margin: 2px 10px 8px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #e8ecf0;
+  font: inherit;
+  font-size: 13px;
+}
+.search::placeholder {
+  color: #8e9aa6;
+}
+
+.body {
+  flex: 1 1 auto;
   min-height: 0;
+  overflow-y: auto;
   overscroll-behavior: contain;
+  padding: 0 6px 6px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+
+.none {
+  margin: 6px;
+  color: #a9b4bf;
+}
+
+/* The section's heading is only for Show all: in Sections the strip above already says it, and
+   no section says how many rows it has. */
+.tray :global(.tn-src-sec) {
+  margin: 0 0 8px;
+}
+.tray[data-view="sections"] :global(.tn-src-sec-head) {
+  display: none;
+}
+.tray :global(.tn-src-sec-head) {
+  margin: 6px 0 2px;
+  padding: 0 8px;
+  border: 0;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.tray :global(.tn-src-sec-n),
+.tray :global(.tn-src-sec-on) {
+  display: none;
+}
+
+/* One row: the dot, the name over its detail line, the pin, the switch. */
+.tray :global(.tn-src-row) {
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr) auto auto;
+  column-gap: 10px;
+  row-gap: 2px;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: 8px;
+}
+.tray :global(.tn-src-dot),
+.tray :global(.tn-src-row[data-on="true"] .tn-src-dot) {
+  grid-column: 1;
+  grid-row: 1;
+  width: 7px;
+  height: 7px;
+  box-shadow: none;
+}
+.tray :global(.tn-src-label) {
+  grid-column: 2;
+  grid-row: 1;
+  font-weight: 600;
+  line-height: 16px;
+  color: #a9b4bf;
+}
+.tray :global(.tn-src-row[data-on="true"] .tn-src-label) {
+  font-weight: 600;
+  color: #e8ecf0;
+}
+.detail {
+  grid-column: 2;
+  grid-row: 2;
+  min-width: 0;
+  font-size: 11px;
+  line-height: 1.35;
+  color: #8e9aa6;
+  overflow-wrap: anywhere;
+}
+.tray :global(.tn-src-add) {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  background: transparent;
+  color: #a9b4bf;
+}
+.tray :global(.tn-src-add[data-placed="true"]) {
+  background: #e8ecf0;
+  border-color: #e8ecf0;
+  color: #0b0d10;
+}
+.tray :global(.tn-src-toggle) {
+  grid-column: 4;
+  grid-row: 1 / span 2;
+  width: 26px;
+  height: 14px;
+  border-radius: 7px;
+  background: #3a444e;
+}
+.tray :global(.tn-src-row[data-on="true"] .tn-src-toggle) {
+  background: #e8ecf0;
+}
+.tray :global(.tn-src-toggle)::after {
+  width: 10px;
+  height: 10px;
+  background: #0b0d10;
+  box-shadow: none;
+}
+.tray :global(.tn-src-row[data-on="true"] .tn-src-toggle)::after {
+  transform: translateX(12px);
+}
+.tray :global(.tn-src-toggle:disabled) {
+  opacity: 0.4;
+  cursor: default;
+}
+.tray :global(.tn-src-add:focus-visible),
+.tray :global(.tn-src-toggle:focus-visible),
+.tray :global(.tn-src-label:focus-visible) {
+  outline: 2px solid #e8ecf0;
+  outline-offset: 2px;
 }
 
 /* A row's popover hangs under it. The console draws its own beside the rail, from code in
    SourceRow; here it is inline in the row, which is its containing block. */
 .tray :global(.tn-src-pop) {
-  left: 14px;
+  left: 28px;
   top: calc(100% - 2px);
 }
 
-/* "3 here", after the label of a switched-on row. */
-.here {
+/* What the ledger used to say about the whole view. */
+.foot {
   flex: none;
-  font-size: 11px;
-  color: var(--tn-text-faint);
-  white-space: nowrap;
-}
-
-/* The foot: the way to the full console, then what this view leaves out. */
-.foot.foot {
-  flex: none;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 2px 10px;
-  margin: 0;
-  padding: 10px 14px 12px;
-  border-top: 1px solid var(--tn-border);
-}
-.foot a {
-  color: var(--tn-text);
-  font-size: 12.5px;
-  font-weight: 600;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-.foot a:focus-visible {
-  outline: 2px solid var(--tn-accent);
-  outline-offset: 2px;
-}
-
-/* The bar sits above the tray, so the pin menu (inside it) is not covered by the tray when
-   the two overlap. They do not overlap otherwise. */
-.barLayer {
-  z-index: 45;
-}
-
-/* ── The Sources button and the pins: the console's `.tn-rail-fab`, in the bar ───── */
-
-.fab.fab {
-  position: static;
-  top: auto;
-  bottom: auto;
-  left: auto;
-  z-index: auto;
-  min-height: 34px;
-  padding: 0 13px;
-  pointer-events: auto;
-  white-space: nowrap;
-}
-.fab:focus-visible {
-  outline: 2px solid var(--tn-accent);
-  outline-offset: 2px;
-}
-/* Sources keeps the right-hand end of the bar on a wide screen (Turn and the pins before it). */
-.sourcesBtn.sourcesBtn {
-  order: 2;
-}
-.sourcesBtn[aria-expanded="true"] {
-  border-color: var(--tn-accent);
-}
-
-.pin.pin {
-  gap: 8px;
-  touch-action: none;
-  --c: var(--tn-text-muted);
-}
-.pin[aria-pressed="false"] {
-  color: var(--tn-text-muted);
-  font-weight: 500;
-}
-.pin[aria-disabled="true"] {
-  opacity: 0.5;
-  cursor: default;
-}
-.pinDot {
-  flex: none;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--c);
-  /* The console's own off-dot in its dark mode (app/globals.css, .tn-src-dot). */
-  opacity: 0.7;
-}
-.pin[aria-pressed="true"] .pinDot {
-  opacity: 1;
-  box-shadow: 0 0 6px var(--c);
-}
-
-/* The pins' own area. It shows a dashed outline while a source is carried, and takes the
-   accent when the pointer is over it. */
-.pins {
-  display: flex;
-  align-items: stretch;
-  gap: 8px;
-  border-radius: 12px;
-}
-.pins[data-dragging] {
-  min-width: 96px;
-  min-height: 34px;
-  outline: 1.5px dashed var(--tn-border-strong);
-  outline-offset: 3px;
-}
-.pins[data-over] {
-  outline-color: var(--tn-accent);
-  background: var(--tn-accent-soft);
-}
-.pin[data-lifted] {
-  opacity: 0.35;
-}
-/* Where the carried source would land: a bar on the side of a pin. */
-.pin[data-drop] {
-  position: relative;
-}
-.pin[data-drop]::after {
-  content: "";
-  position: absolute;
-  top: -2px;
-  bottom: -2px;
-  width: 3px;
-  border-radius: 2px;
-  background: var(--tn-accent);
-}
-.pin[data-drop="before"]::after {
-  left: -6px;
-}
-.pin[data-drop="after"]::after {
-  right: -6px;
-}
-
-/* The carried source, following the pointer by transform only. */
-.ghost {
-  position: fixed;
-  left: 0;
-  top: 0;
-  z-index: 80;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border: 1px solid var(--tn-border-strong);
-  border-radius: 10px;
-  background: var(--tn-surface-solid);
-  color: var(--tn-text);
-  font-size: 13px;
-  font-weight: 600;
-  white-space: nowrap;
-  box-shadow: var(--tn-shadow);
-  pointer-events: none;
-  will-change: transform;
-}
-.ghost[hidden] {
-  display: none;
-}
-
-/* The pin menu: the console's `.tn-src-pop` surface, placed by the code (fixed). */
-.menu.menu {
-  position: fixed;
-  top: auto;
-  right: auto;
-  bottom: auto;
-  left: auto;
-  z-index: 70;
   display: grid;
-  width: auto;
-  min-width: 150px;
-  padding: 4px;
-  pointer-events: auto;
+  gap: 2px;
+  padding: 8px 16px 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 11px;
+  line-height: 1.4;
+  color: #8e9aa6;
 }
-.menu button {
-  min-height: 36px;
-  padding: 0 12px;
-  border: 0;
-  border-radius: 7px;
-  background: none;
-  color: var(--tn-text);
-  font: inherit;
-  font-size: 13px;
-  text-align: left;
-  cursor: pointer;
+.foot p {
+  margin: 0;
 }
-.menu button:hover,
-.menu button:focus-visible {
-  background: var(--tn-surface-2);
-  outline: none;
-}
-.menu button:focus-visible {
-  box-shadow: inset 0 0 0 2px var(--tn-accent);
-}
-.menu button[aria-disabled="true"] {
-  color: var(--tn-text-faint);
-  cursor: default;
+.said {
+  color: #e8ecf0;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .pin[data-drop]::after {
-    transition: none;
-  }
-}
-
-/* ── The grip is the phone's; a wide screen does not show it ─────────────── */
-
-.tray :global(.tn-src-grip) {
-  display: none;
-}
-
-/* ── A phone: a pop-up above the bar, the bar's strip, thumb-sized rows ───────────────
-   The same line the rest of the view draws between the wide and the phone layouts. */
-
-/* The controls bar's scrolling wrapper (EyeHud): on a wide screen it adds no box, its
-   buttons are the controls' own. */
-.bar {
-  display: contents;
-}
-
-@media (max-aspect-ratio: 4/5) {
-  .tray.tray {
-    top: auto;
-    left: 10px;
+/* Upright, or a phone's width: a pop-up over the scene, with 44 px of hit box on every control.
+   The ＋ and the switch keep their painted size and get a transparent box: the console's own
+   technique, in the note above its <= 900 px touch pass (app/globals.css). */
+@media (max-width: 900px), (max-aspect-ratio: 4/5) {
+  .tray {
+    top: calc(68px + env(safe-area-inset-top, 0px));
+    left: calc(var(--rail-w, 0px) + 10px);
     right: 10px;
-    /* 8 px above the bar; EyeSources.tsx measures the bar and sets --tray-bottom. */
-    bottom: var(--tray-bottom, 80px);
     width: auto;
-    max-height: min(470px, 56dvh);
+    max-height: calc(100% - 80px - env(safe-area-inset-top, 0px));
   }
-  /* Show all is taller: its top edge stays about 92 px from the top of the screen. */
-  .tray.tray[data-view="all"] {
-    top: 92px;
-    max-height: none;
+  .tab {
+    min-height: 40px;
+    font-size: 13px;
   }
-
+  .close {
+    width: 44px;
+    height: 44px;
+  }
+  .search {
+    height: 44px;
+    font-size: 15px;
+  }
   .tray :global(.tn-src-row) {
+    column-gap: 16px;
     min-height: 44px;
-    padding: 0 6px 0 0;
-    gap: 16px;
+    padding: 6px 12px 6px 10px;
   }
   .tray :global(.tn-src-label) {
-    padding: 13px 0;
     font-size: 14px;
     line-height: 18px;
   }
-  .tray :global(.tn-src-grip) {
-    display: grid;
-    place-items: center;
-    flex: none;
-    width: 24px;
-    height: 40px;
-    margin-right: -8px;
-    color: var(--tn-text-faint);
-    font-size: 13px;
-    letter-spacing: -2px;
-    touch-action: none;
-    cursor: grab;
-  }
-  /* The ＋ and the switch keep the console's painted size and get a transparent hit box
-     to 44 px: the console's own technique (b), in the note above its <= 900 px touch pass
-     (app/globals.css). Neighbours are 16 px apart, so the boxes touch and never overlap
-     (9 and 8 px reach out sideways). */
+  /* The ＋ has a 1 px border and the box is measured from inside it, so -12 and -9 make 44 tall
+     and 38 wide. Neighbours are 16 px apart, so the boxes touch and never overlap. */
   .tray :global(.tn-src-add) {
     position: relative;
   }
-  /* The ＋ has a 1 px border and the box is measured from inside it, so -12 and -9 make 44
-     tall and 38 wide. */
   .tray :global(.tn-src-add)::before {
     content: "";
     position: absolute;
@@ -366,107 +334,37 @@
   .tray :global(.tn-src-toggle)::before {
     content: "";
     position: absolute;
-    inset: -14px -8px;
-  }
-  .tray :global(.tn-rail-tab) {
-    min-height: 40px;
-    font-size: 14px;
-  }
-  .strip :global(.tn-rail-tab) {
-    min-height: 36px;
-    font-size: 13px;
-  }
-  .tray :global(.tn-rail-collapse) {
-    width: 44px;
-    height: 44px;
-  }
-  .search.search {
-    min-height: 44px;
-    font-size: 15px;
-  }
-
-  .fab.fab {
-    min-height: 44px;
-  }
-  /* Sources first in the bar, at the bottom left, in thumb reach. */
-  .sourcesBtn.sourcesBtn {
-    order: -1;
-  }
-  .menu button {
-    min-height: 44px;
-  }
-
-  /* The bar: Sources stays first and fixed; Places, the other buttons and the pins scroll
-     sideways in one strip, with a fade on the right. */
-  .bar {
-    display: flex;
-    align-items: stretch;
-    gap: 8px;
-    flex: 1 1 auto;
-    min-width: 0;
-    padding-right: 26px;
-    margin-right: -26px;
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
-    scrollbar-width: none;
-    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 26px), transparent);
-    mask-image: linear-gradient(to right, #000 calc(100% - 26px), transparent);
-  }
-  .bar::-webkit-scrollbar {
-    display: none;
-  }
-  .bar > * {
-    flex: none;
+    inset: -15px -8px;
   }
 }
 
-/* ── A phone on its side (eye.module.css holds the twin block and the reasons) ───────
-   The tray hangs 8 px under the bar and runs to 10 px above the bottom edge, and the
-   whole tray scrolls under its sticky header, as the console's own rail does: on a
-   300-390 px screen the strip, the section's title and the foot left the rows one line
-   or none when only the rows scrolled. The bar keeps to the right half, so Places,
-   Previews, Turn and the pins scroll sideways in its strip, as on a phone, with a fade at
-   its end; Sources keeps the bar's right-hand end. */
+/* A phone on its side: the right half, under the clock, to 10 px above the bottom edge. The whole
+   tray scrolls under its sticky header, as the console's own rail does: on a 300-390 px screen the
+   strip and the foot left the rows one line or none when only the rows scrolled. */
 @media (min-aspect-ratio: 4/5) and (max-height: 500px) {
-  .tray.tray {
-    top: 96px;
-    right: 22px;
-    width: min(600px, calc(100vw - 44px));
-    max-height: calc(100dvh - 106px);
+  .tray {
+    top: 68px;
+    left: auto;
+    right: 10px;
+    width: min(340px, calc(50vw - 16px));
+    max-height: calc(100dvh - 78px);
     overflow-y: auto;
     overscroll-behavior: contain;
   }
-  .tray .body.body {
+  .head {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: #0c0f13;
+  }
+  .body {
     flex: none;
     overflow: visible;
   }
-  /* The console pins a rail's header (.tn-rail-header: sticky, top 0) and then, inside
-     .tn-terminal, makes it static because its panes scroll (app/globals.css). Here the whole
-     tray scrolls, so the header is pinned again: its 10 px gap becomes padding, so no row
-     shows through between it and the strip while the rows pass under it. */
-  .tray.tray :global(.tn-rail-header) {
-    position: sticky;
-    top: 0;
-    margin: 0;
-    padding-bottom: 18px;
-  }
-  .bar {
-    display: flex;
-    align-items: stretch;
-    gap: 8px;
-    flex: 1 1 auto;
-    min-width: 0;
-    padding-right: 12px;
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
-    scrollbar-width: none;
-    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 12px), transparent);
-    mask-image: linear-gradient(to right, #000 calc(100% - 12px), transparent);
-  }
-  .bar::-webkit-scrollbar {
-    display: none;
-  }
-  .bar > * {
-    flex: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tray {
+    transition: none;
   }
 }
