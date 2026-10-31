@@ -164,6 +164,34 @@ test("the default stays on /app: the landing page and /privacy are not dark", as
   }
 });
 
+// maplibre-gl.css sets the open credit's text to black, which was 1.16:1 on the dark panel.
+test("the map's open credit can be read, on both skins", async ({ page }) => {
+  test.setTimeout(180_000);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/app");
+  for (const skin of ["dark", "light"]) {
+    if (skin === "light") {
+      await page.evaluate((k) => window.localStorage.setItem(k, JSON.stringify({ v: 1, d: "light" })), SKIN_KEY);
+      await page.reload();
+    }
+    expect(await skinAttr(page), skin).toBe(skin === "dark" ? "dark" : null);
+    await page.locator(".maplibregl-ctrl-attrib-button").first().click({ timeout: 90_000 });
+    await expect(page.locator(".maplibregl-ctrl-attrib-inner").first()).toContainText(/\S/);
+    const ratio = await page.evaluate(() => {
+      const box = document.querySelector(".maplibregl-ctrl-attrib")!;
+      const channels = (s: string) => (s.match(/[\d.]+/g) ?? []).map(Number).slice(0, 3);
+      const lum = (rgb: number[]) => {
+        const [r, g, b] = rgb.map((c) => (c / 255 <= 0.03928 ? c / 255 / 12.92 : ((c / 255 + 0.055) / 1.055) ** 2.4));
+        return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+      };
+      const text = lum(channels(getComputedStyle(document.querySelector(".maplibregl-ctrl-attrib-inner")!).color));
+      const panel = lum(channels(getComputedStyle(box).backgroundColor));
+      return (Math.max(text, panel) + 0.05) / (Math.min(text, panel) + 0.05);
+    });
+    expect(ratio, skin).toBeGreaterThanOrEqual(4.5);
+  }
+});
+
 test("phone: Theme is reachable at 44px, and the evidence shots are written", async ({ page }) => {
   test.setTimeout(180_000);
   await page.setViewportSize({ width: 360, height: 780 });

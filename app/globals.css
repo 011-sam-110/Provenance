@@ -5352,6 +5352,10 @@ body:has(.tn-terminal) { background: #d6dde6; color: #10161d; }
   box-shadow: var(--tnx-shadow-1);
 }
 .tn-terminal .maplibregl-ctrl-attrib a { color: var(--tnx-ink-faint); }
+/* The open credit's own text. maplibre-gl.css sets `.maplibregl-ctrl-attrib.maplibregl-compact
+   { color: #000 }`, which outranks the rule above: 1.16:1 on the dark panel, measured on
+   production on 2026-10-31. A credit is an obligation to its source, so it must be readable. */
+.tn-terminal .maplibregl-ctrl-attrib.maplibregl-compact { color: var(--tnx-ink-faint); }
 /* THE BOX HAD TO BE FIXED TOO, AND THAT IS THE BUG THIS BLOCK NOW ANSWERS.
    Recolouring the mark above left the CONTAINER at maplibre-gl.css's compact
    metrics — `box-sizing: content-box; min-height: 20px; padding: 2px 24px 2px 0` —
