@@ -3,16 +3,16 @@
 // board is loaded, and the link that reproduces them.
 //
 // NO MAP VIEW CONTROLS HERE, deliberately. Basemap, 2D/3D, terrain and buildings live in
-// the Inspector rail's Map settings tool (components/shell/inspector/tools/SettingsTool.tsx),
+// the sidebar's Map settings panel (components/shell/inspector/tools/SettingsTool.tsx),
 // and that file argues the case against a second surface for one concept better than a
 // comment here could.
 //
 // THE APPEARANCE ROW IS BACK, and it is a different row. The old light/dark pair (a Theme
 // segment) was deleted with the dark theme, and a segment with one option left in it is a
-// control that cannot do anything. This one switches the console's opt-in dark SKIN
-// (lib/terminal/skin.ts, not the Theme in lib/shell/ui.ts), it has two live options, and it
-// shares its store with the moon button beside SETTINGS in the header, so the two cannot
-// disagree.
+// control that cannot do anything. This one switches the console's SKIN (lib/terminal/skin.ts,
+// not the Theme in lib/shell/ui.ts), and it has two live options. Dark is the default, and
+// since the moon button left the navbar on 2026-10-31 this row is the only way to light, so it
+// stays the first row of this tab.
 //
 // THE TRANSIENT STATE MOVED WITH THE MARKUP, and that is not incidental. Inactive tabs
 // unmount, so `copied` and its timer live here rather than in SettingsPanel — otherwise a

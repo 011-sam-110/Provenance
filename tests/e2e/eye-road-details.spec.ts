@@ -42,7 +42,6 @@ const dialog = (page: Page) => page.getByRole("dialog");
 const closeBtn = (page: Page) => dialog(page).getByRole("button", { name: "Close", exact: true });
 const roadPlate = (page: Page) => page.getByRole("button", { name: /Utility works, road notice details/ });
 const hintPlate = (page: Page) => page.getByRole("complementary", { name: "How to move the view" });
-const hintToggle = (page: Page) => page.getByRole("button", { name: "How to move the view" });
 
 /** The notice the first row becomes, with its times moved to "now". */
 const NOW = Date.now();
@@ -84,9 +83,10 @@ async function feeds(
   await page.route((url) => url.pathname === "/api/eye/vessels", (route) =>
     route.fulfill(json(JSON.stringify({ ok: true, stream: "live", features: [] }))),
   );
-  await page.route((url) => url.pathname === "/api/planes", (route) => {
+  await page.route((url) => url.pathname === "/api/eye/planes", (route) => {
+    const box = new URL(route.request().url()).searchParams.get("bbox")!.split(",").map(Number);
     const planes = plane ? [{ ...PLANES.planes[0], lon: plane[0], lat: plane[1] }] : [];
-    return route.fulfill(json(JSON.stringify({ ...PLANES, count: planes.length, planes })));
+    return route.fulfill(json(JSON.stringify({ ...PLANES, ok: true, box, sampled: false, count: planes.length, planes })));
   });
   return { errors, setPlane: (at) => (plane = at), setNotices: (list) => (notices = list ?? NOTICES) };
 }
@@ -313,8 +313,16 @@ test.describe("on a wide screen", () => {
     // The ring sits on top of the selected streets.
     for (const [, at] of order.selected) expect(order.ring).toBeGreaterThan(at);
 
-    // Clicking bare ground closes it and clears the streets and the ring.
-    await page.mouse.click(v.x - 260, v.y + 180);
+    // Clicking bare ground closes it and clears the streets and the ring. The ground is the first
+    // of these spots that has only the map on it: the frame's parts take their own presses.
+    const ground = await page.evaluate(({ x, y }) => {
+      for (const [dx, dy] of [[-260, 180], [260, 180], [-260, -180], [260, -180], [-120, 220], [120, 220]]) {
+        if (document.elementFromPoint(x + dx, y + dy)?.classList.contains("maplibregl-canvas")) return { x: x + dx, y: y + dy };
+      }
+      return null;
+    }, v);
+    expect(ground).not.toBeNull();
+    await page.mouse.click(ground!.x, ground!.y);
     await expect(dialog(page)).toHaveCount(0);
     expect(await selectedFeatures(page)).toEqual({});
     expect(errors).toEqual([]);
@@ -369,7 +377,7 @@ test.describe("on a wide screen", () => {
     expect(errors).toEqual([]);
   });
 
-  test("opening a panel closes the control hint, and the ? brings it back and closes the panel", async ({ page }) => {
+  test("opening a panel closes the control hint, and Controls brings it back and closes the panel", async ({ page }) => {
     const feed = await feeds(page);
     await openWithPlaneAside(page, feed);
     await hintCase(page);
@@ -433,7 +441,7 @@ test.describe("on a phone", () => {
     expect(errors).toEqual([]);
   });
 
-  test("opening a panel closes the control hint, and the ? brings it back and closes the panel", async ({ page }) => {
+  test("opening a panel closes the control hint, and Controls brings it back and closes the panel", async ({ page }) => {
     const feed = await feeds(page);
     await openWithPlaneAside(page, feed);
     await hintCase(page);
@@ -451,9 +459,6 @@ test.describe("on a phone", () => {
     expect(shown.inside).toBe(true);
     for (const t of shown.titles) expect(CROWD_TITLES).toContain(t);
     expect(new Set(shown.titles).size).toBe(4);
-    // The ledger counts what has a plate, as it does for every kind.
-    await expect(page.locator('section[aria-label="What this view shows"] p[data-k="road"] b')).toHaveText("4");
-
     // A notice with no plate is still a ring you can tap.
     const bare = spots.find((s) => !shown.titles.includes(s.title))!;
     await page.touchscreen.tap(bare.x, bare.y);
@@ -474,11 +479,13 @@ test.describe("on a phone", () => {
 
 /**
  * The hint rule, at either width: the hint is up on arrival; opening a road notice closes it
- * (and the "?" reads "collapsed"); the "?" brings it back and closes the panel, with focus on
- * the "?"; and an aircraft's panel closes it again.
+ * (and the sidebar's Controls reads "collapsed"); Controls brings it back and closes the panel,
+ * with focus on that row; and an aircraft's panel closes it again.
  */
 async function hintCase(page: Page) {
-  const toggle = page.locator("[data-hint-toggle]");
+  const narrow = (page.viewportSize()?.width ?? 0) <= 900;
+  const toggle = page.locator('[data-rail="eye"] [data-rail-entry="controls"]');
+  const menu = page.locator('[data-rail="eye"] [data-rail-menu]');
   await expect(hintPlate(page)).toBeVisible();
   await expect(toggle).toHaveAttribute("aria-expanded", "true");
 
@@ -494,11 +501,13 @@ async function hintCase(page: Page) {
   await roadPlate(page).click();
   await expect(dialog(page)).toBeVisible();
 
-  await hintToggle(page).click();
+  // On a phone the row is behind the menu, and the sheet closes the panel on its own.
+  if (narrow) await menu.click();
+  await toggle.click();
   await expect(hintPlate(page)).toBeVisible();
   await expect(dialog(page)).toHaveCount(0);
   await expect(toggle).toHaveAttribute("aria-expanded", "true");
-  await expect(toggle).toBeFocused();
+  await expect(narrow ? menu : toggle).toBeFocused();
 
   // An aircraft's panel closes the hint again.
   await page.getByRole("button", { name: /aircraft details/ }).click();

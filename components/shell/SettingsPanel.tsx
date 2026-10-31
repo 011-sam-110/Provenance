@@ -15,8 +15,17 @@
 // need a shared magic height, and the first time one of them grew the divider would step.
 // As `grid-template-rows: auto 1fr` the header row is simply as tall as the taller of the
 // two, so they cannot disagree. It also buys the responsive layout outright: below 520px
-// the same four cells re-address to a title+✕ row, a horizontal strip, then the panel,
+// the same cells re-address to a title+✕ row, a horizontal strip, the panel, then the foot,
 // with no element moving in the DOM and the title never leaving the rail.
+//
+// THE FOOT IS THE PERMANENT DOOR TO THE DISCORD, and the reason CommunityNote's dismissal is
+// allowed to be permanent. That card asks once and then never again; without a standing link,
+// "No thanks" would close the only route rather than just the prompt. It lived in the navbar
+// until Sam moved it here on 2026-10-31. It sits at the foot of the tab column so every tab
+// shows it, and across the bottom of the drawer on the narrow pass, where a thumb already is.
+// It is a fifth cell and not part of the rail because a tablist may hold only tabs. It comes
+// after the panel in the DOM so Tab still goes from the rail straight into the panel, which is
+// the point of the roving tabindex below.
 //
 // It was one scroll of six unrelated sections, which put the two things people actually
 // open it for — rebinding a key, switching board — underneath a wall of integration
@@ -43,6 +52,9 @@ import DisplayTab from "./settings/DisplayTab";
 import ShortcutsTab from "./settings/ShortcutsTab";
 import AccountTab from "./settings/AccountTab";
 import { accountsConfigured } from "@/lib/account/config";
+import DiscordMark from "@/components/brand/DiscordMark";
+import { BRAND } from "@/lib/brand";
+import footStyles from "./settings/SettingsFoot.module.css";
 
 /**
  * Which way the rail is actually running, read back off the rail itself.
@@ -74,7 +86,13 @@ function useRailAxis(ref: React.RefObject<HTMLElement | null>, open: boolean) {
   return axis;
 }
 
-export default function SettingsPanel({ open, onClose, initialTab }: { open: boolean; onClose: () => void; initialTab?: SettingsTabId }) {
+export default function SettingsPanel({ open, onClose, initialTab, onOpenPalette }: {
+  open: boolean;
+  onClose: () => void;
+  initialTab?: SettingsTabId;
+  /** ConsoleShell owns the palette; the Shortcuts tab holds its door. */
+  onOpenPalette: () => void;
+}) {
   const tabs = SETTINGS_TABS.filter((t) => t.id !== "account" || accountsConfigured());
   const [tab, setTab] = useState<SettingsTabId>(tabs[0].id);
   const bodyRef = useRef<HTMLDivElement | null>(null);
@@ -224,8 +242,30 @@ export default function SettingsPanel({ open, onClose, initialTab }: { open: boo
         >
           {tab === "main" && <MainTab />}
           {tab === "display" && <DisplayTab />}
-          {tab === "shortcuts" && <ShortcutsTab />}
+          {tab === "shortcuts" && (
+            <ShortcutsTab
+              onOpenPalette={() => {
+                // Closed first, so the palette takes the focus the drawer gives back.
+                onClose();
+                onOpenPalette();
+              }}
+            />
+          )}
           {tab === "account" && <AccountTab />}
+        </div>
+
+        {/* Cell 5 — the foot. See the header of this file. */}
+        <div className={footStyles.foot}>
+          <a
+            className={footStyles.link}
+            href={BRAND.discordUrl}
+            target="_blank"
+            rel="noreferrer noopener"
+            title={`Join the ${BRAND.name} Discord`}
+          >
+            <DiscordMark size={14} />
+            <span>Join the Discord</span>
+          </a>
         </div>
       </aside>
     </div>

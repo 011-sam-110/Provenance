@@ -8,12 +8,9 @@
 // in here is how the two would come to disagree. Nothing below is dead code — it is
 // one constant away from rendering again, so read it as live.
 //
-// IT IS A MODAL, WHERE CommunityNote NEXT DOOR IS A CORNER CARD, and the difference is
-// the design rather than an inconsistency. The invitation asks for nothing and may be
-// ignored at no cost, so it takes no veil and never moves focus. This one carries the
-// only statement anybody gets that the data is unverified and the software is
-// unwarranted, and a person who never reads it is the person the warning existed for.
-// So it takes the veil and focus trap FeedbackPrompt uses.
+// IT IS A MODAL. It carries the only statement anybody gets that the data is unverified
+// and the software is unwarranted, and a person who never reads it is the person the
+// warning existed for. So it takes the veil and focus trap FeedbackPrompt uses.
 //
 // Escape still closes it. A dialog with no way out is an accessibility defect, and
 // this is a notice rather than a contract — the licence it points at binds whether or
@@ -25,9 +22,9 @@
 // functions over an injectable store, unit-tested in the node environment. This file
 // is the thin shell: a hold, a card, two controls.
 //
-// z-index 1200 puts it above FeedbackPrompt's 1100 and CommunityNote's 1050. If any
-// of them ever coincide, the warning is the one that must be readable, and that falls
-// out of the z-order with no cross-component subscription to keep in sync.
+// z-index 1200 puts it above FeedbackPrompt's 1100. CommunityNote's pop-up is higher, but
+// its gate holds it back while any dialog is up, so the warning is the one that stays
+// readable, with no cross-component subscription to keep in sync.
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BRAND } from "@/lib/brand";

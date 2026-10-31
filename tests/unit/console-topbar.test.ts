@@ -1,20 +1,21 @@
-import { readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, test } from "vitest";
 
-// The console top bar's presentation (Leon, 2026-10-29): the board tabs centred in the
-// bar with no dot, VIDEO and STILLS roomier with a camcorder and a camera, and ONE
-// hairline before WEBCAMS. These are source pins, because the things they hold are
-// things CSS and markup can quietly undo: a border put back on the tab, a dot that
-// returns, a second rule. The rendered numbers (centred to 0.5px, no overflow, no
-// hydration error) are measured in a browser, not here.
+// The console top bar's presentation. The board tabs come from Leon, 2026-10-29: centred in
+// the bar with no dot. The short bar comes from Sam, 2026-10-31: the camera counts leave, and
+// Discord, Shortcuts and the moon move into Settings. These are source pins, because the
+// things they hold are things CSS and markup can quietly undo: a border put back on the tab,
+// a dot that returns, a button that creeps back. What is painted and pressed is in
+// tests/e2e/console-navbar.spec.ts.
 
 const ROOT = resolve(__dirname, "..", "..");
 const read = (...p: string[]) => readFileSync(resolve(ROOT, ...p), "utf8").replace(/\r\n/g, "\n");
 
 const header = read("components", "terminal", "TerminalHeader.tsx");
-const stats = read("components", "terminal", "CameraStats.tsx");
-const glyphs = read("components", "terminal", "StatGlyphs.tsx");
+const panel = read("components", "shell", "SettingsPanel.tsx");
+const shortcuts = read("components", "shell", "settings", "ShortcutsTab.tsx");
+const display = read("components", "shell", "settings", "DisplayTab.tsx");
 const css = read("app", "globals.css");
 
 /** The body of the first rule whose selector is exactly `selector`. */
@@ -63,53 +64,81 @@ describe("the board tabs", () => {
   });
 });
 
-describe("the camera stats strip", () => {
-  const start = css.indexOf("/* ── CAMERA STATS STRIP");
-  const end = css.indexOf("/* ── END CAMERA STATS STRIP ── */");
-  const block = css.slice(start, end);
-
-  test("one hairline before WEBCAMS, also after RETRY in the error state", () => {
-    expect(block).not.toContain("cs-web::after");
-    expect(block).not.toContain("cs-web::before");
-    expect(block).toContain(":is(.cs-seg, .cs-retry) + .cs-seg::before");
-    expect(block).not.toMatch(/\.cs-web \{[^}]*margin-left/);
+describe("the short bar", () => {
+  test("keeps the brand, the tabs, presence, Support, Source, Settings and Account", () => {
+    expect(header).toContain("<Mark ");
+    expect(header).toContain("<BoardTabs />");
+    expect(header).toContain("<LivePresence />");
+    expect(header).toContain("href={BRAND.kofiUrl}");
+    expect(header).toContain('tn-settings-trigger"');
+    expect(header).toContain("<AccountButton ");
   });
 
-  test("VIDEO and STILLS are the roomier pair, and the glyph is sized by CSS in an existing token", () => {
-    expect(ruleBody(block, ".tn-terminal .cs-seg.is-major")).toContain("padding: 0 12px");
-    const glyph = ruleBody(block, ".tn-terminal .cs-glyph");
-    expect(glyph).toContain("width: 14px");
-    expect(glyph).toContain("height: 14px");
-    expect(glyph).toContain("color: var(--tnx-ink-dim)");
-    // The colour comes from a token, never a literal, in everything this change added.
-    expect(glyph).not.toMatch(/#[0-9a-f]{3,8}\b|rgba?\(/i);
+  test("the Source link stays: it is the AGPL section 13 offer", () => {
+    expect(header).toContain("href={BRAND.repoUrl}");
   });
 
-  test("the strip marks VIDEO and STILLS as major", () => {
-    expect(stats).toMatch(/id === "video" \|\| id === "stills" \? "is-major" : ""/);
+  test("keeps what nobody sees: the page's h1 and the two status lines", () => {
+    expect(header.match(/<h1 /g)).toHaveLength(1);
+    expect(header).toContain('data-testid="stat-line"');
+    expect(header).toContain('data-testid="a11y-status-line"');
+  });
+
+  test("Discord, Shortcuts, the moon and the camera counts have left", () => {
+    for (const gone of ["CameraStats", "StatGlyphs", "statsView", "DiscordMark", "discordUrl", "SkinGlyphs", "MoonGlyph", "SunGlyph", "tn-palette-trigger", "tnx-hdr-skin", "tnx-hdr-btn-mark"]) {
+      expect(header, gone).not.toContain(gone);
+    }
+  });
+
+  test("the strip's files, route and rules went with it, so nothing is left to reach", () => {
+    for (const file of [
+      ["components", "terminal", "CameraStats.tsx"],
+      ["components", "terminal", "StatGlyphs.tsx"],
+      ["components", "terminal", "SkinGlyphs.tsx"],
+      ["lib", "cameras", "statsView.ts"],
+      ["lib", "cameras", "stats.ts"],
+      ["app", "api", "camera-stats", "route.ts"],
+    ]) {
+      expect(existsSync(resolve(ROOT, ...file)), file.join("/")).toBe(false);
+    }
+    expect(css).not.toContain("CAMERA STATS STRIP");
+    expect(css).not.toMatch(/\.cs-[a-z]/);
+    expect(css).not.toContain(".tnx-hdr-skin");
+    expect(css).not.toContain(".tnx-hdr-btn-mark");
   });
 });
 
-describe("the two glyphs", () => {
-  test("hand-drawn in currentColor, exported by name, with no colour literal", () => {
-    expect(glyphs).toContain('stroke: "currentColor"');
-    expect(glyphs).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
-    expect(glyphs).not.toMatch(/\bfill="(?!none)/);
-    expect(glyphs).toContain("export function VideoGlyph()");
-    expect(glyphs).toContain("export function StillsGlyph()");
-    expect(glyphs).toContain('data-glyph="video"');
-    expect(glyphs).toContain('data-glyph="stills"');
-    expect(glyphs).toContain('"aria-hidden": true');
+describe("what moved into Settings", () => {
+  test("Discord is a link in the drawer, outside the tablist, from the one address constant", () => {
+    expect(panel).toContain("href={BRAND.discordUrl}");
+    expect(panel).toContain("<DiscordMark");
+    expect(panel).toContain("Join the Discord");
+    // A tablist may hold only tabs, so the link cannot sit inside the rail's element.
+    const rail = panel.slice(panel.indexOf('role="tablist"'), panel.indexOf("</div>", panel.indexOf('role="tablist"')));
+    expect(rail).not.toContain("discordUrl");
   });
 
-  test("used in the strip, the phone line, the breakdown heading and the phone sheet", () => {
-    const count = (re: RegExp) => (stats.match(re) ?? []).length;
-    expect(count(/<VideoGlyph \/>/g)).toBeGreaterThanOrEqual(4);
-    expect(count(/<StillsGlyph \/>/g)).toBeGreaterThanOrEqual(4);
+  test("the palette's door is the first thing on the Shortcuts tab, and it goes through onOpenPalette", () => {
+    const body = shortcuts.slice(shortcuts.indexOf("export default function ShortcutsTab"));
+    const door = body.indexOf("Open command palette");
+    expect(door).toBeGreaterThan(-1);
+    expect(door).toBeLessThan(body.indexOf("KEY_ACTIONS.map"));
+    expect(body).toContain("onClick={onOpenPalette}");
+    expect(header).toContain("onOpenPalette={onOpenPalette}");
+    // The drawer closes first, so the palette does not open behind it.
+    expect(panel).toMatch(/onClose\(\);\s*onOpenPalette\(\);/);
   });
 
-  test("the region chart's key keeps its colour squares (they key the bar colours)", () => {
-    expect(stats).toContain('<span className="cs-chip v" aria-hidden="true" />');
-    expect(stats).toContain('<span className="cs-chip s" aria-hidden="true" />');
+  test("Theme is the first row of Display, and the only theme control", () => {
+    const body = display.slice(display.indexOf("export default function DisplayTab"));
+    expect(body.indexOf('aria-label="Theme"')).toBeGreaterThan(-1);
+    expect(body.indexOf('aria-label="Theme"')).toBeLessThan(body.indexOf("tn-settings-row", body.indexOf('aria-label="Theme"')));
+    expect(body.indexOf('aria-label="Theme"')).toBeLessThan(body.indexOf('aria-label="Interface language"'));
+    expect(header).not.toContain("terminalSkinStore.set");
+    expect(header).not.toContain("terminalSkinStore.toggle");
+  });
+
+  test("the header still hydrates the saved skin, because the drawer's row reads the store", () => {
+    expect(header).toContain("terminalSkinStore.hydrate()");
   });
 });

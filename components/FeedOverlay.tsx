@@ -1,7 +1,7 @@
 "use client";
-// RETIRED — no longer mounted. The right-edge dossier was rehomed into the Sources
-// rail's Inspector tab (components/shell/InspectorPanel.tsx) on 2026-09-15; that
-// tab renders the same OverlayBody and carries the close/export/Esc affordances this
+// RETIRED — no longer mounted. The right-edge dossier was rehomed into the Inspector
+// panel (components/shell/InspectorPanel.tsx) on 2026-09-15; that
+// panel renders the same OverlayBody and carries the close/export/Esc affordances this
 // file used to own. Left on disk, unmounted, per the repo's convention for retired
 // chrome — restoring it is one import in ConsoleShell, un-deleting is not.
 //

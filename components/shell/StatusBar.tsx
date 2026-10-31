@@ -124,7 +124,7 @@ export default function StatusBar({ onOpenPalette }: { onOpenPalette: () => void
         </div>
       </header>
 
-      <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} onOpenPalette={onOpenPalette} />
     </>
   );
 }

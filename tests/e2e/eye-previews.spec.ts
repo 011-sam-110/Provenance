@@ -1,7 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
 
 /**
- * The God's eye view's Previews switch (lib/eye/previews.ts, EyeApp, EyeOverlay).
+ * The God's eye view's Camera previews switch (lib/eye/previews.ts, EyeApp, EyeOverlay), in the
+ * sidebar.
  *
  *   - Off, every camera is a small icon and no picture, clip or stream is fetched for it.
  *   - A tapped icon opens that one camera's card with a close button; Esc and the button
@@ -12,7 +13,7 @@ import { expect, test, type Page } from "@playwright/test";
  *   - A card opened from an icon says "Live" only while a stream plays in it.
  *
  * THE HOOKS: `main[data-eye-state="ready"]`, `main[data-previews="off"]`, `[data-cam-icon]`
- * (an icon), `a[href^="/camera/"]` (a card), and the switch, `role="switch"` named "Previews".
+ * (an icon), `a[href^="/camera/"]` (a card), and the switch, `role="switch"` named "Camera previews".
  *
  * The gate (`npx tsc --noEmit && npm test`) does NOT run this file. See CLAUDE.md, "Build gate".
  */
@@ -38,7 +39,7 @@ const icons = (page: Page) => page.locator("[data-cam-icon]");
 const cards = (page: Page) => page.locator('a[href^="/camera/"]');
 // A card's close button, not the control hint's own "Close this hint".
 const closeButton = (page: Page) => page.getByRole("button", { name: /^Close (?!this hint)/ });
-const previewsSwitch = (page: Page) => page.getByRole("switch", { name: "Previews" });
+const previewsSwitch = (page: Page) => page.getByRole("switch", { name: "Camera previews" });
 
 test("off: icons stand where the cards did, and no picture is fetched", async ({ page }) => {
   const pictures = pictureRequests(page);
@@ -117,8 +118,9 @@ test("the choice is remembered in this browser, and on brings the cards back", a
 
   await previewsSwitch(page).click();
   await expect(previewsSwitch(page)).toHaveAttribute("aria-checked", "true");
-  await expect(icons(page)).toHaveCount(0);
   await expect.poll(() => cards(page).count(), { timeout: 20_000 }).toBeGreaterThanOrEqual(1);
+  // A camera with no room for a card stays an icon (eye-cameras.spec.ts), and it fetches nothing.
+  expect(await cards(page).count()).toBeLessThanOrEqual(5);
 });
 
 test("a recording ignores it: no icons, no switch", async ({ page }) => {
@@ -151,11 +153,17 @@ test.describe("on a phone", () => {
       expect(box!.width).toBeGreaterThanOrEqual(44);
       expect(box!.height).toBeGreaterThanOrEqual(44);
     }
-    // The switch is a 44 px button with the word Cameras (not a picture), and its name still says Previews.
+    // The switch is a row of 44 px in the sheet behind the menu.
+    const menu = page.locator('[data-rail="eye"] [data-rail-menu]');
+    await expect(previewsSwitch(page)).toBeHidden();
+    await menu.tap();
+    // The sheet takes .18s to open: this reads the switch at rest, not on its way.
+    await expect.poll(async () => (await previewsSwitch(page).boundingBox())!.width).toBeGreaterThanOrEqual(44);
     const sw = await previewsSwitch(page).boundingBox();
-    expect(sw!.width).toBeGreaterThanOrEqual(44);
     expect(sw!.height).toBeGreaterThanOrEqual(44);
     expect(await sideways(page)).toBeLessThanOrEqual(0);
+    await page.keyboard.press("Escape");
+    await expect(previewsSwitch(page)).toBeHidden();
 
     await icons(page).first().tap();
     await expect(cards(page)).toHaveCount(1);
@@ -166,7 +174,7 @@ test.describe("on a phone", () => {
     await closeButton(page).tap();
     await expect(cards(page)).toHaveCount(0);
 
-    // A narrower phone: the bar wraps instead of overflowing.
+    // A narrower phone: nothing overflows.
     await page.setViewportSize({ width: 360, height: 780 });
     await page.reload();
     await ready(page);

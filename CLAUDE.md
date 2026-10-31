@@ -80,17 +80,38 @@ obligations and are not satisfied by the licence.
   static, and its store writes stay in the tab (`EyeApp.tsx` says why). Two rules are not
   style preferences. A still is never called live: `mediaLabel` says "Live" only while a
   stream plays, and a still or a clip says its operator's own age. And there is no road
-  speed in it, because no open feed for London publishes one: the ledger says so, and
-  nothing draws an invented flow (`lib/eye/streets.ts`). Its vessels come from
+  speed in it, because no open feed for London publishes one: the Sources tray and a film's
+  ledger say so, and nothing draws an invented flow (`lib/eye/streets.ts`). Its cameras come from `/api/near`
+  with `km=4`: all of them within 4 km of where it asked (up to `NEAR_MAX`, the densest
+  circle measured 545), asked again when the view settles 2 km away (`camerasMoved`). The
+  frame stands at most 5 cards (3 on a phone), every other camera in it is an icon that opens
+  its card (16, 10 on a phone), and past that a ring; a film or a recording has cards only. The
+  tray's Live cams row holds every camera with moving pictures, a stream or a recording such
+  as TfL's clips, and Static cams only the stills (`cameraRow`, Sam's call on 2026-10-31).
+  That row only sorts: the card still says "Clip". The console's own Live cams row still
+  means a stream that played. Its vessels come from
   `/api/eye/vessels?bbox=`, not from the console's Ships layer: the whole world, Class A
   and B, the 500 nearest the middle of the view, asked every minute and again once the
   view settles outside the box it holds (`lib/eye/vessels.ts`, `lib/eye/vesselFeed.ts`);
   the console's Ships layer (`/api/signals/ais`) stays the 11 chokepoints, Class A only.
-  The HUD's vessel number counts every boat drawn inside the frame. Vessels are stylised 3D
+  Its aircraft come from `/api/eye/planes?bbox=`, not from the console's 3,000 sample: the same box
+  rules, the 500 nearest the middle of the view, read from everything the one type pull heard
+  (`lib/planes/pool.ts`, in memory), so it makes no new adsb.lol request; after a restart, until the
+  next pull, it is the sample's share and says `sampled: true` (`lib/eye/planes.ts`).
+  A film's vessel number counts every boat drawn inside the frame. Vessels are stylised 3D
   models (`components/eye/vesselLayer.ts`, a MapLibre custom layer with three.js loaded lazily,
   ten packed files in `public/models/vessels/`, a bare hull for an untyped boat), drawn at their
   AIS length with a 28 px minimum; the chevrons are the fallback, and the licences are in
-  `docs/IMAGE-LICENSES.md`. Its link flags are
+  `docs/IMAGE-LICENSES.md`. Aircraft are 3D models of their real type (`components/eye/planeLayer.ts`,
+  the pure half `lib/eye/planeModels.ts`, 75 packed files in `public/models/planes/` built from
+  published figures by `scripts/plane-models/build.py`, fetched only for the types in view; a code
+  the table does not hold gets a plain model, never a named one). Two rules are not style
+  preferences. A plane's height is capped so it stays in view (the lower of half the camera's height
+  and 16% of the frame above its spot), with a line down to a ring on its real spot, and the tag and
+  panel always give the height it reported, the panel saying "Drawn lower than its real height". And
+  `/app` draws no models: it loads no three.js. The layer is placed by MapLibre's `getMatrixForModel`,
+  because the map is a globe below zoom 12 and takes different coordinates there.
+  Its link flags are
   listed at the top of `EyeApp.tsx` (`overlay=0`, `motion=orbit|fly`, `record=1`, `clock=manual`), and
   `node scripts/eye-record.mjs --base=http://localhost:3000` films one move frame by
   frame into a 9:16 MP4 for a reel (not in the gate: it needs a browser and a GPU).
@@ -100,23 +121,33 @@ obligations and are not satisfied by the licence.
   than it plays. And while the view moves only one card's clip plays (`clipsToPlay`):
   three at once halved the frame rate, measured 2026-10-25.
   **Since 2026-10-27 it is the map behind every "Open the map" door** (the landing page,
-  `/privacy`), and `/` stays the landing page with no MapLibre and no /api call. Its
-  Sources button opens the console's own rail as a tray in this view (Sections, Show all,
-  a ＋ that pins a source to the bar, remembered in this browser as `tn.eye.sources.v1`),
-  built from `SourceSection` and `SourceRowView` inside a `.tn-terminal` token scope
-  (`components/eye/EyeSources.tsx`; the rows are built on the server by
+  `/privacy`), and `/` stays the landing page with no MapLibre and no /api call on load.
+  **Its frame is HUD v2 (`components/eye/EyeHud.tsx`), and a film has its own.** The frame is
+  the shared sidebar (`components/rail/SideRail.tsx`: Camera previews, Auto-turn, Sources &
+  layers, pinned sources, Exit to dashboard, Controls), the pill search (`EyeSearch.tsx`, pure
+  half `lib/eye/search.ts`: the three places, the cameras and vessels in the scene, and
+  `/api/geocode`; a typed IP or domain never reaches the geocoder), the place and the UTC clock,
+  the compass along the bottom edge (`EyeCompass.tsx`, `lib/eye/compass.ts`: one strip moved by a
+  transform, no React render per frame) and the coordinates with © Credits, whose pop-up holds
+  every source and the link to the landing page, beside the always-visible Source and AGPL links.
+  `record=1` and `clock=manual` draw `EyeFilmFrame.tsx` instead: the evidence ledger of counts,
+  heading and tilt, and every credit in full, because reels are filmed from it. The normal view
+  says no counts; the ledger's sources and cadences are the tray's detail lines (`trayDetail`).
+  Everything beside the sidebar moves with `--rail-w`. Its Sources & layers row opens the tray
+  (`components/eye/EyeSources.tsx`: Sections, Show all, a ＋ that pins a source as a switch in the
+  sidebar, remembered in this browser as `tn.eye.sources.v1`), built from `SourceSection` and
+  `SourceRowView` with the HUD's own look (the rows are built on the server by
   `lib/eye/sourceRows.ts`, so the widget registry stays out of the page's bundle). Console
   layers that are switched on draw through WorldMap with this view's own paint pass
-  (`eyeSignalPaintOps`), their own ledger line and credit; the country-level layers and the
+  (`eyeSignalPaintOps`) and bring their own credit; the country-level layers and the
   headlines widget are left out by rule (their `precision`, `widgetOnly`), not by a list.
-  The tray's "Open the full map" goes to the console at the spot on screen with its Sources
-  rail open (`getSourcesHref()`; `sources=open`, read once after mount by ConsoleShell,
-  `lib/console/sourcesLink.ts`); on a phone Sources is the console's own "≡ Sources" thumb
-  control, first in the bar. A browser with no saved board also gets `layers=` and `base=`
-  so the console does not open empty; a saved board (`tn.variant.v1`) keeps its own. `tests/unit/landing-doors.test.ts` holds
-  the doors. The same link carries `eye=`, the view's own link (place or camera, centre,
-  zoom, heading, tilt). The console reads nothing from it and only drops it from the address
-  (`withoutArrivalFlags`), because the "Back to <place>" chip it fed left on 2026-10-31.
+  The console's `sources=open` (read once after mount by ConsoleShell,
+  `lib/console/sourcesLink.ts`) is now the landing page's alone. A browser with no saved board
+  also gets `layers=` and `base=` from this view's way out, so the console does not open empty;
+  a saved board (`tn.variant.v1`) keeps its own. `tests/unit/landing-doors.test.ts` holds
+  the doors. A link kept from before 2026-10-31 may carry `eye=`, which fed a "Back to <place>" chip
+  that left that day and which this view no longer sends. The console reads nothing from it and only drops it
+  from the address (`withoutArrivalFlags`).
   **The way in from the console is the person** (`components/console/EyePerson.tsx`, the rules
   in `lib/console/eyePerson.ts` and `lib/eye/coverage.ts`, 2026-10-31, on the map stage only, not on
   a Streets wall): a round button directly above the map's i, with the behaviour of Google's
@@ -141,15 +172,13 @@ obligations and are not satisfied by the licence.
   directly before the credit, so a credit that wraps does not move it and anything MapLibre adds
   later lands above it (`tests/e2e/eye-person.spec.ts`). The acceptance table is in
   `tests/unit/eye-coverage.test.ts`, on production's own cells (`tests/fixtures/eye-coverage.json`).
-  "Exit to main dashboard" (2026-10-30) is the view's always-visible way
-  out: a plate beside the name at its top left, under the place on a phone (the ledger moves
-  down by that row). It is the same link without `sources=open` (`getDashboardHref()`), so
-  the console opens at the spot on screen with its rail as the visitor left it; a recording
-  or a film draws none (`tests/e2e/eye-exit.spec.ts`).
+  "Exit to dashboard" is the view's way out, in the sidebar's foot and in the sheet behind the
+  menu on a phone (`getDashboardHref()`), so the console opens at the spot on screen with its rail
+  as the visitor left it; a recording or a film draws none (`tests/e2e/eye-exit.spec.ts`).
   **Both map pages ask for WebGL before they mount MapLibre**
   (`lib/map/webgl.ts`, `components/map/*`): without it they show a plain fallback with the
   camera directory and the source link, not Next's "Application error" page.
-  The "Previews" switch beside Turn turns the camera pictures off: each camera is then an
+  The sidebar's "Camera previews" switch turns the camera pictures off: each camera is then an
   icon that fetches nothing, one tapped icon opens that one card (a close button, Esc),
   the choice is kept in this browser under `tn.eye.v1`, and a film or a recording ignores it.
   A TfL road notice (works, incident or closure) can be clicked like a vessel: its
@@ -163,9 +192,28 @@ obligations and are not satisfied by the licence.
   listener and nothing may set React state per frame: a new effect is computed in
   that loop from the same value. Pins are CSS `position: sticky`. The page's styles are
   `app/landing.css`, imported by `app/(site)/page.tsx` alone, with every rule under
-  `.lp-root` so none can reach `/privacy` or the console (the two rules outside it,
-  `html:has(.lp-root)` and the Discord note's corner, match only while this page is
-  mounted).
+  `.lp-root` so none can reach `/privacy` or the console (the one rule outside it,
+  `html:has(.lp-root)`, matches only while this page is mounted).
+- **The landing page's main button offers a different place every few seconds** (2026-10-31).
+  The server prints plain links saying "See London in 3D"; `components/marketing/CtaRotor.tsx`
+  renders nothing, finds the links marked `data-rotor` after mount and rewrites their words and
+  `href`, with no React state, no scroll listener and no `/api` call. The list is
+  `lib/marketing/ctaDeck.ts`, ordered by the browser's own time zone and language (read, never
+  sent or stored; `/privacy` says so). When the words change, each changed character turns a
+  full 360 about its own axis into the new one (`lib/marketing/ctaTurn.ts`, Web Animations on
+  transform and opacity); the words that stay only slide. Every button says the same phrase: the ones
+  on screen turn together (the nav's always is), one off screen changes with no turn, and only a
+  phone's narrow nav button may show a different one, the next it can hold. The button's width is
+  fixed so nothing beside it moves, all of them hold still while a pointer or keyboard focus is on
+  any of them, and with reduced motion they take the
+  visitor's first phrase once and stay there. **A place is offered only if its buildings are
+  worth seeing:** `node scripts/gen-eye-cities.mjs --write` reads each candidate from the tiles
+  the map draws and writes `lib/eye/cities.data.ts`, `lib/marketing/cta-places.data.ts` and
+  `docs/EYE_CITIES.md`; a person then looks at the frames, and `REFUSED` in that script holds
+  what the numbers passed and a person turned down. `/eye?place=<id>` opens a city by name; the
+  HUD's own list stays the three framed London presets (`EYE_PLACES`). A topic names its layers
+  under `needs`: `npx vite-node -c vitest.config.ts scripts/check-cta-deck.mts` asks production
+  for each and fails on an empty one. `tests/e2e/landing-cta.spec.ts` holds the browser half.
 - **The globe on `/` draws ONE saved snapshot, on two stacked canvases. It is not a map
   and it is not live.** `lib/marketing/landingGlobe.ts` is the choreography and the 2D
   painter, and touches no DOM: scroll position in, plain state objects out, pixels on a
@@ -189,7 +237,9 @@ obligations and are not satisfied by the licence.
   along a shared route, because that is how Chrome's 2D canvas draws a hairline and the
   design was approved looking at it.
   It draws `public/marketing/globe-snapshot.json` and nothing else. **The landing page
-  makes no `/api` call and loads no MapLibre**: no style and no tile. `/privacy` states
+  makes no `/api` call on load and loads no MapLibre**: no style and no tile. The one call
+  it ever makes is the Discord pop-up's `/api/community`, after 15 seconds of visible time,
+  at most once per browser, and never in a browser driven by automation. `/privacy` states
   the no-tiles half in public, `tests/unit/privacy-page.test.ts` pins the imports behind it, and
   `tests/e2e/landing.spec.ts` watches the network for both halves (not in the gate).
   The snapshot is written only by `node scripts/gen-landing-snapshot.mjs`, which reads
@@ -211,13 +261,12 @@ obligations and are not satisfied by the licence.
   mounts it, held still, behind the hero and the close). `app/provenance.css` is not dead
   either: `(site)/layout.tsx` still imports it and wraps `/`, `/privacy` and
   `/account/confirm` in `.pv-root`, `/privacy` is built from its `.pv-doc` / `.pv-block` /
-  `.pv-ledger` rules, the email-link page from `.pv-doc` and its own `.pv-account*` rules,
-  and the Discord note on `/` is styled by its `.pv-root .tn-note` block, which
-  `community-mounts.test.ts` pins. Delete the landing-only rules, never the file.
+  `.pv-ledger` rules, and the email-link page from `.pv-doc` and its own `.pv-account*`
+  rules. Delete the landing-only rules, never the file.
 - **Never type a count into the landing page.** `lib/marketing/wall.ts` and the source
   wall it fed are gone; the rule outlived them, and it outlived the 2026-10-05 rebuild
-  too. Every figure on `/` comes from one of three committed files, each of which can
-  be re-derived: `camera-facts.data.ts` (measured, pinned by a test that recomputes
+  too. Every figure the page prints comes from one of three committed files, each of which
+  can be re-derived (the Discord pop-up shows Discord's own live counts, and types none): `camera-facts.data.ts` (measured, pinned by a test that recomputes
   it), `coverage-audit.data.ts` (GENERATED by `scripts/gen-landing-audit.mjs` from a
   production run of `scripts/country-event-breakdown.mts` — never hand-edit it; it
   carries its own `AUDIT_MEASURED_AT`) and `globe-snapshot.meta.ts` (GENERATED, above).
@@ -240,13 +289,13 @@ obligations and are not satisfied by the licence.
   line of the landing footer's credits is a claim about what the page loads, so a
   credit arrives and leaves with its asset.
 - `app/` — routes + API. `app/api/*` are internal Next handlers (no user auth):
-  `cameras`, `camera`, `coverage`, `planes`, `flight`, `satellites`, `signals/[id]`,
+  `cameras`, `camera`, `coverage`, `planes`, `planes/track`, `flight`, `satellites`, `signals/[id]`,
   `webcams`, `webcam-image`, `markets`, `news`, `brief`, `advisory`, `recon`, `geocode`,
   `near`, `geolocate`, `proxy`, `hls`, `discord`, `telegram`, `air-quality`, `point-weather`,
-  `status`, `presence`, `feedback`, `webcam-place`, `webcam-search`, `youtube-live`, `camera-stats`
-  (the top bar's camera stats strip, `lib/cameras/stats.ts`), `relay/[feed]`
+  `status`, `presence`, `feedback`, `community` (the Discord invite's state and counts), `webcam-place`, `webcam-search`, `youtube-live`, `relay/[feed]`
   (signed snapshots pushed from provenance-1, see `lib/relay`), `eye/streets` (TfL's road
-  disruptions for `/eye`), `eye/vessels` (the boats around the God's eye view's box),
+  disruptions for `/eye`), `eye/vessels` (the boats around the God's eye view's box), `eye/planes`
+  (the aircraft around it),
   `eye/coverage` (where the cameras are, for the person on the console's map, `lib/eye/coverage.ts`),
   `camera-road` (what the road operators say about each camera's
   road, for the camera detail, the camera wall and the `/eye` cards; `lib/roads/nearCamera.ts`),
@@ -261,9 +310,28 @@ obligations and are not satisfied by the licence.
   `gateMatcher()`; `tests/unit/gate.test.ts` fails if the two drift. It is **not** the `/admin`
   guard — that is the 404-in-production check described under discovery below.
 - `components/WorldMap.tsx` — the single MapLibre globe→2D instance; all layers are data-driven.
-  Hovering a Sources rail row or section heading fades every other app mark through ONE MapLibre global-state key (`srcHover`, `lib/map/sourceHighlight.ts`); every map source is classed there as fading or never fading, and a test fails on an unclassed one.
+  Hovering a Sources panel row or section heading fades every other app mark through ONE MapLibre global-state key (`srcHover`, `lib/map/sourceHighlight.ts`); every map source is classed there as fading or never fading, and a test fails on an unclassed one.
   The lit marks also get a glow drawn under them (`srchl-*` layers, filtered by the same key, so they hold nothing at rest). A switched-off source previews while you point at it through `lib/shell/sourcePreview.ts`, which writes no store, layout or link and keeps its own 5-minute cache.
 - `components/shell/*` — thin console chrome (StatusBar, CommandPalette, BreakingBanner, panels).
+- **The Discord pop-up** (`components/shell/CommunityNote.tsx`, `app/community.css`, gate in
+  `lib/shell/community.ts`) shows once per browser, on `/` and `/app`, never on `/eye`, after 15
+  seconds of visible time. Two rules are not style preferences. It says "the link works again", so it opens
+  only after `/api/community` (`lib/community/invite.ts`) has not called the invite dead; an
+  expired invite keeps it shut and spends nothing. And every figure on it is Discord's: with no
+  answer it opens with no number, and the globe draws one dot per member
+  (`lib/community/memberGlobe.ts`). `?discord=1` opens it for review and stays on for the tab
+  (`?discord=0` ends that). Automation never gets it unasked (`navigator.webdriver`).
+- **The console's left edge is the shared sidebar** (`components/shell/ConsoleSidebar.tsx`, on
+  `components/rail/SideRail.tsx`, since 2026-10-31), and search is a pill on the map
+  (`components/console/MapSearch.tsx`). Its rows open ONE panel at a time beside it: Sources,
+  Inspector, Map settings, Areas, Notifications (`lib/console/consolePanel.ts`, a view over
+  the three older stores; drawn by `SourceCatalog.tsx`). Three widths, and only one moves the
+  map: the workspace always reserves 64px, the open column (232px, `--rail-w`) overlays what is
+  beside it while the map's plates slide clear, and a panel (`--tn-rail-w`, saved as
+  `tn.sources.railw`) pads the workspace, so the stage resizes. The Escape ladder is written
+  down at the top of `ConsoleSidebar.tsx`; `data-owns-escape` is how a field joins it. The
+  styles are `app/console-sidebar.css`. On a phone the column is a ☰ sheet and the panel is a
+  bottom sheet.
 - **The command palette reads a typed question into filters, with rules and no model.**
   `lib/shell/ask.ts` (pure, `parseAsk`) turns "fires in Spain last 24h" into a layer, a
   place, a time window and a precision rule, and gives back the words it did not
@@ -377,11 +445,12 @@ obligations and are not satisfied by the licence.
   `layoutOverrides` slot is not drawn by anything — do not write a new feature to it
   (the Source Catalog's ＋ used to, which is why it silently did nothing).
 - **The console top bar is exactly two board tabs — Globe and Streets — and nothing drops down from them.**
-  After them sits the camera stats strip (`components/terminal/CameraStats.tsx`, 2026-10-27):
-  video, stills, countries, operators and the time of that count, then the Windy webcams with
-  their own source, from `/api/camera-stats`. It is the one thing in the bar that opens a panel,
-  and only on a click. Its wording lives in `lib/cameras/statsView.ts`, where a test fails if
-  any string says "live"; video there counts streams that PLAYED at their last check.
+  Beside them sit the presence count, Support, Source, Settings and Account, and nothing else
+  (2026-10-31, `tests/e2e/console-navbar.spec.ts`). The camera stats strip and `/api/camera-stats`
+  left that day and the counts have no new home. Discord is at the foot of the settings drawer's
+  tab column, the theme is the first row of its Display tab, and the command palette's only door
+  is the button at the top of its Shortcuts tab: the palette has no key, because Ctrl+K opens
+  the Sources rail.
   `components/terminal/TerminalHeader.tsx` renders the tabs from `TOP_BAR_PRESET_IDS`
   (a subset of the lineup, pinned by `console-presets.test.ts`); News left the
   navbar on 2026-09-16 on request and stays a preset reachable from the Sources
@@ -428,14 +497,16 @@ obligations and are not satisfied by the licence.
 - Every upstream fetch is keyless-first and **dormant-safe**: failures resolve to `[]` / last-good / a labelled placeholder, never a 5xx, never fabricated data.
 - Keep the upstream→domain mapping in a PURE exported function with a unit test.
 - Tests are vitest, NODE environment, in `tests/unit/**/*.test.ts`. No React testing library is installed — no component tests.
-- Calm light identity; `.tn-*` CSS tokens in `app/globals.css`. The console (`/app`) has an
-  opt-in dark skin (`lib/terminal/skin.ts`, `html[data-tnx-skin="dark"]`, the DARK SKIN block in
-  `globals.css`): light by default, remembered per browser, and never read from the OS
+- Calm light identity; `.tn-*` CSS tokens in `app/globals.css`. The console (`/app`) opens in its
+  dark skin (`lib/terminal/skin.ts`, `html[data-tnx-skin="dark"]`, the DARK SKIN block in
+  `globals.css`), set before the first paint since 2026-10-31. Settings > Display switches it to
+  light; that choice is remembered per browser, and the skin is never read from the OS
   (`prefers-color-scheme` appears nowhere). It is not a `Theme`; see the header of `lib/shell/ui.ts`.
+  The landing page and the other public pages do not read it.
   `/eye` switches that dark mode on for itself, always (`app/(console)/eye/layout.tsx`,
-  `lib/eye/skin.ts`, Leon's call), so its Sources tray, Sources button and pins are dark
-  whatever the console is set to. Its own frame does not use the skin, and it never reads or
-  writes the console's saved choice.
+  `lib/eye/skin.ts`, Leon's call), whatever the console is set to. Its own frame and tray have
+  their own dark look and do not use the skin, and it never reads or writes the console's saved
+  choice.
 - **ONE typeface: Inter, everywhere — with two route-scoped exceptions.** Loaded once, self-hosted by next/font in
   `app/layout.tsx`, published as `--tn-font-sans` on `<html>`. Nothing else loads
   Inter — `(site)/layout.tsx` reads that same variable rather than loading its own copy.
@@ -452,7 +523,7 @@ obligations and are not satisfied by the licence.
   on `.lp-root`, where `app/landing.css` reads it. It is loaded in the PAGE, not in a
   layout, so no other route downloads it: not `/app`, and not `/privacy`, which shares
   the `(site)` layout. It is credited in the landing footer beside Inter, which still
-  sets the Discord note there.
+  sets the Discord pop-up there.
   **Permanent Marker was the first exception and is now a leftover.** `(site)/layout.tsx`
   still loads it as `--pv-font-marker`, but the graffiti it was for left `/` with the
   surveillance section on 2026-10-05, so nothing on `/` or `/privacy` uses it and the
@@ -487,6 +558,19 @@ Re-measure before putting a number in a README, a CV or a PR description.
   its turn in `lib/http/hostLane.ts`. Four batches plus a `/v2/mil` poll in between is
   what dropped the GA batch from 3 of 5 prod snapshots. Do not add an adsb.lol call
   outside that lane.
+- **The Full flight trail setting keeps a plane's line on our own server (2026-10-31).** The free
+  networks have no history a server can read: adsb.lol's and adsb.fi's `/data/traces/` answer 403
+  at a verification page, and adsb.lol's API has no history path. So the pull (`fetchAircraftOnce`)
+  also feeds a memory store (`lib/planes/trackStore.ts`), with its whole pool of about 10,000 BEFORE
+  the cap and no request of its own, because the served 3,000 are a sample that moves and a line
+  fed from it has holes. Its log line gives the store's size. `GET /api/planes/track?id=` serves one line, and the switch in Map settings
+  (`lib/planes/fullTrail.ts`, this browser only) lets a tab grow its own lines past 12 points
+  (`lib/planes/fullHistory.ts`). Three rules are not style preferences. The words say "from when we
+  first heard it", never "since take-off" (`lib/planes/lineWords.ts`). A stretch we hold no position
+  for is a break in the line and nothing is drawn across it (`lib/planes/trackLine.ts`). And the
+  store writes no file, so a restart or a deploy starts every line again, which `/privacy` states.
+  Re-measure with `scripts/track-store-memory.mts` and `scripts/planes-trail-fps.mjs` (neither is
+  in the gate).
 - **GDELT left the live path on 2026-10-16.** An audit labelled a random sample: 86% of
   its conflict rows and 58% of its protest rows were not that event at that place. The
   `conflict` and `protests` layers now read UCDP's monthly verified events, U.S. Embassy

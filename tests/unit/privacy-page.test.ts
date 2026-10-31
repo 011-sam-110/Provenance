@@ -45,9 +45,10 @@ describe("privacy page", () => {
     // Both the machine-readable attribute and the human-readable text, because a
     // reader needs the second and a crawler reads the first.
     expect(copy).toContain(`dateTime="2026-10-31"`);
-    // A new route, /api/eye/coverage: a drag sends no location, and its ?bbox= is rounded outward.
-    expect(copy).not.toContain(`dateTime="2026-10-27"`);
     expect(copy).toContain("31 October 2026");
+    // The date before this one, in both shapes it was printed in.
+    expect(copy).not.toContain("deployed on 27 October 2026");
+    expect(copy).not.toContain(`dateTime="2026-10-27"`);
     expect(copy).not.toContain(`dateTime="2026-10-25"`);
     expect(copy).not.toContain("deployed on 25 October 2026");
     // The date before this one, in both shapes it was printed in.
@@ -72,7 +73,7 @@ describe("privacy page", () => {
     // and the old lifetime ("about three and a half days") had no source in the repo.
     expect(copy).not.toContain("Nothing you type is logged anywhere");
     expect(copy).not.toContain("three and a");
-    for (const part of ["?q=", "?target=", "?lat=", "?bbox=", "50 MiB", "five files"]) {
+    for (const part of ["?q=", "?target=", "?lat=", "?bbox=", "?id=", "50 MiB", "five files"]) {
       expect(copy).toContain(part);
     }
   });

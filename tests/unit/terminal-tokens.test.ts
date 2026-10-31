@@ -30,11 +30,12 @@ function blockAfter(needle: string): string {
 }
 
 /**
- * TWO PALETTES: the light default and the opt-in dark skin.
+ * TWO PALETTES: the light one and the dark skin, which is the console's default.
  *
  * The console had two skins, PR #162 folded them into one (`.tn-terminal` itself), and
- * on 2026-10-29 a dark one came back as an OPT-IN: the DARK SKIN block, keyed on
- * `html[data-tnx-skin="dark"]` and written by lib/terminal/skin.ts. Every colour
+ * on 2026-10-29 a dark one came back: the DARK SKIN block, keyed on
+ * `html[data-tnx-skin="dark"]` and written by lib/terminal/skin.ts, an opt-in until it
+ * became the default on 2026-10-31. Every colour
  * assertion below walks this list, so the dark palette meets the SAME floors as the
  * light one: that is the whole reason the list survived as a list. The dark block's
  * selector line must stay at column 0, spelled exactly as below, because blockAfter()

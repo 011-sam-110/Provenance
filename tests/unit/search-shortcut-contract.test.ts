@@ -4,12 +4,11 @@ import { join } from "node:path";
 
 // THE SEARCH SHORTCUT IS A CONTRACT ACROSS TWO FILES, AND NOTHING ELSE CAN SEE IT.
 //
-// ConsoleShell.tsx owns the keydown ladder and calls focusInspectorSearch();
-// components/shell/inspector/InspectorRail.tsx owns that function and opens the
-// rail's Search tool from it. The load-bearing part is the BOOLEAN: the shell
-// preventDefaults only when there was something to focus, so when the console's left
-// rail is not on screen the key still types its own character and the browser's own
-// binding still fires. Swallow it unconditionally and you get a dead key.
+// ConsoleShell.tsx owns the keydown ladder and calls focusMapSearch();
+// components/console/MapSearch.tsx owns that function. The load-bearing part is the BOOLEAN:
+// the shell preventDefaults only when there was something to focus, so when no search box is
+// on screen the key still types its own character and the browser's own binding still fires.
+// Swallow it unconditionally and you get a dead key.
 //
 // THAT MATTERS MORE NOW, NOT LESS. The binding used to be "/", one key, checked after
 // the text-field guard. It is now whatever the user's keymap says, and the default set
@@ -17,15 +16,14 @@ import { join } from "node:path";
 // printable binding does not just shadow Firefox's quick-find, it stops the character
 // being typed at all.
 //
-// THE FUNCTION MOVED ON 2026-09-16 AND THIS FILE MOVED WITH IT. It was
-// focusStageSearch() in components/terminal/StageBar.tsx, because the search box was
-// STAGE chrome — floating over the map, unmounted whenever a widget was expanded onto
-// the stage, which is what gave the boolean its original meaning. The box lives on the
-// Inspector panel's tool rail now, so the same question ("is there a search box on
-// screen?") is asked of the console's left rail, which is hidden rather than unmounted
-// on the narrow pass. The contract is unchanged; the path it is asserted against is
-// not. This is the second time this file has been repointed rather than deleted — it
-// was slash-shortcut-contract.test.ts before the keymap replaced the `case "/":` arm.
+// THE FUNCTION HAS MOVED TWICE AND THIS FILE MOVED WITH IT. It was focusStageSearch() in
+// components/terminal/StageBar.tsx while the search box was stage chrome, unmounted whenever a
+// widget was expanded onto the stage, which is what gave the boolean its original meaning. It
+// was focusMapSearch() while the box lived on the Inspector panel's tool rail, and it
+// is focusMapSearch() since 2026-10-31, with the box back on the map as a pill. That is the
+// first meaning again: a focused widget or a closed dock leaves no box to focus. This is the
+// third time this file has been repointed rather than deleted — it was
+// slash-shortcut-contract.test.ts before the keymap replaced the `case "/":` arm.
 //
 // WHY A SOURCE TEST, WHICH IS NORMALLY THE WEAK KIND. Three signals all stay green
 // while this breaks:
@@ -47,15 +45,15 @@ function read(rel: string): string {
 }
 
 const SHELL = "components/shell/ConsoleShell.tsx";
-const RAIL = "components/shell/inspector/InspectorRail.tsx";
+const PILL = "components/console/MapSearch.tsx";
 
-describe("the search shortcut contract between ConsoleShell and the Inspector rail", () => {
-  it("the shell still imports focusInspectorSearch from the rail", () => {
+describe("the search shortcut contract between ConsoleShell and the search pill", () => {
+  it("the shell still imports focusMapSearch from the pill", () => {
     // Not just "calls something named that" — the import is what makes it the same
     // function, and an inlined re-implementation is the failure this catches.
     const src = read(SHELL);
     expect(src).toMatch(
-      /import\s*\{[^}]*\bfocusInspectorSearch\b[^}]*\}\s*from\s*"@\/components\/shell\/inspector\/InspectorRail"/,
+      /import\s*\{[^}]*\bfocusMapSearch\b[^}]*\}\s*from\s*"@\/components\/console\/MapSearch"/,
     );
   });
 
@@ -64,8 +62,8 @@ describe("the search shortcut contract between ConsoleShell and the Inspector ra
     // The whole contract in one line. Allows reformatting and an intermediate
     // variable; rejects a bare call followed by an unconditional preventDefault.
     const guarded =
-      /if\s*\(\s*focusInspectorSearch\(\)\s*\)\s*e\.preventDefault\(\)/.test(src) ||
-      /const\s+(\w+)\s*=\s*focusInspectorSearch\(\)[\s\S]{0,120}?if\s*\(\s*\1\s*\)\s*e\.preventDefault\(\)/.test(src);
+      /if\s*\(\s*focusMapSearch\(\)\s*\)\s*e\.preventDefault\(\)/.test(src) ||
+      /const\s+(\w+)\s*=\s*focusMapSearch\(\)[\s\S]{0,120}?if\s*\(\s*\1\s*\)\s*e\.preventDefault\(\)/.test(src);
     expect(guarded).toBe(true);
   });
 
@@ -75,9 +73,9 @@ describe("the search shortcut contract between ConsoleShell and the Inspector ra
     // slice from the arm's `if` to the `return` that closes it, so an unrelated
     // preventDefault elsewhere in the handler does not fail this.
     const arm = src.split('if (action === "search")')[1]?.split("return;")[0] ?? "";
-    expect(arm).toContain("focusInspectorSearch()");
+    expect(arm).toContain("focusMapSearch()");
     // `[\s\S]*?` rather than `[^)]*`, because the condition itself contains a
-    // closing paren — `if (focusInspectorSearch())`. The lazy form still terminates:
+    // closing paren — `if (focusMapSearch())`. The lazy form still terminates:
     // it expands only until the required `) e.preventDefault()` suffix matches.
     expect(arm.replace(/if\s*\([\s\S]*?\)\s*e\.preventDefault\(\)/g, "")).not.toContain(
       "e.preventDefault()",
@@ -98,22 +96,23 @@ describe("the search shortcut contract between ConsoleShell and the Inspector ra
     expect(src.slice(typing, dispatch)).toMatch(/if\s*\(\s*!typing\s*\)/);
   });
 
-  it("focusInspectorSearch returns a boolean and opens the rail's Search tool", () => {
-    const src = read(RAIL);
-    expect(src).toMatch(/export function focusInspectorSearch\(\)\s*:\s*boolean/);
-    // Both halves of the answer: false when there is no rail on screen, and the
-    // store call that opens the tool when there is.
+  it("focusMapSearch returns a boolean, and false is a real answer", () => {
+    const src = read(PILL);
+    expect(src).toMatch(/export function focusMapSearch\(\)\s*:\s*boolean/);
+    // Both ways there can be no box: not mounted, and mounted but hidden. A closed dock on
+    // a wall board keeps the box in the DOM with `visibility: hidden`, and a focus() on that
+    // does nothing while the shell eats the key.
     expect(src).toContain("return false");
-    expect(src).toMatch(/inspectorRailStore\.open\(\s*"search"\s*\)/);
+    expect(src).toMatch(/instanceof HTMLInputElement\)\)\s*return false/);
+    expect(src).toMatch(/getClientRects\(\)\.length === 0/);
+    expect(src).toMatch(/visibility === "hidden"/);
   });
 
-  it("it also points the rail at the Inspector tab, or the box would open off screen", () => {
-    // THE HALF THAT IS EASY TO LOSE. Opening a tool on a panel the user cannot see is
-    // the same dead key as swallowing the character: the Sources rail may be
-    // collapsed, or open on the Sources tab, and the shortcut is a map-wide action
-    // rather than a Sources-tab one.
-    const src = read(RAIL);
-    expect(src).toMatch(/sourcesRailStore\.setOpen\(\s*true\s*\)/);
-    expect(src).toMatch(/railTabStore\.set\(\s*"inspector"\s*\)/);
+  it("it opens no panel: the box is on the map, so the shortcut touches nothing else", () => {
+    // The old shortcut had to open a rail, point it at a tab and open a tool. Keeping any of
+    // that would cover the map the visitor is about to search.
+    const src = read(PILL);
+    const fn = src.split("export function focusMapSearch")[1]?.split("\n}\n")[0] ?? "";
+    expect(fn).not.toMatch(/openPanel|sourcesRailStore|railTabStore|inspectorRailStore/);
   });
 });

@@ -1,11 +1,10 @@
 import { expect, test, type Page } from "@playwright/test";
 
 /**
- * "Exit to main dashboard" on God's eye view (components/eye/EyeHud.tsx).
+ * "Exit to dashboard" in God's eye view's sidebar (components/eye/EyeHud.tsx).
  *
- *   - It is always on screen: beside the name on a wide screen, under the place on a
- *     phone, 44 px tall there, clear of the ledger and the clock, and nothing scrolls
- *     sideways.
+ *   - It is in the sidebar's foot on a wide screen, and in the sheet behind the menu on a
+ *     phone, 44 px tall in both, and nothing scrolls sideways.
  *   - One click (or Enter on it) opens the console at the spot on screen NOW, wherever
  *     the view has been moved to, without the Sources rail, and the person on the console's
  *     map is the way back in (tests/e2e/eye-person.spec.ts holds the person itself).
@@ -26,7 +25,7 @@ const shot = async (page: Page, name: string) => {
 };
 
 const ready = (page: Page) => page.waitForSelector('main[data-eye-state="ready"]', { timeout: 90_000 });
-const exit = (page: Page) => page.getByRole("link", { name: "Exit to main dashboard", exact: true });
+const exit = (page: Page) => page.getByRole("link", { name: "Exit to dashboard", exact: true });
 const person = (page: Page) => page.locator("[data-eye-person]");
 
 interface Spot {
@@ -74,7 +73,7 @@ function expectSameSpot(a: Spot, b: Spot) {
   expect(Math.abs(a.zoom - b.zoom)).toBeLessThan(0.05);
 }
 
-test("wide screen: the way out is beside the name, and one click opens the dashboard at the same spot", async ({ page }) => {
+test("wide screen: the way out is in the sidebar's foot, and one click opens the dashboard at the same spot", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(String(e)));
   await page.setViewportSize({ width: 1440, height: 900 });
@@ -83,12 +82,12 @@ test("wide screen: the way out is beside the name, and one click opens the dashb
 
   const link = exit(page);
   await expect(link).toBeVisible();
-  // On the name's row: its middle is level with the name's, and it starts after it.
-  const [l, id] = [await link.boundingBox(), await page.locator("header a[href='/']").boundingBox()];
-  expect(l && id).toBeTruthy();
-  expect(Math.abs(l!.y + l!.height / 2 - (id!.y + id!.height / 2))).toBeLessThanOrEqual(4);
-  expect(l!.x).toBeGreaterThan(id!.x + id!.width);
-  expect(l!.height).toBeGreaterThanOrEqual(32);
+  // In the column, in its bottom half, above Controls.
+  const l = (await link.boundingBox())!;
+  expect(l.x).toBeLessThan(64);
+  expect(l.y).toBeGreaterThan(450);
+  expect(l.height).toBeGreaterThanOrEqual(44);
+  expect(l.y).toBeLessThan((await page.locator('[data-rail-entry="controls"]').boundingBox())!.y);
   await shot(page, "01-desktop-eye");
 
   const opened = await mapSpot(page);
@@ -102,13 +101,11 @@ test("wide screen: the way out is beside the name, and one click opens the dashb
   await link.click();
   const url = await asked;
   expect(url.searchParams.has("sources")).toBe(false);
-  expect(url.searchParams.get("eye")).toMatch(/^place=tower-bridge&lat=/);
+  expect(url.searchParams.has("eye")).toBe(false);
 
   await page.waitForURL(/\/app/);
   await expect(person(page)).toBeVisible({ timeout: 60_000 });
   expectSameSpot(await mapSpot(page), left);
-  // The arrival flag has left the address; the spot has not.
-  await expect.poll(() => new URL(page.url()).searchParams.has("eye")).toBe(false);
   await bootDone(page);
   await page.waitForTimeout(1500);
   await shot(page, "03-desktop-dashboard");
@@ -133,8 +130,8 @@ test("keyboard: Tab reaches it with a visible focus ring, and Enter follows it",
 
   const link = exit(page);
   let reached = false;
-  // The map and each camera card on screen come first in the tab order, then the name.
-  for (let i = 0; i < 20 && !reached; i++) {
+  // The map and each camera card on screen come first in the tab order, then the sidebar.
+  for (let i = 0; i < 40 && !reached; i++) {
     await page.keyboard.press("Tab");
     reached = await link.evaluate((el) => el === document.activeElement);
   }
@@ -157,34 +154,18 @@ test("keyboard: Tab reaches it with a visible focus ring, and Enter follows it",
   expectSameSpot(await mapSpot(page), at);
 });
 
-test("phone: under the place, 44 px tall, clear of the ledger and the clock, and it works", async ({ page }) => {
+test("phone: in the sheet behind the menu, 44 px tall, and it works", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/eye?place=tower-bridge");
   await ready(page);
-  // A phone hides a zero row, so the ledger shows only once something has arrived.
-  const ledger = page.locator('section[aria-label="What this view shows"]');
-  await ledger.locator("p:not([data-zero]):not([data-note])").first().waitFor({ state: "visible", timeout: 20_000 }).catch(() => undefined);
-
   const link = exit(page);
+  await expect(link).toBeHidden();
+  await page.locator('[data-rail="eye"] [data-rail-menu]').click();
   await expect(link).toBeVisible();
   const box = (await link.boundingBox())!;
   expect(box.height).toBeGreaterThanOrEqual(44);
   expect(box.x).toBeGreaterThanOrEqual(0);
   expect(box.x + box.width).toBeLessThanOrEqual(390);
-  // Under the place's line, and above the ledger.
-  const sub = (await page.locator("header p").first().boundingBox())!;
-  expect(box.y).toBeGreaterThanOrEqual(sub.y + sub.height);
-  if (await ledger.isVisible()) {
-    const lb = (await ledger.boundingBox())!;
-    expect(box.y + box.height).toBeLessThanOrEqual(lb.y);
-  }
-  // Clear of the clock and the "?" in the right-hand corner.
-  for (const other of [page.getByLabel("Time now, UTC"), page.locator("header button").first()]) {
-    const o = await other.boundingBox();
-    if (!o) continue;
-    const overlap = box.x < o.x + o.width && o.x < box.x + box.width && box.y < o.y + o.height && o.y < box.y + box.height;
-    expect(overlap).toBe(false);
-  }
   expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
   await shot(page, "05-phone-eye");
 

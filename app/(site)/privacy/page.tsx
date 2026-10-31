@@ -15,7 +15,30 @@ const ISSUES_URL = `${REPO_URL}/issues`;
  * rule for writing it: verify first, then write, and if you cannot verify it either
  * leave it out or say plainly that you do not know.
  *
+ * WHAT CHANGED ON 2026-10-30:
+ *   - The Discord pop-up: app/api/community asks Discord (discord.com, the public invite
+ *     endpoint) whether the invite is alive and how many members it reports, and keeps the
+ *     answer in memory for five minutes. The handler takes no parameter, so it reads nothing
+ *     from the visitor's request, and the request to Discord carries the invite code and this
+ *     project's name. No browser talks to Discord unless its owner presses the link, so the
+ *     third-party cards do not change. It takes no input, so the table of routes that receive
+ *     something does not change either. The route count is 57 (56, plus this one). The front
+ *     page now makes this one call, once per browser; no sentence here said otherwise, and it
+ *     loads nothing from Discord.
  * WHAT CHANGED ON 2026-10-31:
+ *   - Camera stats strip: removed from the console's top bar on request, and with it
+ *     app/api/camera-stats, which nothing else read. It took no input from the visitor, read
+ *     no header and logged nothing, so no sentence on this page changes. The route count
+ *     is 57 (58, less this one).
+ *   - Full flight trail: the server's plane pull now also feeds a memory store of where each
+ *     plane it heard has been (lib/planes/trackStore.ts), and app/api/planes/track serves one plane's
+ *     line, read by id. The store holds aircraft positions and nothing about who asks, writes
+ *     no file (the write check in discovery-admin-gate.test.ts still has its two files), and
+ *     goes on a restart or a deploy. The route reads the id query and no header, and logs
+ *     nothing. The prose under "No database" says what is held, the server table has a row
+ *     for it, the access-log paragraph names ?id=, the browser's table names the switch
+ *     (tn.planes.fullTrail.v1, this device only: lib/account/syncKeys.ts leaves it out), and
+ *     the route count is 58 (57, plus this one).
  *   - The person on the console's map (components/console/EyePerson.tsx) has a new route,
  *     /api/eye/coverage. It reads the bbox query and nothing else, keeps nothing about the asker
  *     and logs nothing. The browser asks for the whole index once (no query), and every search
@@ -24,7 +47,7 @@ const ISSUES_URL = `${REPO_URL}/issues`;
  *     under him, rounded outward to a 0.1 degree grid. To name the place it chose it asks
  *     /api/geocode for that camera cell's ?lat= and ?lon=, not the pointer's. A spot in /eye names
  *     itself the same way, from the coordinates it opened at. The access-log paragraph now says
- *     all of this, and the route count is 57.
+ *     all of this, and the route count is 59 (58, plus this one).
  *
  * WHAT CHANGED ON 2026-10-29:
  *   - Vessels in the God's eye view: the view no longer reads /api/signals/ais. It asks
@@ -35,6 +58,18 @@ const ISSUES_URL = `${REPO_URL}/issues`;
  *     access log, which keeps the whole address, never holds a place finer than that. The
  *     access-log paragraph now names ?bbox=, and the route count is 56 (55 with M4's
  *     camera-road, plus this one).
+ *
+ * WHAT CHANGED ON 2026-10-31:
+ *   - The front page's main button reads the browser's time zone and language
+ *     (components/marketing/CtaRotor.tsx) to order the places it offers. Neither is stored or
+ *     sent. "What your own browser keeps" gained a row saying so.
+ *   - Aircraft in the God's eye view: the view no longer reads /api/planes. It asks
+ *     /api/eye/planes?bbox=west,south,east,north (app/api/eye/planes/route.ts, lib/eye/planes.ts)
+ *     for the aircraft around what is on screen. The route reads the bbox query and nothing else
+ *     (no header, no body), keeps nothing about the asker and logs nothing, and the box is rounded
+ *     outward to about 1 km as the vessels' is. It asks no outside service for anything: it reads
+ *     what the site's own plane pull already holds in memory. The access-log paragraph now says
+ *     aircraft too, and the route count is 58 (57, plus this one).
  *
  * WHAT CHANGED ON 2026-10-27:
  *   - Camera roads (M4 of the live road data plan): app/api/camera-road answers what the road
@@ -57,11 +92,11 @@ const ISSUES_URL = `${REPO_URL}/issues`;
  *     site's own `log` block in deploy/Caddyfile masks the address and deletes headers,
  *     but it has no filter on request>uri, so every access-log line keeps the full
  *     address asked for, query included. What people type travels in that query:
- *     ?q= (place search: components/console/MapSearch.tsx, components/shell/PlaceSearch.tsx,
+ *     ?q= (place search: components/console/MapSearch.tsx,
  *     components/shell/CommandPalette.tsx, lib/shell/askPlaceLookup.ts,
  *     lib/console/widgets/camslot.picker.tsx) and ?target= (lib/console/widgets/recon.tsx).
  *     The coordinates of "cameras near you" travel as ?lat= and ?lon=
- *     (components/shell/PlaceSearch.tsx -> /api/near). lib/analytics/rollup.ts strips the
+ *     (components/console/MapSearch.tsx -> /api/near). lib/analytics/rollup.ts strips the
  *     query before it counts a path, so the daily summaries hold none of it; the raw log
  *     does. The sentence is gone, the log paragraph names the query, and the three table
  *     rows that said "kept: no" or "5 minutes" now point at the log.
@@ -85,7 +120,7 @@ const ISSUES_URL = `${REPO_URL}/issues`;
  *     come from OpenFreeMap whatever the basemap is, and the switch is off by default
  *     (lib/mapView.ts). Everything else on /eye comes through this site: camera images
  *     through /api/proxy and /api/hls, vessels, aircraft and TfL's road notices through
- *     /api/eye/vessels, /api/planes and /api/eye/streets.
+ *     /api/eye/vessels, /api/eye/planes and /api/eye/streets.
  *   - Like every page under app/(console), /eye inherits the layout's warm-up
  *     (basemapWarmup), which asks the browser to open a connection to the imagery host
  *     and to CARTO's font host. /eye draws no labels, so it loads no CARTO font, but the
@@ -510,6 +545,12 @@ export default function PrivacyPage() {
               repeated request does not hit an upstream service twice. That is listed below. It also
               lives in RAM on one serverless instance and is gone when the instance recycles.
             </p>
+            <p>
+              The server also holds where each aircraft has been, for up to 12 hours, so that the
+              Full flight trail setting can draw a plane&rsquo;s line from when we first heard it.
+              That is aircraft positions from the same public feed as the map, and nothing about
+              you. It lives in memory only, and a restart or a deploy clears it.
+            </p>
           </div>
         </section>
 
@@ -541,13 +582,22 @@ export default function PrivacyPage() {
               </thead>
               <tbody>
                 <tr>
+                  <td>
+                    Your browser&rsquo;s time zone and language, which the front page&rsquo;s main
+                    button reads to choose which places to offer you first
+                  </td>
+                  <td>Read on the page, not stored</td>
+                  <td>No</td>
+                </tr>
+                <tr>
                   <td>Console layout, boards, presets, saved monitor profiles</td>
                   <td>Local storage</td>
                   <td>No</td>
                 </tr>
                 <tr>
                   <td>
-                    Theme, skin, language, view mode, which map layers are on, and, in the
+                    Theme, skin, language, view mode, which map layers are on, whether the Full
+                    flight trail setting is on, and, in the
                     God&rsquo;s eye view, whether camera previews show, which sources are switched
                     on and which are pinned to its bar (kept apart from the console&rsquo;s boards)
                   </td>
@@ -669,7 +719,7 @@ export default function PrivacyPage() {
           <div>
             <p className="pv-eyebrow">
               <span>The server</span>
-              <span>57 API routes</span>
+              <span>59 API routes</span>
             </p>
             <h2 className="pv-h2">What reaches our server, and where it goes.</h2>
           </div>
@@ -730,6 +780,15 @@ export default function PrivacyPage() {
                   <td>
                     Cached against that target for 5 minutes. The target is also in the
                     server&rsquo;s access log, described under <a href="#logs">Logs</a>
+                  </td>
+                </tr>
+                <tr>
+                  <td>Click a plane with the Full flight trail setting on</td>
+                  <td>That plane&rsquo;s id</td>
+                  <td>Nowhere. Its line is read from our server&rsquo;s memory</td>
+                  <td>
+                    Not by the application. The id is in the server&rsquo;s access log, described
+                    under <a href="#logs">Logs</a>
                   </td>
                 </tr>
                 <tr>
@@ -1064,7 +1123,7 @@ export default function PrivacyPage() {
           </div>
           <div className="pv-prose">
             <p>
-              Five log statements exist across the 57 API route files. Each records that a data
+              Five log statements exist across the 59 API route files. Each records that a data
               feed or a handler failed, with the error. None of them is given anything you typed:
               their inputs are our own feed names, a camera&rsquo;s stream address, camera
               coordinates and webcam ids. So the application&rsquo;s own code writes nothing you type
@@ -1081,7 +1140,7 @@ export default function PrivacyPage() {
               <code>?q=</code>, a recon tool sends the domain or IP as <code>?target=</code>, and
               &ldquo;cameras near you&rdquo; sends the coordinates your browser gave as{" "}
               <code>?lat=</code> and <code>?lon=</code>. The God&rsquo;s eye view asks for the
-              vessels around what is on screen as <code>?bbox=</code>, four numbers that are the
+              vessels and aircraft around what is on screen as <code>?bbox=</code>, four numbers that are the
               edges of a box about the size of the view, rounded outward to about a kilometre.
               The person you drag onto the console&rsquo;s map sends no location while you drag him:
               the search runs in your browser, on a list of camera positions it asked for once. Zoomed
@@ -1089,6 +1148,8 @@ export default function PrivacyPage() {
               kilometres, and to name the place it chose it sends that camera&rsquo;s area as{" "}
               <code>?lat=</code> and <code>?lon=</code>. A spot opened in the God&rsquo;s eye view
               names itself from its own coordinates in the same way.
+              A click on a plane with the Full flight trail setting on sends that plane&rsquo;s id
+              as <code>?id=</code>.
               Each of those is in the log line for that request. <strong>It does not record your IP address.</strong> The server is told to
               mask it before writing &mdash; the first 16 bits survive for IPv4, which is a block of
               some sixty-five thousand addresses, and the rest is discarded. That is enough to tell

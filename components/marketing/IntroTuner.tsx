@@ -219,10 +219,9 @@ export default function IntroTuner({ control }: { control: MutableRefObject<Intr
 
   return (
     <section className="lp-tune lp-tune-panel" aria-label="Intro tuner" data-state={state}>
-      {/* The Discord note sits in its own layer above the whole landing page, so nothing inside
-          `.lp-root` can rise over it, and its corner is where this panel ends. While the panel
-          is open, and only on `/?tune`, it steps aside. */}
-      <style>{".tn-note-live { display: none !important; }"}</style>
+      {/* The Discord pop-up sits in its own layer above the whole landing page, so nothing inside
+          `.lp-root` can rise over it. While the panel is open, and only on `/?tune`, it steps aside. */}
+      <style>{".tn-join { display: none !important; }"}</style>
       <header className="lp-tune-head">
         <h2>Intro tuner</h2>
         <button

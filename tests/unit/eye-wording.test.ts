@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 import * as wording from "@/lib/eye/wording";
 import {
-  FULL_MAP_LABEL,
+  AUTO_TURN_LABEL,
+  CONTROLS_LABEL,
+  CREDITS_LABEL,
+  EXIT_LABEL,
+  EYE_SEARCH_NAME,
+  EYE_SEARCH_PLACEHOLDER,
+  HOME_LABEL,
   SECTION_SHORT,
   creditsFromAttribution,
   drawnAsText,
@@ -9,11 +15,7 @@ import {
   fmtHeading,
   fmtLat,
   fmtLon,
-  fullMapName,
-  hereText,
   leftOutText,
-  liftedText,
-  movedPinText,
   noMatchText,
   pinCapText,
   pinName,
@@ -24,7 +26,6 @@ import {
   signalLedgerRow,
   sourcesName,
   switchName,
-  unpinGhostText,
   unpinnedText,
 } from "@/lib/eye/wording";
 
@@ -81,15 +82,24 @@ describe("creditsFromAttribution", () => {
   });
 });
 
+describe("the frame's words", () => {
+  it("are the design's, short and active", () => {
+    expect(sourcesName()).toBe("Sources & layers");
+    expect(AUTO_TURN_LABEL).toBe("Auto-turn");
+    expect(CONTROLS_LABEL).toBe("Controls");
+    expect(EXIT_LABEL).toBe("Exit to dashboard");
+    expect(CREDITS_LABEL).toBe("© Credits");
+    expect(HOME_LABEL).toBe("About Provenance");
+    expect(EYE_SEARCH_PLACEHOLDER).toBe("Search places, cameras, vessels");
+  });
+
+  it("name the search box in a sentence, which a screen reader reads whole", () => {
+    expect(EYE_SEARCH_NAME).toBe("Search places, cameras and vessels");
+  });
+});
+
 describe("the Sources tray's words", () => {
   const crime = { id: "crime", label: "UK street crime", credit: "data.police.uk", precision: "area" as const, color: "#9333ea" };
-
-  it("name the button and say where the link goes, from the count it is given", () => {
-    expect(sourcesName()).toBe("Sources");
-    expect(FULL_MAP_LABEL).toBe("Open the full map");
-    expect(fullMapName(55)).toBe("Open the full map with all 55 sources");
-    expect(fullMapName(7)).toBe("Open the full map with all 7 sources");
-  });
 
   it("say how precisely a layer places what it shows, for each level", () => {
     expect(precisionWords("exact")).toBe("exact points");
@@ -120,30 +130,24 @@ describe("the Sources tray's words", () => {
     expect(r.detail).toBe("drawn on the map, data.police.uk");
   });
 
-  it("derive every number from what they are given", () => {
-    expect(hereText(0)).toBe("0 here");
-    expect(hereText(14)).toBe("14 here");
-    expect(pinCapText(5)).toBe("The bar holds 5. Unpin one first.");
-    expect(pinCapText(6)).toBe("The bar holds 6. Unpin one first.");
-    expect(noMatchText("zzz", 55)).toBe("No source here is called \u201czzz\u201d. Open the full map for all 55.");
-    expect(leftOutText(55, { country: 5, widget: 1 })).toBe("all 55 sources. 6 are not drawn here: 5 country-wide, 1 headlines widget.");
-    expect(leftOutText(30, { country: 1, widget: 0 })).toBe("all 30 sources. 1 is not drawn here: 1 country-wide.");
-    expect(leftOutText(30, { country: 0, widget: 2 })).toBe("all 30 sources. 2 are not drawn here: 2 headlines widgets.");
-    expect(leftOutText(30, { country: 0, widget: 0 })).toBe("all 30 sources.");
+  it("say what is left out in words, with no count", () => {
+    expect(pinCapText(6)).toBe("The sidebar holds 6. Unpin one first.");
+    expect(noMatchText("zzz")).toBe("No source here is called \u201czzz\u201d.");
+    expect(leftOutText({ country: 5, widget: 1 })).toBe("Not drawn here: country-wide layers and the headlines. The dashboard has them.");
+    expect(leftOutText({ country: 1, widget: 0 })).toBe("Not drawn here: country-wide layers. The dashboard has them.");
+    expect(leftOutText({ country: 0, widget: 2 })).toBe("Not drawn here: the headlines. The dashboard has them.");
+    expect(leftOutText({ country: 0, widget: 0 })).toBeNull();
   });
 
   it("name the pin and the switch by the source's label", () => {
-    expect(pinName("Protests", false)).toBe("Pin Protests to the bar");
-    expect(pinName("Protests", true)).toBe("Unpin Protests from the bar");
+    expect(pinName("Protests", false)).toBe("Pin Protests to the sidebar");
+    expect(pinName("Protests", true)).toBe("Unpin Protests from the sidebar");
     expect(switchName("Ships")).toBe("Show Ships in this view");
   });
 
-  it("say a lift, a drop, a move and an unpin aloud", () => {
-    expect(liftedText("Protests")).toContain("Picked up Protests");
-    expect(pinnedText("Protests", 2, 3)).toBe("Pinned Protests, 2 of 3.");
-    expect(movedPinText("Protests", 1, 3)).toBe("Protests moved to 1 of 3.");
+  it("say a pin and an unpin aloud", () => {
+    expect(pinnedText("Protests")).toBe("Pinned Protests to the sidebar.");
     expect(unpinnedText("Protests")).toBe("Unpinned Protests.");
-    expect(unpinGhostText("Protests")).toBe("Unpin Protests");
   });
 
   it("have a short name for each of the console's sections, Air quality for the last", () => {
@@ -157,23 +161,18 @@ describe("the Sources tray's words", () => {
     for (const v of Object.values(SECTION_SHORT)) strings.push(v);
     strings.push(
       sourcesName(),
-      fullMapName(3),
       precisionWords("exact"),
       precisionWords("facility"),
       precisionWords("area"),
       precisionWords("country"),
       drawnAsText(null),
-      hereText(2),
       pinCapText(5),
-      noMatchText("x", 3),
-      leftOutText(10, { country: 2, widget: 1 }),
+      noMatchText("x"),
+      leftOutText({ country: 2, widget: 1 })!,
       pinName("X", true),
       switchName("X"),
-      liftedText("X"),
-      pinnedText("X", 1, 2),
-      movedPinText("X", 1, 2),
+      pinnedText("X"),
       unpinnedText("X"),
-      unpinGhostText("X"),
       signalLedgerRow({ id: "x", label: "X", credit: "Y", precision: "area", color: "#000" }, 2).detail,
       signalLedgerRow({ id: "x", label: "X", credit: "Y", precision: null, color: "#000" }, null).detail,
     );

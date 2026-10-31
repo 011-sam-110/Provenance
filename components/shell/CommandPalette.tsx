@@ -1,6 +1,6 @@
 "use client";
 // The command palette — search-and-jump plus quick layer control. A calm,
-// keyboardless door now: it opens from the header's SHORTCUTS button. ⌘K used to
+// keyboardless door now: it opens from the button at the top of Settings > Shortcuts. ⌘K used to
 // open it and belongs to the Sources rail since the keymap landed (lib/shell/keymap.ts).
 // keyboard-first way to compose the view: toggle a layer, apply a preset, switch
 // basemap, or fly to a covered region. Open/close is owned by ConsoleShell.

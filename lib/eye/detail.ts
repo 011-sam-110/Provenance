@@ -196,7 +196,11 @@ function aircraftKindLine(a: Aircraft): string {
   return "Type not sent";
 }
 
-export function aircraftDetail(a: Aircraft, now: number, pulledAt: number | null): DetailModel {
+/**
+ * `drawn` says how the view's height cap treats this plane (lib/eye/planeModels.ts): "lowered"
+ * and "unsent" put one line first, so nobody reads the model's place in the scene as its height.
+ */
+export function aircraftDetail(a: Aircraft, now: number, pulledAt: number | null, drawn: "lowered" | "unsent" | null = null): DetailModel {
   const lol = a.network === "adsb.lol";
   const emergency = a.emergency ? cap(a.emergency.replace(/_/g, " ")) : null;
   return {
@@ -211,6 +215,16 @@ export function aircraftDetail(a: Aircraft, now: number, pulledAt: number | null
       { label: "Vertical speed", value: a.fpm != null ? verticalText(a.fpm) : null },
     ],
     groups: [
+      {
+        heading: "On this map",
+        rows: rows([
+          drawn === "lowered"
+            ? row("Height", "Drawn lower than its real height", "so it stays in view. The line runs down to its real spot.")
+            : drawn === "unsent"
+              ? row("Height", "Drawn at the highest this view shows", "because it sent no altitude.")
+              : null,
+        ]),
+      },
       {
         heading: "Transponder, as set in the cockpit",
         rows: rows([

@@ -23,7 +23,7 @@ import {
  * It is deliberately NOT modelled on the community invitation next door, and the
  * two differences are the interesting part:
  *
- *   (a) NO QUALIFYING TIME. CommunityNote waits 40 seconds of visible time because
+ *   (a) NO QUALIFYING TIME. CommunityNote waits 15 seconds of visible time because
  *       an invitation shown to a bounce is wasted. A warning shown late is WORSE
  *       than not shown at all - the person has already hit the bug it was warning
  *       about. So it shows the moment the boot plate is gone.

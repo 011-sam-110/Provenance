@@ -1,0 +1,558 @@
+/* The God's eye view's frame (EyeHud.tsx): the box the sidebar stands in, the pill search, the
+ * title and the clock, the compass, and the credits line. Sizes and colours are the design's
+ * (Provenance HUD v2), with Inter through --tn-sans, inherited from .root in eye.module.css.
+ * The vignette and the scrims under the words are .hud::before there.
+ *
+ * NEIGHBOURS OF THE SIDEBAR MOVE WITH --rail-w (components/rail/SideRail.tsx): 64px closed, 232px
+ * open, 0px on a phone, over the same .18s. The open sidebar never covers the search or the title.
+ *
+ * STACK ORDER, all inside .hud's own (z-index 30): the sidebar 6, the top 8, the hint 11, the tray
+ * and the credits 12, a phone's sheet 40. A details panel is .hud's sibling at 31, which is why
+ * EyeHud closes it when a phone's sheet opens.
+ *
+ * THREE LAYOUTS. Wide: the design. Up to 900 px wide, the sidebar is a 44 px button at x 10-54,
+ * y 12-56, so the top starts after it. Upright or short (the same two lines the rest of this view
+ * draws, PORTRAIT_QUERY in EyeApp.tsx and the 500 px line): the phone's sizes, and the compass and
+ * the credits find room as each block below says. */
+
+.railBox {
+  --rail-z: 6;
+  --rail-sheet-z: 40;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: var(--rail-w, 64px);
+}
+
+.pinDot {
+  display: block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin: 4px;
+}
+
+/* ── The top: the search, the clock, the title ─────────────────────────── */
+
+.top {
+  position: absolute;
+  top: 16px;
+  left: calc(var(--rail-w, 64px) + 24px);
+  right: 24px;
+  z-index: 8;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px 12px;
+  align-items: start;
+  pointer-events: none;
+  transition: left 0.18s ease;
+}
+
+.search {
+  position: relative;
+  grid-column: 1;
+  grid-row: 1;
+  width: min(400px, 100%);
+  pointer-events: auto;
+}
+
+.pill {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 48px;
+  padding: 0 8px 0 20px;
+  background: rgba(14, 18, 22, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 24px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+.pill:focus-within {
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.searchInput {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #e8ecf0;
+  font: inherit;
+  font-size: 14px;
+  caret-color: #e8ecf0;
+}
+.searchInput::placeholder {
+  color: #7d8995;
+  opacity: 1;
+}
+
+.searchClear {
+  appearance: none;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 16px;
+  background: transparent;
+  color: #a9b4bf;
+  font: inherit;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+.searchClear:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+.searchClear:focus-visible {
+  outline: 2px solid #e8ecf0;
+  outline-offset: -2px;
+}
+
+.searchGlass {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  color: #c4ccd4;
+}
+.searchGlass svg {
+  width: 17px;
+  height: 17px;
+}
+
+/* 56 px below the top of the pill. Solid: the white title behind it showed through at .97. */
+.results {
+  position: absolute;
+  top: 56px;
+  left: 0;
+  right: 0;
+  padding: 6px;
+  background: #0e1216;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.resultsList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: min(60dvh, 360px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+
+.result {
+  appearance: none;
+  box-sizing: border-box;
+  flex: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 40px;
+  padding: 10px 14px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #e8ecf0;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+.result:hover,
+.result[data-active] {
+  background: rgba(255, 255, 255, 0.07);
+}
+.resultName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.resultKind {
+  flex: none;
+  font-size: 11px;
+  color: #8e9aa6;
+}
+
+.resultsStatus {
+  margin: 0;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: #8e9aa6;
+}
+
+.clock {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: center;
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  color: #e8ecf0;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.6);
+}
+.clockTime {
+  font-size: 18px;
+  font-weight: 600;
+}
+.clockZone {
+  font-size: 10px;
+  font-weight: 600;
+  color: #8e9aa6;
+}
+
+.place {
+  grid-column: 1 / -1;
+  justify-self: start;
+  min-width: 0;
+  max-width: min(640px, 100%);
+  padding-left: 4px;
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.55);
+}
+.place h1 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  color: #e8ecf0;
+}
+.place p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: #a9b4bf;
+}
+
+/* ── The compass ───────────────────────────────────────────────────────── */
+
+.compass {
+  position: absolute;
+  left: 50%;
+  bottom: 20px;
+  z-index: 2;
+  width: min(520px, 38vw);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.chip {
+  padding: 3px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  background: rgba(12, 15, 19, 0.8);
+  color: #e8ecf0;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 16px;
+}
+
+.pointer {
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 7px solid #e8ecf0;
+}
+
+.window {
+  position: relative;
+  width: 100%;
+  height: 36px;
+  overflow: hidden;
+  border-top: 1px solid rgba(255, 255, 255, 0.35);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent);
+}
+
+/* 340% of the window: a full turn and one more window, 510 degrees, of which it shows 150. */
+.strip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 340%;
+  height: 100%;
+  will-change: transform;
+}
+
+.tick {
+  position: absolute;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  color: rgba(232, 236, 240, 0.4);
+  transform: translateX(-50%);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+.tick i {
+  display: block;
+  width: 1px;
+  height: 4px;
+  background: currentColor;
+}
+.tick b {
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+}
+.tick[data-kind="major"] {
+  color: #a9b4bf;
+}
+.tick[data-kind="major"] i {
+  height: 8px;
+}
+.tick[data-kind="cardinal"],
+.tick[data-kind="north"] {
+  color: #e8ecf0;
+}
+.tick[data-kind="north"] {
+  color: #f0727a;
+}
+.tick[data-kind="cardinal"] i,
+.tick[data-kind="north"] i {
+  width: 2px;
+  height: 12px;
+}
+.tick[data-kind="cardinal"] b,
+.tick[data-kind="north"] b {
+  font-size: 13px;
+}
+
+/* ── The credits line ──────────────────────────────────────────────────── */
+
+/* Its widest is the room beside the compass, so the two never meet: half the window, less half
+   the compass (min(260px, 19vw)), less its own 24 px margin and 8 px of air. It wraps inside that. */
+.foot {
+  position: absolute;
+  right: 24px;
+  bottom: 24px;
+  z-index: 12;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  max-width: max(calc(31vw - 32px), calc(50vw - 292px));
+  font-size: 11px;
+}
+
+.line {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 2px 14px;
+  color: #a9b4bf;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
+}
+
+.coords {
+  white-space: nowrap;
+}
+
+.lineBtn {
+  appearance: none;
+  position: relative;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #a9b4bf;
+  font: inherit;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  pointer-events: auto;
+  text-shadow: inherit;
+}
+.lineBtn:hover {
+  color: #fff;
+}
+.lineBtn:focus-visible,
+.home:focus-visible {
+  outline: 2px solid #e8ecf0;
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.creditsPop {
+  box-sizing: border-box;
+  max-width: 100%;
+  padding: 10px 12px;
+  background: rgba(12, 15, 19, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  color: #a9b4bf;
+  line-height: 1.5;
+  text-wrap: pretty;
+  pointer-events: auto;
+}
+/* Every source drawn, each once, run as one line of text so it wraps where the line is full. */
+.sources > span:not(:last-child)::after {
+  content: "\00a0· ";
+}
+.home {
+  display: block;
+  margin-top: 4px;
+  color: #e8ecf0;
+}
+
+/* ── Up to 900 px wide: the sidebar is a button at x 10-54, y 12-56 ─────── */
+
+@media (max-width: 900px) {
+  .top {
+    top: calc(10px + env(safe-area-inset-top, 0px));
+    left: calc(12px + env(safe-area-inset-left, 0px));
+    right: calc(12px + env(safe-area-inset-right, 0px));
+    row-gap: 10px;
+  }
+  .search {
+    margin-left: 50px;
+    width: calc(100% - 50px);
+    max-width: 400px;
+  }
+  .searchClear {
+    position: relative;
+  }
+  /* 44 px of hit box round the 32 px circle. */
+  .searchClear::before {
+    content: "";
+    position: absolute;
+    inset: -6px;
+  }
+  .result {
+    min-height: 44px;
+  }
+  /* From the screen's edge, under the menu button too: it covers the title whole, not half of it. */
+  .results {
+    left: -50px;
+  }
+  /* The credits pop-up is wider than the room beside the compass, and goes over it while open. */
+  .creditsPop {
+    position: absolute;
+    right: 0;
+    bottom: calc(100% + 8px);
+    width: min(340px, calc(100vw - 24px));
+    max-width: none;
+  }
+  /* 44 px of hit box on the words of the line, in the air round them. */
+  .lineBtn::after {
+    content: "";
+    position: absolute;
+    inset: -14px -5px;
+  }
+}
+
+/* ── Upright ───────────────────────────────────────────────────────────── */
+/* The search takes the first row, so the title and the clock share the next, and the title wraps
+   beside the clock. The compass takes the phone's whole width, because 38vw at 360 px is 137 px,
+   too short to read: 150 degrees at 328 px still labels every 15. The credits line runs under it. */
+
+@media (max-aspect-ratio: 4/5) {
+  .compass {
+    width: min(calc(100vw - 32px), 420px);
+    bottom: calc(38px + env(safe-area-inset-bottom, 0px));
+    gap: 4px;
+  }
+  .foot {
+    left: calc(var(--rail-w, 0px) + 12px);
+    right: 12px;
+    bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    align-items: stretch;
+    max-width: none;
+  }
+  .line {
+    justify-content: space-between;
+    gap: 2px 10px;
+  }
+}
+@media (max-aspect-ratio: 4/5) and (max-width: 900px) {
+  .search {
+    grid-column: 1 / -1;
+  }
+  .clock {
+    grid-row: 2;
+    align-self: start;
+    padding-top: 3px;
+  }
+  .place {
+    grid-column: 1;
+    grid-row: 2;
+    padding-left: 2px;
+  }
+}
+/* Too narrow for the line on one row: it takes two, and the compass stands above them. */
+@media (max-aspect-ratio: 4/5) and (max-width: 350px) {
+  .compass {
+    bottom: calc(54px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* The phone's sizes, upright or on its side (22 px, as Leon chose). */
+@media (max-aspect-ratio: 4/5), (min-aspect-ratio: 4/5) and (max-height: 500px) {
+  .place h1 {
+    font-size: 22px;
+  }
+  .place p {
+    margin-top: 2px;
+    font-size: 12px;
+  }
+  .clockTime {
+    font-size: 17px;
+  }
+}
+
+/* ── A phone on its side ───────────────────────────────────────────────── */
+/* The title keeps to the left half, the bottom is short, and the compass stays at 38vw between
+   the left edge and the credits, which wrap in the room to its right. */
+
+@media (min-aspect-ratio: 4/5) and (max-height: 500px) {
+  .place {
+    max-width: calc(50vw - 16px);
+    padding-left: 2px;
+  }
+  .compass {
+    bottom: 8px;
+    gap: 3px;
+  }
+  .chip {
+    padding: 2px 8px;
+    font-size: 12px;
+  }
+  .window {
+    height: 30px;
+  }
+  .foot {
+    right: calc(12px + env(safe-area-inset-right, 0px));
+    bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+  }
+  .line {
+    gap: 2px 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .top {
+    transition: none;
+  }
+}

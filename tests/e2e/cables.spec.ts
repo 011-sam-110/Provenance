@@ -20,26 +20,39 @@ test("hovering a submarine cable names it, and clicking there opens that cable",
   // The cables adapter enriches ~700 routes from a keyless upstream on first load.
   test.setTimeout(240_000);
 
-  await page.goto("/");
+  await page.addInitScript(() => {
+    window.localStorage.setItem("tn.terminal.boot.v1", JSON.stringify({ v: 1, d: { seenVersion: 1 } }));
+  });
+  await page.goto("/app");
+  await page.waitForFunction(
+    () => (window as unknown as { __map?: { isStyleLoaded(): boolean } }).__map?.isStyleLoaded(),
+    undefined,
+    { timeout: 60_000 },
+  );
 
-  await page.goto("/?lat=22&lon=128&z=5&base=light");
-  await page.waitForTimeout(6000);
+  // Turn the cables layer on from the Sources panel.
+  await page.locator('nav[data-rail="console"] [data-rail-entry="sources"]').click();
+  await page.getByLabel("Search sources").fill("submarine");
+  const row = page.locator('[data-source-row="cables"]');
+  const read = page.waitForResponse((r) => r.url().includes("/api/signals/cables") && r.ok(), { timeout: 150_000 });
+  await row.locator(".tn-src-toggle").click();
+  await expect(row).toHaveAttribute("data-on", "true");
+  await read;
+  await page.getByRole("button", { name: "Close sources" }).click();
 
-  // Turn the cables layer on from the Sources rail.
-  await page.locator("button.tn-rail-fab").click();
-  await page.locator("input.tn-cat-search").fill("submarine");
-  const row = page.locator(".tn-layer-row", { hasText: "Submarine cables" });
-  await row.locator(".tn-toggle").click();
-  await expect(row.locator(".tn-layer-count")).toHaveText(/\d{3}/, { timeout: 150_000 });
-  await page.locator(".tn-rail-collapse").click();
-  await page.waitForTimeout(1500);
+  // The north Pacific, where the routes are thick enough to find by sweeping.
+  await page.evaluate(() => {
+    (window as unknown as { __map: { jumpTo(o: unknown): void } }).__map.jumpTo({ center: [128, 22], zoom: 5 });
+  });
+  await page.waitForTimeout(2500);
 
   // Sweep the pointer until a cable names itself.
   let found: { x: number; y: number; label: string } | null = null;
   for (let y = 300; y <= 560 && !found; y += 6) {
     for (let x = 700; x <= 1060 && !found; x += 6) {
       await page.mouse.move(x, y);
-      const tip = page.locator(".tn-linetip");
+      // The element is always there, and hidden until a cable is under the pointer.
+      const tip = page.locator(".tn-linetip:not([hidden])");
       if (await tip.count()) found = { x, y, label: (await tip.innerText()).trim() };
     }
   }
@@ -51,7 +64,7 @@ test("hovering a submarine cable names it, and clicking there opens that cable",
 
   // The click must open the cable the hover promised, not a different one.
   await page.mouse.click(found!.x, found!.y);
-  const dossier = page.locator(".tn-dossier");
+  const dossier = page.locator(".tn-inspector[role=dialog]");
   await expect(dossier).toBeVisible({ timeout: 5000 });
   expect(await dossier.getAttribute("aria-label")).toBe(found!.label);
   await expect(dossier).toContainText("Submarine cables");

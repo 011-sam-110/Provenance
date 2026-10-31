@@ -9,7 +9,6 @@ import {
   EYE_PLACES,
   consoleHref,
   eyeCameraHref,
-  eyeLinkQuery,
   eyePlaceHref,
   eyeSpotHref,
   parseEyeLink,
@@ -150,24 +149,20 @@ describe("links", () => {
     expect(t.view.lon).toBe(-0.12397);
   });
 
-  it("eyeLinkQuery reopens the same view for a place, a camera and a spot", () => {
-    const moved = { lat: 51.50531234, lon: -0.08056789, zoom: 15.7123, tilt: 47.6, heading: -113.2 };
+  it("a link kept from a view still reopens it, for a place, a camera and a spot", () => {
     const rounded = { lat: 51.50531, lon: -0.08057, zoom: 15.71, tilt: 48, heading: 247 };
     const tower = EYE_PLACES.find((p) => p.id === "tower-bridge")!;
     const toLink = (q: string) => new URLSearchParams(q);
+    const position = "lat=51.50531&lon=-0.08057&z=15.71&heading=247&tilt=48";
 
-    const place = eyeLinkQuery({ kind: "place", place: tower, view: tower.wide }, moved);
-    expect(place).toBe("place=tower-bridge&lat=51.50531&lon=-0.08057&z=15.71&heading=247&tilt=48");
-    expect(parseEyeLink(toLink(place), false)).toEqual({ kind: "place", place: tower, view: rounded });
-
+    expect(parseEyeLink(toLink(`place=tower-bridge&${position}`), false)).toEqual({ kind: "place", place: tower, view: rounded });
     const cam = "tfl:JamCams_00001.04227";
-    const camera = eyeLinkQuery({ kind: "camera", cameraId: cam, view: tower.wide }, moved);
-    expect(camera.startsWith("cam=")).toBe(true);
-    expect(parseEyeLink(toLink(camera), false)).toEqual({ kind: "camera", cameraId: cam, view: rounded });
-
-    const spot = eyeLinkQuery({ kind: "spot", view: tower.wide }, moved);
-    expect(spot).toBe("lat=51.50531&lon=-0.08057&z=15.71&heading=247&tilt=48");
-    expect(parseEyeLink(toLink(spot), false)).toEqual({ kind: "spot", view: rounded });
+    expect(parseEyeLink(toLink(`cam=${encodeURIComponent(cam)}&${position}`), false)).toEqual({
+      kind: "camera",
+      cameraId: cam,
+      view: rounded,
+    });
+    expect(parseEyeLink(toLink(position), false)).toEqual({ kind: "spot", view: rounded });
   });
 
   it("the way back is the console's own link format, at the same spot", () => {

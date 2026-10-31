@@ -149,7 +149,7 @@ function drawnInsideRing(page: Page): Promise<number> {
  * `:not(.tn-ctxbar-draw)` IS KEPT AFTER THE ROW IT EXCLUDED WAS REMOVED (2026-09-16).
  * "Draw an area" was an ACTION sharing the `.tn-ctxbar-opt` row class, and the
  * exclusion stopped a context picker from silently arming a draw; it lives on the
- * Inspector rail's toolbar now, so the selector currently excludes nothing. It stays
+ * Areas panel now, so the selector currently excludes nothing. It stays
  * because the hazard is a property of the menu — one row class for two kinds of row —
  * and a future action row would reintroduce it the moment nobody was looking.
  */
@@ -187,11 +187,13 @@ test("switching context draws nothing different, and an area's own source is cro
   // The switcher names what a toggle would write, and it starts on World.
   await expect(page.locator(".tn-ctxbar")).toHaveText(/World/);
 
-  // The areas block sits in the rail's one scroll, under the search box.
+  // The areas list is the Areas panel, a row away on the sidebar.
+  await page.locator('nav[data-rail="console"] [data-rail-entry="draw"]').click();
   await expect(page.locator(".tn-insp-row")).toHaveCount(1);
   await expect(page.locator(".tn-insp-label")).toHaveText(AREA_LABEL);
-  // The rail is pointed at World, so no row carries the pill.
+  // The panels are pointed at World, so no row carries the pill.
   await expect(page.locator(".tn-insp-pill", { hasText: "EDITING" })).toHaveCount(0);
+  await page.locator('nav[data-rail="console"] [data-rail-entry="sources"]').click();
 
   // Switch the signal on for WORLD, through the rail. The row carries its own id, and
   // the switch is .tn-src-toggle — .tn-src-label only opens the provenance popover.
@@ -221,7 +223,10 @@ test("switching context draws nothing different, and an area's own source is cro
   // number collapsed to the ring's contents the moment an area was selected, taking
   // every global signal off the globe. It must not move at all.
   await switchContext(page, AREA_LABEL);
+  // The Areas panel says which area the switches now write to.
+  await page.locator('nav[data-rail="console"] [data-rail-entry="draw"]').click();
   await expect(page.locator(".tn-insp-pill", { hasText: "EDITING" })).toHaveCount(1);
+  await page.locator('nav[data-rail="console"] [data-rail-entry="sources"]').click();
   // The area's own row now ticks from the AREA's set, which has the signal on.
   await expect(row).toHaveAttribute("data-on", "true");
   expect(await drawnSignals(page)).toBe(worldCount);

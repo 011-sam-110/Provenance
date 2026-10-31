@@ -27,7 +27,7 @@ function blockAfter(needle: string): string {
   return CSS.slice(open, close);
 }
 
-/** The two palettes: the light default, and the opt-in dark skin (selector at column 0). */
+/** The two palettes: the light one, and the dark skin the console opens in (selector at column 0). */
 const SKIN_BLOCKS = [
   ["light", "\n.tn-terminal {"],
   ["dark", '\n:root[data-tnx-skin="dark"] .tn-terminal {'],
@@ -103,7 +103,7 @@ describe("real events land in the band their own community would call them", () 
 });
 
 describe("the alert ramp is not the accent (the whole point)", () => {
-  // The console has two palettes again: the light default and the opt-in dark skin
+  // The console has two palettes again: the light one and the default dark skin
   // (the DARK SKIN block in globals.css). Each must define all three alert tokens, or a
   // severity badge falls back to whatever it happens to inherit.
   it("defines all three alert tokens", () => {

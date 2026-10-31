@@ -773,6 +773,6 @@ describe("the old buttons are gone", () => {
   });
 
   it("the chip's rules left the stylesheet", () => {
-    expect(read("app", "globals.css")).not.toContain("tn-eye-return");
+    for (const sheet of ["globals.css", "console-sidebar.css"]) expect(read("app", sheet)).not.toContain("tn-eye-return");
   });
 });

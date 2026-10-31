@@ -1,5 +1,5 @@
 "use client";
-// The Map settings tool — projection, basemap, terrain and 3D buildings. It was the
+// The Map settings tool — projection, basemap, terrain, 3D buildings and the planes' full trail. It was the
 // stage rail's View flyout (components/console/maprail/ViewFlyout.tsx): a lateral
 // strip of chips over the map, sized for a 40px column. The panel is a column now, so
 // every control is a labelled ROW with the reason it exists under it.
@@ -30,7 +30,7 @@
 // you would get, and its stated justification was width: "two buttons for two mutually
 // exclusive states spend a chip of strip width". A chip of strip width is exactly what
 // this panel has, so both states are visible at once and the current one is filled —
-// which is the same segmented control the rail's own Sources/Inspector tabs use.
+// which is the same segmented control God's eye view's Sources tray uses.
 
 import { useEffect } from "react";
 import { BASEMAPS } from "@/lib/basemaps";
@@ -41,6 +41,8 @@ import { hudStore, useHudPrefs } from "@/lib/hud/store";
 import { HUD_OPACITY_MAX, HUD_OPACITY_MIN, HUD_VARIANTS, VARIANT_LABEL } from "@/lib/hud/model";
 import { issOrbitStore, useIssOrbitPrefs } from "@/lib/cinematic/orbitStore";
 import { ISS_ORBIT_SPEED_LABEL, ISS_ORBIT_SPEEDS } from "@/lib/cinematic/prefs";
+import { fullTrailStore, useFullTrail } from "@/lib/planes/fullTrail";
+import planesStyles from "./PlanesSection.module.css";
 import ToolSection from "@/components/shell/inspector/ToolSection";
 
 /** One control row: what it is, what it does, and the thing you press. */
@@ -70,6 +72,7 @@ export default function SettingsTool() {
   const mode = modeForStage(stage);
   const hud = useHudPrefs();
   const orbit = useIssOrbitPrefs();
+  const fullTrail = useFullTrail();
 
   // HUD and ISS-orbit prefs persist through the same versioned envelope as the
   // shell stores; hydrate once on mount so the rows below reflect what the
@@ -77,6 +80,7 @@ export default function SettingsTool() {
   useEffect(() => {
     hudStore.hydrate();
     issOrbitStore.hydrate();
+    fullTrailStore.hydrate();
   }, []);
 
   return (
@@ -249,6 +253,29 @@ export default function SettingsTool() {
               />
               <span className="tn-num">{hud.opacity}%</span>
             </span>
+          }
+        />
+      </ToolSection>
+
+      <ToolSection title="Planes">
+        {/* lib/planes/fullTrail.ts keeps the choice in this browser. Off is the 12-point line.
+            The words say when the line starts because that is all the line can claim: the free
+            networks refuse a server their history, so it starts when our own pull first heard
+            the plane, not at take-off. */}
+        <Field
+          label="Full flight trail"
+          sub="Each line grows while this tab is open. Click a plane to load its line from when we first heard it."
+          control={
+            <button
+              type="button"
+              className={`tn-insp-switch ${planesStyles.hit}`}
+              role="switch"
+              aria-checked={fullTrail}
+              aria-label="Full flight trail"
+              onClick={() => fullTrailStore.set(!fullTrail)}
+            >
+              <span className="tn-insp-switch-knob" aria-hidden />
+            </button>
           }
         />
       </ToolSection>

@@ -15,15 +15,14 @@
 //     The stage rail kept ONE group open at a time, so opening any other group
 //     mid-draw took the draw group's readout with it, and with it the Cancel button
 //     that lived in it. Escape still worked, and nothing on screen said so. That
-//     group is gone; the draw has no panel at all now — the Inspector rail's Draw
-//     button arms the map and draws nothing but its own pressed state (see
-//     components/shell/inspector/InspectorRail.tsx, and lib/console/inspectorRail.ts
-//     for why one tool at a time is still the rail's rule). Reason 2 is the whole
+//     group is gone; the gesture starts from the Areas panel's button, and that panel can
+//     be closed or replaced while the draw runs (components/shell/ConsoleSidebar.tsx, and
+//     lib/console/consolePanel.ts for why it is one panel at a time). Reason 2 is the whole
 //     story rather than a risk, which is why this pill is the only narration left.
 //
 //     A draw starts from several surfaces: the `draw` key action arms the polygon
 //     tool directly (Ctrl+Q by default and rebindable — see lib/shell/keymap.ts), the
-//     Inspector rail's Draw button, and `camslot.area` from the camera wall's own
+//     Areas panel's Draw button, and `camslot.area` from the camera wall's own
 //     panel each call `startDraw` from their own surface. The narration has to
 //     outlive all of them.
 //
@@ -47,7 +46,7 @@
 // kill Escape for the whole app exactly while the user needs Escape to cancel.
 //
 // WHY IT MEASURES THE STAGE. It is `position: fixed`, and it used to be centred on
-// the VIEWPORT — so opening the Sources rail, which insets the console by up to
+// the VIEWPORT — so opening a panel, which insets the console by up to
 // 602px, left it visibly off-centre over the map that was left. The stage's
 // bounding box is the only value with every inset already folded into it; see
 // placeBanner in lib/shell/drawBanner.ts for why the rail width variables cannot be
@@ -64,8 +63,11 @@ import { drawBannerModel, placeBanner, type BannerPlacement } from "@/lib/shell/
 
 /** The map stage this banner belongs to (components/console/ConsoleWorkspace.tsx). */
 const STAGE_SELECTOR = ".tn-cw-stage";
-/** The camera-pick hint, which shares the stage's top edge while picking is armed. */
-const ABOVE_SELECTOR = ".tn-arm-hint";
+/**
+ * What shares the stage's top edge, so the banner stacks under it: the search pill, and the
+ * camera-pick hint while picking is armed.
+ */
+const ABOVE_SELECTOR = ".tn-arm-hint, .tn-mapsearch-bar";
 
 /**
  * Track the stage's box for as long as the gesture runs.
@@ -95,11 +97,11 @@ function useStagePlacement(active: boolean): BannerPlacement | null {
     const measure = () => {
       raf = 0;
       const r = stage.getBoundingClientRect();
-      const above = document.querySelector(ABOVE_SELECTOR)?.getBoundingClientRect();
+      const above = [...document.querySelectorAll(ABOVE_SELECTOR)].map((el) => el.getBoundingClientRect().bottom);
       setPlace(
         placeBanner({
           stage: { left: r.left, width: r.width, top: r.top },
-          above: above ? { bottom: above.bottom } : null,
+          above: above.length ? { bottom: Math.max(...above) } : null,
           viewport: window.innerWidth,
         }),
       );

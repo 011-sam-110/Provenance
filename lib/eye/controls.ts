@@ -15,13 +15,12 @@
 //      The phone LAYOUT is a different question (the screen's shape, PORTRAIT_QUERY in
 //      EyeApp.tsx), and the two are allowed to disagree: a tablet is wide and touch.
 //
-// THE "?" BESIDE THE CLOCK (HintToggle in ControlHint.tsx) brings the plate back or hides
-// it. A plate brought back follows the same rules as on arrival: it fades FADE_AFTER_MS
-// after the next move, and the x, the "?" or a panel opening closes it. The button's
-// accessible name is HINT_NAME, and it must never contain a word another e2e spec matches
-// by substring (Close, Turn, Places, Sources, Previews): getByRole name matching is a
-// substring match unless `exact` is set, which is how #319's "Close this hint" broke
-// #321's spec.
+// THE SIDEBAR'S CONTROLS ROW (EyeHud.tsx, with its ? icon) brings the plate back or hides it. A
+// plate brought back follows the same rules as on arrival: it fades FADE_AFTER_MS after the next
+// move, and the x, that row or a panel opening closes it. The plate's accessible name is
+// HINT_NAME, and it must never contain a word another e2e spec matches by substring (Close,
+// Turn, Sources, Previews): getByRole name matching is a substring match unless `exact` is set,
+// which is how #319's "Close this hint" broke #321's spec.
 
 export type HintKind = "mouse" | "touch" | "touch-desktop";
 
@@ -102,7 +101,7 @@ export type HintEvent =
   | { type: "timeout" }
   | { type: "close" }
   | { type: "panel-open" }
-  /** The "?" beside the clock was pressed: hide a shown plate, or bring it back. `pointerType`
+  /** The sidebar's Controls row was pressed: hide a shown plate, or bring it back. `pointerType`
    *  is what pressed it ("mouse", "pen", "touch", or "" for the keyboard); `onlyTouch` is
    *  TOUCH_QUERY at that moment. */
   | { type: "toggle"; pointerType: string; onlyTouch: boolean };

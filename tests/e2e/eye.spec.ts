@@ -7,13 +7,14 @@ import { BRAND } from "@/lib/brand";
  *   - It opens at a preset on a wide screen, a phone and a 9:16 recording, draws, and
  *     throws nothing.
  *   - Its frame names the place, credits every source it draws (the imagery, the map
- *     data, TfL) and offers the source code (AGPL-3.0, section 13).
+ *     data, TfL), behind © Credits, and offers the source code with them closed (AGPL-3.0,
+ *     section 13). A recording's frame draws them all in full.
  *   - No card says "Live" unless a stream is playing in it.
  *   - The browser reaches no third party but the ones /privacy names for this page:
  *     Esri's imagery and OpenFreeMap's building shapes (and the visit counter, when the
  *     build has a key for it).
- *   - "Turn" turns the view, the first touch stops it, and with reduced motion there is
- *     no "Turn" at all.
+ *   - "Auto-turn" turns the view, the first touch stops it, and with reduced motion there is
+ *     no "Auto-turn" at all.
  *   - While the view turns, at most one card's clip plays; at rest every clip plays
  *     (the frame-time rule, clipsToPlay in lib/eye/cameras.ts).
  *   - In a film (clock=manual) the view runs on the film's clock: the HUD's time and
@@ -36,6 +37,8 @@ const SHAPES = [
 const ALLOWED_THIRD_PARTIES = [/(^|\.)arcgisonline\.com$/, /(^|\.)openfreemap\.org$/, /(^|\.)posthog\.com$/];
 
 const ready = (page: Page) => page.waitForSelector('main[data-eye-state="ready"]', { timeout: 90_000 });
+const turnSwitch = (page: Page) => page.getByRole("switch", { name: "Auto-turn" });
+const menu = (page: Page) => page.locator('[data-rail="eye"] [data-rail-menu]');
 
 for (const shape of SHAPES) {
   test(`opens Westminster on a ${shape.name} screen, credited and clean`, async ({ page, baseURL }) => {
@@ -57,26 +60,28 @@ for (const shape of SHAPES) {
 
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Westminster");
     const credits = page.locator("footer");
+    await expect(page.locator(`footer a[href="${BRAND.repoUrl}"]`)).toHaveCount(1);
+    if (shape.query.includes("record=1")) {
+      // A recording is a frame, not a tool: every credit in full, and no button.
+      await expect(page.getByRole("button", { name: "© Credits" })).toHaveCount(0);
+      await expect(page.locator("[data-eye-exit]")).toHaveCount(0);
+    } else {
+      // The way to the console, at the spot on screen, its Sources rail as the visitor left it.
+      // The href is filled in as the link is used, so read it after a focus.
+      if (shape.width <= 900) await menu(page).click();
+      const exit = page.locator("[data-eye-exit]");
+      await exit.focus();
+      await expect(exit).toHaveAttribute("href", /^\/app\?lat=[-\d.]+&lon=[-\d.]+&z=[\d.]+/);
+      await expect(exit).not.toHaveAttribute("href", /sources=open/);
+      if (shape.width <= 900) await page.keyboard.press("Escape");
+      await page.getByRole("button", { name: "© Credits" }).click();
+      // Who this is, for a visitor who arrived from a reel.
+      await expect(page.locator('main a[href="/"]').first()).toHaveText(/Provenance/);
+    }
     await expect(credits).toContainText("Imagery © Esri");
     await expect(credits).toContainText("OpenStreetMap");
     // Westminster's cameras and road notices are TfL's.
     await expect(credits).toContainText("Powered by TfL Open Data");
-    await expect(page.locator(`footer a[href="${BRAND.repoUrl}"]`)).toHaveCount(1);
-    // Sources is a button that opens the console's rail as a tray; the way to the console is
-    // the tray's link.
-    const sourcesButton = page.getByRole("button", { name: /^Sources/ });
-    if (shape.query.includes("record=1")) {
-      await expect(sourcesButton).toHaveCount(0);
-    } else {
-      // The way to the console, its Sources rail open, at the spot on screen. The href
-      // is filled in as the link is used, so read it after a focus.
-      await sourcesButton.click();
-      const sources = page.getByRole("link", { name: /^Open the full map/ });
-      await sources.focus();
-      await expect(sources).toHaveAttribute("href", /^\/app\?lat=[-\d.]+&lon=[-\d.]+&z=[\d.]+.*sources=open/);
-      // Who this is, for a visitor who arrived from a reel.
-      await expect(page.locator('main a[href="/"]').first()).toHaveText(/Provenance/);
-    }
 
     // "Live" only where a stream is playing.
     const chips = await page.locator("[data-media]").evaluateAll((els) =>
@@ -96,7 +101,7 @@ for (const shape of SHAPES) {
   });
 }
 
-test("Turn turns the view, and the first touch stops it", async ({ page }) => {
+test("Auto-turn turns the view, and the first touch stops it", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/eye?place=westminster");
   await ready(page);
@@ -105,16 +110,16 @@ test("Turn turns the view, and the first touch stops it", async ({ page }) => {
   const clips = page.locator('[data-media="clip"] video');
   const playing = () => clips.evaluateAll((vs) => vs.filter((v) => !(v as HTMLVideoElement).paused).length);
 
-  const turn = page.getByRole("button", { name: "Turn" });
+  const turn = turnSwitch(page);
   const before = await bearing();
   await turn.click();
-  await expect(turn).toHaveAttribute("aria-pressed", "true");
+  await expect(turn).toHaveAttribute("aria-checked", "true");
   await page.waitForTimeout(1500);
   expect(Math.abs((await bearing()) - before)).toBeGreaterThan(3);
   expect(await playing()).toBeLessThanOrEqual(1);
 
   await page.mouse.click(720, 640);
-  await expect(turn).toHaveAttribute("aria-pressed", "false");
+  await expect(turn).toHaveAttribute("aria-checked", "false");
   const stopped = await bearing();
   await page.waitForTimeout(800);
   expect(await bearing()).toBeCloseTo(stopped, 3);
@@ -173,12 +178,12 @@ test("in a film, a clip moves on only with the film's steps", async ({ page }) =
 });
 
 test.describe("with reduced motion", () => {
-  test("there is no Turn, and a motion link does not move", async ({ page }) => {
+  test("there is no Auto-turn, and a motion link does not move", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto("/eye?place=westminster&motion=orbit");
     await ready(page);
-    await expect(page.getByRole("button", { name: "Turn" })).toHaveCount(0);
+    await expect(turnSwitch(page)).toHaveCount(0);
     const bearing = () => page.evaluate(() => (window as unknown as { __map: { getBearing(): number } }).__map.getBearing());
     const a = await bearing();
     await page.waitForTimeout(1000);
@@ -186,34 +191,32 @@ test.describe("with reduced motion", () => {
   });
 });
 
-test("Sources opens the console with its Sources rail open, and keeps the scene's layers on a first visit", async ({ page }) => {
+test("Exit to dashboard keeps the scene's layers on a first visit", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/eye?place=westminster");
   await ready(page);
-  await page.getByRole("button", { name: /^Sources/ }).click();
-  const sources = page.getByRole("link", { name: /^Open the full map/ });
-  await sources.focus();
-  const href = await sources.getAttribute("href");
+  const exit = page.locator("[data-eye-exit]");
+  await exit.focus();
+  const href = await exit.getAttribute("href");
   expect(href).toContain("layers=livecams%2Cstaticcams%2Cplanes");
-  await sources.click();
+  await exit.click();
   await page.waitForURL(/\/app/);
-  // The rail is open on arrival, and the flag has left the address.
-  await expect(page.locator('aside.tn-rail[aria-label="Sources"]')).toBeVisible({ timeout: 30_000 });
-  await expect.poll(() => new URL(page.url()).searchParams.has("sources")).toBe(false);
+  // The arrival flag has left the address.
+  await expect.poll(() => new URL(page.url()).searchParams.has("eye"), { timeout: 30_000 }).toBe(false);
 });
 
-test("a phone keeps the console's thumb control: Sources first in the bar at the bottom left", async ({ page }) => {
+test("a phone holds the tools behind the menu at the top left, within thumb reach of nothing else", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/eye?place=westminster");
   await ready(page);
-  const sources = page.getByRole("button", { name: /^Sources/ });
-  const box = await sources.boundingBox();
+  const box = await menu(page).boundingBox();
   expect(box).not.toBeNull();
-  // Thumb reach: the left half of the screen, in the bottom third, 44 px or taller.
-  expect(box!.x).toBeLessThan(390 / 2);
-  expect(box!.y).toBeGreaterThan((844 * 2) / 3);
   expect(box!.height).toBeGreaterThanOrEqual(44);
-  // The places sit behind one button on a phone.
-  await page.getByRole("button", { name: "Places" }).click();
-  await expect(page.getByRole("navigation", { name: "Places" }).getByRole("link", { name: /Tower Bridge/ })).toBeVisible();
+  expect(box!.width).toBeGreaterThanOrEqual(44);
+  await menu(page).click();
+  await expect(page.getByRole("button", { name: "Sources & layers" })).toBeVisible();
+  // The places are in the search box.
+  await page.keyboard.press("Escape");
+  await page.getByRole("combobox", { name: "Search places, cameras and vessels" }).click();
+  await expect(page.getByRole("option", { name: /Tower Bridge/ })).toBeVisible();
 });

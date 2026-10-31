@@ -15,8 +15,10 @@
 //   /eye?lat=…&lon=…&z=…&heading=…&tilt=…   any spot, opened by the person on the console's
 //                                     map (components/console/EyePerson.tsx)
 // A preset that also names a position (`place=…&lat=…&lon=…`) opens that position under
-// the preset's name: `eyeLinkQuery` writes one, and any link kept from a view opens it.
+// the preset's name: nothing writes one now, and any link kept from a view still opens it.
 // Anything else, including a link with a broken number in it, opens the first preset.
+
+import { EYE_CITY_ROWS, type EyeCityRow } from "@/lib/eye/cities.data";
 
 /** One camera position. MapLibre's own terms: tilt is pitch, heading is bearing. */
 export interface EyeView {
@@ -78,9 +80,32 @@ export const EYE_PLACES: readonly EyePlace[] = [
 
 export const DEFAULT_PLACE: EyePlace = EYE_PLACES[0];
 
+/** A phone sees a narrower frame, so it stands a little further back. */
+const CITY_TALL_ZOOM_OUT = 0.2;
+const CITY_TILT = 58;
+
+function cityPlace([id, name, area, lat, lon, zoom, heading]: EyeCityRow): EyePlace {
+  return {
+    id,
+    name,
+    area,
+    wide: { lat, lon, zoom, tilt: CITY_TILT, heading },
+    tall: { lat, lon, zoom: zoom - CITY_TALL_ZOOM_OUT, tilt: CITY_TILT, heading },
+  };
+}
+
+/**
+ * The places the landing page's button offers, measured and framed by
+ * scripts/gen-eye-cities.mjs (docs/EYE_CITIES.md). A link can open them; the HUD's own list
+ * stays EYE_PLACES, the three framed by hand.
+ */
+export const EYE_CITIES: readonly EyePlace[] = EYE_CITY_ROWS.map(cityPlace);
+
+const PLACE_BY_ID = new Map<string, EyePlace>([...EYE_PLACES, ...EYE_CITIES].map((p) => [p.id, p]));
+
 export function placeById(id: string | null | undefined): EyePlace | undefined {
   if (!id) return undefined;
-  return EYE_PLACES.find((p) => p.id === id);
+  return PLACE_BY_ID.get(id);
 }
 
 /**
@@ -143,7 +168,7 @@ export function parseEyeLink(params: URLSearchParams, portrait: boolean): EyeTar
   if (place) {
     const framed = portrait ? place.tall : place.wide;
     if (!spot) return { kind: "place", place, view: framed };
-    // A place link that also names a camera position: the way back from the console.
+    // A place link that also names a camera position, kept from before 2026-10-31.
     // What it leaves out falls back to the place's own framing.
     return {
       kind: "place",
@@ -233,12 +258,6 @@ export interface ConsoleLinkOptions {
    * link is used.
    */
   scene?: boolean;
-  /**
-   * This view's own link, from `eyeLinkQuery`, carried as `eye=`. The console no longer
-   * reads it: its way back was removed for the person on its map, and `withoutArrivalFlags`
-   * drops the param from the address, so a link that carries one still opens cleanly.
-   */
-  back?: string;
 }
 
 /**
@@ -256,8 +275,6 @@ export function consoleHref(view: Pick<EyeView, "lat" | "lon" | "zoom">, opts: C
     p.set("base", "satellite");
   }
   if (opts.sources) p.set("sources", "open");
-  // Last, so the link still reads `lat…&z…` first and `sources=open` before it.
-  if (opts.back) p.set(EYE_RETURN_PARAM, opts.back);
   return `/app?${p.toString()}`;
 }
 
@@ -281,21 +298,3 @@ export function hasSavedBoard(storage: ItemReader | undefined, key: string): boo
   }
 }
 
-/**
- * The console link's param that carries this view's own link. Its value is a query string,
- * `eyeLinkQuery`'s. The console only drops it (lib/console/sourcesLink.ts).
- */
-export const EYE_RETURN_PARAM = "eye";
-
-/**
- * The query (no `?`) that reopens this view: the place or the camera it was opened
- * from, then the camera position, rounded and clamped as every link here is. A spot
- * names no target, only the position.
- */
-export function eyeLinkQuery(target: EyeTarget, view: EyeView): string {
-  const p = new URLSearchParams();
-  if (target.kind === "place") p.set("place", target.place.id);
-  else if (target.kind === "camera") p.set("cam", target.cameraId);
-  viewQuery(view, p);
-  return p.toString();
-}

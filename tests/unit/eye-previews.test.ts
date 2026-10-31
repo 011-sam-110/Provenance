@@ -6,7 +6,6 @@ import {
   ICON_PHONE,
   ICON_WIDE,
   PREVIEWS_LABEL,
-  PREVIEWS_PHONE_WORD,
   cardBoxBelow,
   closeLabel,
   openCardSide,
@@ -61,14 +60,13 @@ describe("a film or a recording ignores the choice", () => {
 
 describe("words", () => {
   it("names the switch and builds the labels from the camera's name", () => {
-    expect(PREVIEWS_LABEL).toBe("Previews");
-    expect(PREVIEWS_PHONE_WORD).toBe("Cameras");
+    expect(PREVIEWS_LABEL).toBe("Camera previews");
     expect(showLabel("Parliament Square")).toBe("Show Parliament Square");
     expect(closeLabel("Parliament Square")).toBe("Close Parliament Square");
   });
 
   it("never says live: a still is never called live", () => {
-    for (const w of [PREVIEWS_LABEL, PREVIEWS_PHONE_WORD, showLabel("Camera 1"), closeLabel("Camera 1")]) expect(w).not.toMatch(/\blive\b/i);
+    for (const w of [PREVIEWS_LABEL, showLabel("Camera 1"), closeLabel("Camera 1")]) expect(w).not.toMatch(/\blive\b/i);
   });
 });
 

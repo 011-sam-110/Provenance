@@ -3,6 +3,7 @@ import { overlay } from "@/lib/overlay";
 import type { WorldObject } from "@/lib/world";
 import { railTabStore } from "@/lib/console/railTab";
 import { sourcesRailStore } from "@/lib/console/sourcesRail";
+import { openPanel, readPanel } from "@/lib/console/consolePanel";
 
 const cam: WorldObject = {
   kind: "camera",
@@ -59,15 +60,33 @@ test("close() is a no-op (no emit) when already closed", () => {
   expect(n).toBe(0);
 });
 
-test("open() points the Sources rail at the Inspector tab and expands it", () => {
+test("open() brings up the Inspector panel", () => {
   overlay.open(cam);
   expect(railTabStore.get().tab).toBe("inspector");
   expect(sourcesRailStore.get().open).toBe(true);
 });
 
-test("close() returns the rail to the Sources tab but leaves it open", () => {
+test("close() from Sources goes back to Sources, and the panel stays open", () => {
+  // Someone reading a dossier they opened from the Sources list goes back to that list.
+  openPanel("sources");
   overlay.open(cam);
+  expect(readPanel()).toBe("inspector");
   overlay.close();
-  expect(railTabStore.get().tab).toBe("sources");
+  expect(readPanel()).toBe("sources");
   expect(sourcesRailStore.get().open).toBe(true);
+});
+
+test("close() of an object clicked with no panel open gives the map back", () => {
+  overlay.open(cam);
+  expect(readPanel()).toBe("inspector");
+  overlay.close();
+  expect(readPanel()).toBeNull();
+});
+
+test("open() over a tool lands on the object, and close() goes back to the tool", () => {
+  openPanel("draw");
+  overlay.open(cam);
+  expect(readPanel()).toBe("inspector");
+  overlay.close();
+  expect(readPanel()).toBe("draw");
 });

@@ -224,8 +224,8 @@ export default function ContextSwitcher() {
 
           {/* THE "DRAW AN AREA" ROW IS GONE FROM THIS MENU (2026-09-16), together
               with the button that used to sit under the areas list. Both were the
-              only doors into the gesture from this tab; Sam moved it to the
-              Inspector rail's toolbar, beside the search box and the map settings.
+              only doors into the gesture from this list; Sam moved it to its own
+              tool, which is the sidebar's Areas panel now.
 
               It was added here for a real gap — opening this menu to point the rail
               at an area, finding you have none, and having to close it and hunt for

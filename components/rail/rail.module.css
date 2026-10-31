@@ -1,0 +1,444 @@
+/*
+ * The shared sidebar. Geometry and colours are the design's (Provenance HUD v2), with
+ * Inter in place of the design's font stack so it matches the panels beside it.
+ *
+ * THE COLOURS ARE TOKENS ON .rail, and the base set is the design's dark one. `tone="dark"`
+ * stops there. `tone="skin"` adds .skin, which replaces the tokens only while the console is
+ * in its light skin, so the attribute on <html> alone decides and no script reads it.
+ *
+ * LABELS ARE ALWAYS IN THE DOM, laid out at their open width inside a row that clips them.
+ * Opening the column widens the clip, so nothing inside a row moves or reflows during the
+ * .18s, and each row keeps its accessible name in both states. 185px is the open row's
+ * inside: 232 less the column's padding and border (21) and the row's padding (26).
+ *
+ * WHAT A HOST CAN SET, on any ancestor: --rail-z and --rail-sheet-z, the stack order of the
+ * column and of the phone's sheet. The column is absolute, so the host's positioned box
+ * decides how tall it is: full height on God's eye view, under the navbar on the console.
+ * The phone's sheet is fixed, so no ancestor may carry a transform or a filter.
+ */
+
+.rail {
+  --rail-bg: rgba(10, 13, 16, 0.94);
+  --rail-line: rgba(255, 255, 255, 0.08);
+  --rail-plate-line: rgba(255, 255, 255, 0.12);
+  --rail-plate-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+  --rail-hover: rgba(255, 255, 255, 0.07);
+  --rail-active: rgba(255, 255, 255, 0.1);
+  --rail-text: #e8ecf0;
+  --rail-icon: #c4ccd4;
+  --rail-track-on: #e8ecf0;
+  --rail-track-off: #3a444e;
+  --rail-knob: #0b0d10;
+  --rail-ring: #e8ecf0;
+  --rail-tip-bg: rgba(12, 15, 19, 0.96);
+  --rail-tip-line: rgba(255, 255, 255, 0.1);
+  --rail-tip-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: var(--rail-z, 5);
+  box-sizing: border-box;
+  width: 64px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 10px;
+  background: var(--rail-bg);
+  border-right: 1px solid var(--rail-line);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  transition: width 0.18s ease;
+  pointer-events: auto;
+  color: var(--rail-text);
+  font-family: var(--tn-sans);
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+}
+
+.rail[data-expanded="true"] {
+  width: 232px;
+}
+
+/* The console's light skin, from the console's own tokens. Measured in
+   tests/e2e/side-rail.spec.ts: 4.5:1 or better over any map, on every row state.
+   The fallbacks are for a host outside `.tn-terminal`, where --tn-hover is not defined. */
+:global(:root):not([data-tnx-skin="dark"]) .skin {
+  --rail-bg: var(--tn-topbar-pill);
+  --rail-line: var(--tn-border);
+  --rail-plate-line: var(--tn-border-strong);
+  --rail-plate-shadow: var(--tn-shadow-sm);
+  --rail-hover: var(--tn-hover, rgba(15, 23, 42, 0.05));
+  /* The line's ink as a wash, the light mirror of the dark set's white at 10%. --tn-chip-bg
+     was tried first and cannot be seen: it is within 2% of the column's own colour. */
+  --rail-active: var(--tn-border);
+  --rail-text: var(--tn-text);
+  --rail-icon: var(--tn-text-muted);
+  --rail-track-on: var(--tn-text);
+  /* Not --tn-toggle-off: the knob is near white, and on that 20% wash it measures 1.5:1. */
+  --rail-track-off: var(--tn-text-faint);
+  --rail-knob: var(--tn-surface-solid);
+  --rail-ring: var(--tn-accent);
+  --rail-tip-bg: var(--tn-surface-solid);
+  --rail-tip-line: var(--tn-border-strong);
+  --rail-tip-shadow: var(--tn-shadow-sm);
+}
+
+.rule {
+  flex: none;
+  height: 1px;
+  margin: 6px 4px;
+  background: var(--rail-line);
+}
+
+/* The rows under the menu button. Closed, nothing can scroll, so a tooltip can leave the
+   column. Open, or in a window too short for the rows, a row must stay reachable. */
+.body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.rail[data-expanded="true"] .body {
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--rail-line) transparent;
+}
+
+.group {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.item {
+  position: relative;
+  flex: none;
+}
+
+.row {
+  -webkit-appearance: none;
+  appearance: none;
+  position: relative;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 44px;
+  padding: 0 13px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--rail-text);
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  overflow: hidden;
+  overflow: clip;
+  transition: background-color 0.12s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.row:active,
+.row[data-active="true"] {
+  background: var(--rail-active);
+}
+
+.row:focus-visible {
+  outline: 2px solid var(--rail-ring);
+  outline-offset: -2px;
+}
+
+.inner {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 185px;
+}
+
+.icon {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  color: var(--rail-icon);
+  font-size: 15px;
+  line-height: 1;
+}
+
+.icon svg {
+  display: block;
+  width: 18px;
+  height: 18px;
+}
+
+.label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 18px;
+  color: var(--rail-text);
+}
+
+.menu .icon {
+  color: var(--rail-text);
+}
+
+.menu .label {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.bars {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 18px;
+}
+
+.bars span {
+  height: 2px;
+  border-radius: 1px;
+  background: currentColor;
+}
+
+.track {
+  flex: none;
+  position: relative;
+  width: 26px;
+  height: 14px;
+  border-radius: 7px;
+  background: var(--rail-track-off);
+  transition: background-color 0.12s ease;
+}
+
+.track[data-on="true"] {
+  background: var(--rail-track-on);
+}
+
+.knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 5px;
+  background: var(--rail-knob);
+  transition: left 0.12s ease;
+}
+
+.track[data-on="true"] .knob {
+  left: 14px;
+}
+
+.badge {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--rail-text);
+}
+
+/* Closed, a badge sits on the icon's corner, because the end of the row is clipped. */
+.rail[data-expanded="false"] .badge {
+  position: absolute;
+  top: 5px;
+  right: 3px;
+}
+
+/* The closed column's labels. 23px from the row is 76px from the screen edge, the
+   sidebar's width + 12px that the pop-overs use, so a tip and a pop-over share a left edge. */
+.tip {
+  position: absolute;
+  top: 50%;
+  left: calc(100% + 23px);
+  transform: translateY(-50%);
+  padding: 6px 10px;
+  border: 1px solid var(--rail-tip-line);
+  border-radius: 8px;
+  background: var(--rail-tip-bg);
+  box-shadow: var(--rail-tip-shadow);
+  color: var(--rail-text);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 16px;
+  white-space: nowrap;
+  pointer-events: none;
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.rail[data-expanded="false"] .row:focus-visible + .tip {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* Hover only where a pointer can hover: on a touch screen it would stick after a tap. */
+@media (hover: hover) {
+  .row:hover {
+    background: var(--rail-hover);
+  }
+  .row[data-active="true"]:hover {
+    background: var(--rail-active);
+  }
+  .rail[data-expanded="false"] .item:hover .tip {
+    visibility: visible;
+    opacity: 1;
+  }
+}
+
+@media (max-height: 420px) {
+  .body {
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--rail-line) transparent;
+  }
+}
+
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--rail-sheet-z, 40) - 1);
+  background: rgba(8, 10, 13, 0.5);
+  animation: scrimIn 0.18s ease;
+}
+
+@keyframes scrimIn {
+  from {
+    opacity: 0;
+  }
+}
+
+/* The repo's narrow pass. There is no column here: the nav is a see-through strip that lets
+   every touch through to the map, with one 44px button on it. The button is the same element
+   in both states, so its focus and its aria-expanded never move to a second copy. */
+@media (max-width: 900px) {
+  /* First paint, before any script: neighbours must not start 64px to the right on a phone.
+     The component writes the same value inline after mount. */
+  :global(html):has(.rail) {
+    --rail-w: 0px;
+  }
+
+  .rail {
+    position: fixed;
+    z-index: var(--rail-sheet-z, 40);
+    padding-top: calc(12px + env(safe-area-inset-top, 0px));
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    padding-left: calc(10px + env(safe-area-inset-left, 0px));
+    background: transparent;
+    border-right-color: transparent;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    pointer-events: none;
+    /* The sheet's colour stays until its width has closed. */
+    transition:
+      width 0.18s ease,
+      background-color 0s linear 0.18s,
+      border-color 0s linear 0.18s;
+  }
+
+  .rail[data-expanded="true"] {
+    width: calc(232px + env(safe-area-inset-left, 0px));
+    background: var(--rail-bg);
+    border-right-color: var(--rail-line);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    pointer-events: auto;
+    transition: width 0.18s ease;
+  }
+
+  /* Hidden, not clipped: a row on a closed phone must not take focus or a tap. */
+  .menuItem ~ .rule,
+  .body {
+    visibility: hidden;
+    transition: visibility 0s linear 0.18s;
+  }
+
+  .rail[data-expanded="true"] .rule,
+  .rail[data-expanded="true"] .body {
+    visibility: visible;
+    transition: none;
+  }
+
+  .menuItem {
+    pointer-events: auto;
+    align-self: flex-start;
+  }
+
+  .rail[data-expanded="true"] .menuItem {
+    align-self: stretch;
+  }
+
+  /* The closed button floats over the map, so it brings its own ground. */
+  .rail[data-expanded="false"] .menu {
+    width: 44px;
+    padding: 0 12px;
+    border: 1px solid var(--rail-plate-line);
+    background: var(--rail-bg);
+    box-shadow: var(--rail-plate-shadow);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+  }
+
+  .tip {
+    display: none;
+  }
+}
+
+/* Forced colours drop backgrounds, and a switch's state is only a background and a position. */
+@media (forced-colors: active) {
+  .rail,
+  .rail[data-expanded="false"] .menu {
+    border: 1px solid CanvasText;
+  }
+  .row[data-active="true"] {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
+  }
+  .track {
+    border: 1px solid ButtonText;
+    background: Canvas;
+  }
+  .track[data-on="true"] {
+    background: Highlight;
+  }
+  .knob {
+    top: 1px;
+    background: ButtonText;
+    forced-color-adjust: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rail,
+  .rail[data-expanded="true"],
+  .row,
+  .track,
+  .knob,
+  .tip,
+  .rule,
+  .body,
+  .menuItem ~ .rule {
+    transition: none;
+  }
+  .scrim {
+    animation: none;
+  }
+}

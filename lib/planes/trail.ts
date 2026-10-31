@@ -3,12 +3,15 @@
 // A plane's trail = its recent ACTUAL positions (breadcrumbs dropped behind it)
 // plus one PROJECTED point ahead along its current heading, so the line both
 // shows where it has been and noses toward where it is going. Kept pure +
-// unit-tested; GlobeView renders the result as a faded path.
+// unit-tested; WorldMap draws the result (toTrailFC). This is the 12-point line. The longer
+// one the Full flight trail setting draws is lib/planes/fullHistory.ts, on the same path shape.
 
 export interface TrailPoint {
   lat: number;
   lon: number;
   altKm: number;
+  /** Epoch ms it was heard. The drawn path ignores it; Full flight trail starts from it. */
+  t?: number;
 }
 
 const EARTH_R_KM = 6371;

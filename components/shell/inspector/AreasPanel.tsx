@@ -1,14 +1,13 @@
 "use client";
-// The DRAW tool's panel — the areas you have, and the button that starts another.
+// The AREAS panel — the areas you have, and the button that starts another.
 //
 // IT MOVED HERE FROM THE SOURCES TAB (2026-09-16), and the move is Sam's second pass
-// at this surface. The block is now the body of the Inspector rail's Draw tool, so
+// at this surface. The block is now the body of the sidebar's Areas panel, so
 // "what areas do I have" and "draw another one" are in the same place — which they
 // were not while the list lived on the Sources tab and the only way in was a button
-// at the bottom of it. The rail carries the entry point on BOTH tabs; this panel
-// holds the state.
+// at the bottom of it.
 //
-// AND THE RAIL BUTTON NO LONGER STARTS A DRAW. It opens this panel; the gesture
+// AND THE SIDEBAR'S ROW DOES NOT START A DRAW. It opens this panel; the gesture
 // starts from the button below. Sam's words: "when you click the draw area button on
 // the inspector, it shouldnt just automatically start drawing an area. A user should
 // click draw area on that page." That is also what keeps the panel's promise honest —
@@ -130,7 +129,7 @@ export default function AreasPanel() {
               <input
                 className="tn-insp-rename"
                 // THE RAIL'S ESCAPE HANDLER STANDS DOWN FOR THIS, and the attribute is
-                // how it knows — see the ladder in InspectorRail.tsx. Escape in a field
+                // how it knows — see the ladder in ConsoleSidebar.tsx. Escape in a field
                 // being edited means "put it back", not "close the panel".
                 data-owns-escape=""
                 value={draft}

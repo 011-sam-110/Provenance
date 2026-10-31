@@ -19,18 +19,19 @@
 //                   reel, and the bare arm of the frame-time measurement.
 //   motion=orbit    start turning about the middle of the view (lib/eye/motion.ts).
 //   motion=fly      start gliding straight ahead along the heading, 220 m, then stop.
-//   record=1        for a recording: no buttons, the clock to the minute, and on a
-//                   9:16 screen every word kept out of the bands Instagram covers.
+//   record=1        for a recording: the film's own frame (EyeFilmFrame.tsx), no buttons,
+//                   the clock to the minute, and on a 9:16 screen every word kept out of
+//                   the bands Instagram covers.
 //   clock=manual    the move waits for window.__eye.step(ms) instead of the screen's
 //                   frames, so scripts/eye-record.mjs films it frame by frame. The
 //                   view then runs on the film's clock (lib/eye/motion.ts, filmClock):
 //                   the HUD's time and every age move only with the film's steps, no
 //                   feed is fetched again during the film, the cards' clips step with
-//                   it, and no card plays a stream.
-// With reduced motion asked for, no move runs and "Turn" is not offered.
+//                   it, and no card plays a stream. It draws the film's frame too.
+// With reduced motion asked for, no move runs and "Auto-turn" is not offered.
 //
-// PREVIEWS. The "Previews" switch beside Turn is on by default. Off, a camera is a small
-// icon that fetches no picture, and a tap opens that one camera's card (EyeOverlay,
+// PREVIEWS. The "Camera previews" switch in the sidebar is on by default. Off, a camera is a
+// small icon that fetches no picture, and a tap opens that one camera's card (EyeOverlay,
 // cameraIcon.ts). The choice is kept in this browser as { previews: boolean } under
 // tn.eye.v1 (lib/eye/previews.ts), read after mount and saved at each switch; it is not
 // in a link and not synced to an account. A recording (record=1) or a film
@@ -39,7 +40,7 @@
 // SOURCES. The Sources tray (EyeSources.tsx) switches this view's own seven kinds on and
 // off (cameras of both kinds, vessels, aircraft, TfL's works, incidents and closures) and
 // switches the console's other layers ON, which WorldMap draws and a paint pass here lays
-// flat (lib/eye/look.ts). What is on and what is pinned to the bar is remembered in this
+// flat (lib/eye/look.ts). What is on and what is pinned to the sidebar is remembered in this
 // browser (tn.eye.sources.v1, lib/eye/sources.ts), apart from the console's boards;
 // record=1 and clock=manual ignore it. This page never starts the console's variant spine
 // or hydrates its inspector store, so nothing here reaches tn.variant.v1 or tn.inspector.v1.
@@ -51,7 +52,7 @@ import { mapViewStore } from "@/lib/mapView";
 import { ACTIVE_LAYERS, layersStore, type LayerKey } from "@/lib/layers";
 import { signalsStore } from "@/lib/signals/store";
 import { BUILDING_LAYER } from "@/lib/map/buildings";
-import { consoleHref, eyeLinkQuery, hasSavedBoard, parseEyeLink, type EyeTarget, type EyeView } from "@/lib/eye/places";
+import { consoleHref, hasSavedBoard, parseEyeLink, type EyeTarget, type EyeView } from "@/lib/eye/places";
 import { PERSIST_KEY as BOARD_KEY } from "@/lib/variants/store";
 import MapBoundary from "@/components/map/MapBoundary";
 import MapFallback from "@/components/map/MapFallback";
@@ -79,21 +80,20 @@ import {
   type EyeMotion,
   type EyePose,
 } from "@/lib/eye/motion";
+import { markResults, type SearchResult } from "@/lib/eye/search";
 import {
   EYE_PREFS_KEY,
   EYE_PREFS_VERSION,
-  PREVIEWS_LABEL,
-  PREVIEWS_PHONE_WORD,
   previewsInEffect,
   readEyePrefs,
   type EyePrefs,
 } from "@/lib/eye/previews";
 import { creditsFromAttribution, fmtSpot } from "@/lib/eye/wording";
-import { ICON_SVG } from "@/lib/icons/svg";
 import { loadPersisted, savePersisted } from "@/lib/shell/persist";
 import { clipsSettled, stepClips } from "./cameraCard";
+import EyeFilmFrame from "./EyeFilmFrame";
 import EyeHud from "./EyeHud";
-import EyeOverlay, { type OverlayReport } from "./EyeOverlay";
+import EyeOverlay, { type OpenMark, type OverlayReport } from "./EyeOverlay";
 import { useSpotName } from "./useSpotName";
 import styles from "./eye.module.css";
 
@@ -139,7 +139,7 @@ interface Flags {
   overlay: boolean;
   record: boolean;
   manualClock: boolean;
-  /** False when reduced motion is asked for: no move, no "Turn". */
+  /** False when reduced motion is asked for: no move, no "Auto-turn". */
   canMove: boolean;
   /** The move the link asked for, if any. */
   motion: EyeMotion | null;
@@ -157,12 +157,9 @@ interface EyeHandle extends EyeDriver {
 }
 
 export default function EyeApp({
-  sourceCount,
   sources,
   leftOut,
 }: {
-  /** How many rows the console's Sources rail draws. */
-  sourceCount: number;
   /** The rows of the Sources tray (lib/eye/sourceRows.ts, built on the server). */
   sources: EyeSourceRow[];
   /** How many of the rail's rows this view leaves out, by reason. */
@@ -187,9 +184,11 @@ export default function EyeApp({
   const mapRef = useRef<maplibregl.Map | null>(null);
   const placeRef = useRef<(() => void) | null>(null);
   // A details panel (a vessel, an aircraft, a road notice) is open: the control hint steps
-  // aside, and the "?" that brings it back closes the panel (EyeHud, EyeOverlay).
+  // aside, and the sidebar's row that brings it back closes the panel (EyeHud, EyeOverlay).
   const [detailOpen, setDetailOpen] = useState(false);
   const detailCloseRef = useRef<(() => void) | null>(null);
+  // Open a camera's card or a vessel's panel, for the search.
+  const markRef = useRef<OpenMark | null>(null);
   // The film's clock under clock=manual, made when the link is read; else the wall clock.
   const film = useMemo(() => (flags.manualClock ? filmClock(Date.now()) : null), [flags.manualClock]);
   const clock = film ?? wallClock;
@@ -273,9 +272,8 @@ export default function EyeApp({
     const el = rootRef.current;
     if (!el) return;
     const stop = (e: Event) => {
-      // The pins on the bar open their own menu on a right-click (EyeSources.tsx), so a
-      // press on the controls is not the console's to catch.
-      if ((e.target as Element | null)?.closest?.("[data-eye-bar]")) return;
+      // The search box keeps the browser's own menu: paste is on it.
+      if ((e.target as Element | null)?.closest?.("[data-eye-search]")) return;
       e.preventDefault();
       e.stopPropagation();
     };
@@ -419,13 +417,11 @@ export default function EyeApp({
     savePersisted<EyePrefs>(EYE_PREFS_KEY, EYE_PREFS_VERSION, { previews: next });
   }, [previews]);
 
-  // The console at the spot on screen, read when a link to it is used. The Sources tray's
-  // "Open the full map" opens its Sources rail too (`sources`); "Exit to main dashboard"
-  // does not. A browser with no saved console board also gets this view's layers and
-  // ground, so the console does not open empty; one with a board keeps its own
-  // (lib/eye/places.ts). Both carry this view's own link as `eye=`, so the console can
-  // offer the way back to the same place, heading and tilt.
-  const consoleLink = useCallback((sources: boolean) => {
+  // The console at the spot on screen, read when "Exit to dashboard" is used. A browser with
+  // no saved console board also gets this view's layers and ground, so the console does not
+  // open empty; one with a board keeps its own (lib/eye/places.ts). The way back in is the person
+  // on the console's map.
+  const getDashboardHref = useCallback(() => {
     let storage: Storage | undefined;
     try {
       storage = window.localStorage;
@@ -438,15 +434,35 @@ export default function EyeApp({
       m && c
         ? { lat: c.lat, lon: c.lng, zoom: m.getZoom(), tilt: m.getPitch(), heading: m.getBearing() }
         : target?.view ?? { lat: 0, lon: 0, zoom: 2, tilt: 0, heading: 0 };
-    const opts = {
-      sources,
+    return consoleHref(live, {
+      sources: false,
       scene: !hasSavedBoard(storage, BOARD_KEY),
-      back: target ? eyeLinkQuery(target, live) : undefined,
-    };
-    return consoleHref(live, opts);
+    });
   }, [target]);
-  const getSourcesHref = useCallback(() => consoleLink(true), [consoleLink]);
-  const getDashboardHref = useCallback(() => consoleLink(false), [consoleLink]);
+
+  // What the search can find: what the scene holds now and is drawing.
+  const { cameras: reportedCameras, vessels: reportedVessels } = report;
+  const marks = useMemo(
+    () =>
+      markResults(
+        (reportedCameras ?? []).filter((c) => c.available && !hidden.has(c.live ? "livecams" : "staticcams")),
+        hidden.has("ships") ? [] : reportedVessels ?? [],
+      ),
+    [reportedCameras, reportedVessels, hidden],
+  );
+
+  // A camera or a vessel was picked. The move ends with the mark where its card or panel can
+  // be seen: a vessel in the middle of the view, a camera low in it, because its card stands
+  // above it on a stalk. flyTo honours reduced motion by itself and jumps.
+  const flyToMark = useCallback((r: Extract<SearchResult, { kind: "camera" | "vessel" }>) => {
+    const m = mapRef.current;
+    if (!m) return;
+    setMotion(null);
+    const h = m.getContainer().clientHeight;
+    const anchorY = r.kind === "camera" ? (h < 500 ? h - 90 : h * 0.68) : h / 2;
+    m.once("moveend", () => markRef.current?.(r.kind, r.id));
+    m.flyTo({ center: [r.lon, r.lat], zoom: Math.max(m.getZoom(), 15.5), offset: [0, anchorY - h / 2] });
+  }, []);
 
   const spotName = useSpotName(target, flags.manualClock || flags.record);
   const words = target ? titleFor(target, report.cameraName, spotName) : null;
@@ -466,7 +482,7 @@ export default function EyeApp({
       <div className={styles.map}>
         {openAt && gl && (
           <MapBoundary fallback={<MapFallback tone="dark" place={words?.title} />}>
-            {/* No Marks key: this view lists what is on screen in its own ledger. */}
+            {/* No Marks key: this view lists its sources in its own tray. */}
             <WorldMap openAt={openAt} onStyleReady={onStyleReady} legend={false} />
           </MapBoundary>
         )}
@@ -487,69 +503,53 @@ export default function EyeApp({
           placeRef={placeRef}
           onDetail={setDetailOpen}
           detailCloseRef={detailCloseRef}
+          markRef={markRef}
         />
       )}
-      {gl !== false && target && words && flags.overlay && (
-        <EyeHud
-          map={map}
-          start={target.view}
-          title={words.title}
-          area={words.area}
-          rows={report.rows}
-          refreshedAt={report.refreshedAt}
-          phoneNote={report.phoneNote}
-          credits={allCredits}
-          getSourcesHref={getSourcesHref}
-          // A recording or a film is a frame, not a tool: no way out is drawn on it.
-          getDashboardHref={flags.record || flags.manualClock ? undefined : getDashboardHref}
-          sourceCount={sourceCount}
-          sourceRows={sources}
-          leftOut={leftOut}
-          sources={picks}
-          dispatch={dispatch}
-          counts={report.counts}
-          london={inLondon(target.view.lat, target.view.lon)}
-          portrait={portrait}
-          placeId={target.kind === "place" ? target.place.id : undefined}
-          record={flags.record}
-          clock={clock}
-          detailOpen={detailOpen}
-          onHintOpen={() => detailCloseRef.current?.()}
-        >
-          {!flags.record && !flags.manualClock && (
-            <button
-              type="button"
-              role="switch"
-              aria-checked={previews}
-              className={`${styles.btn} ${styles.previewsBtn}`}
-              onClick={togglePreviews}
-            >
-              {/* No aria-label: the name is built from the words that are drawn. A wide screen
-                  draws the icon, "Previews" and the track (name "Previews"); a phone draws only
-                  "Cameras" (name "Cameras previews"), struck through while it is off. The words
-                  that are not drawn are display: none, so they are not in the name. */}
-              {/* A constant from lib/icons/svg.ts, never user text. */}
-              <span className={styles.previewsGlyph} aria-hidden dangerouslySetInnerHTML={{ __html: ICON_SVG["cam-still"] }} />
-              <span className={styles.previewsWord}>{PREVIEWS_LABEL}</span>
-              <span className={styles.previewsPhone}>
-                {PREVIEWS_PHONE_WORD}
-                <span className="tn-sr-only"> previews</span>
-              </span>
-              <span className={styles.previewsTrack} aria-hidden />
-            </button>
-          )}
-          {flags.canMove && (
-            <button
-              type="button"
-              className={styles.btn}
-              aria-pressed={motion === "orbit"}
-              onClick={() => setMotion((m) => (m === "orbit" ? null : "orbit"))}
-            >
-              Turn
-            </button>
-          )}
-        </EyeHud>
-      )}
+      {gl !== false && target && words && flags.overlay &&
+        (flags.record || flags.manualClock ? (
+          // A recording or a film is a frame, not a tool.
+          <EyeFilmFrame
+            map={map}
+            start={target.view}
+            title={words.title}
+            area={words.area}
+            rows={report.rows}
+            refreshedAt={report.refreshedAt}
+            phoneNote={report.phoneNote}
+            credits={allCredits}
+            record={flags.record}
+            clock={clock}
+          />
+        ) : (
+          <EyeHud
+            map={map}
+            start={target.view}
+            title={words.title}
+            area={words.area}
+            rows={report.rows}
+            refreshedAt={report.refreshedAt}
+            credits={allCredits}
+            getDashboardHref={getDashboardHref}
+            sourceRows={sources}
+            leftOut={leftOut}
+            sources={picks}
+            dispatch={dispatch}
+            london={inLondon(target.view.lat, target.view.lon)}
+            portrait={portrait}
+            clock={clock}
+            previews={previews}
+            onTogglePreviews={togglePreviews}
+            canTurn={flags.canMove}
+            turning={motion === "orbit"}
+            onToggleTurn={() => setMotion((m) => (m === "orbit" ? null : "orbit"))}
+            marks={marks}
+            onPickMark={flyToMark}
+            detailOpen={detailOpen}
+            onCloseDetail={() => detailCloseRef.current?.()}
+            onFrameChange={() => placeRef.current?.()}
+          />
+        ))}
     </main>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 // In-overlay body for a saved area.
 //
-// The Inspector tab is the INDEX — every area, one row each. This is the DETAIL, and
+// The Areas panel is the INDEX — every area, one row each. This is the DETAIL, and
 // it opens in the same right-edge dossier that a camera, a plane or a country opens
 // in. That split is the whole point: the rail stays a list you can scan, and the
 // panel that was already the app's detail surface goes on being it.

@@ -14,7 +14,7 @@ async function stampSeen(page: import("@playwright/test").Page) {
   });
 }
 
-const SEARCH_INPUT = "#stage-search input";
+const SEARCH_INPUT = "#tn-map-search";
 const RAIL = ".tn-rail";
 
 /** The keymap lives on the Shortcuts tab now, and the drawer always opens on Main. */
@@ -63,10 +63,9 @@ test("Ctrl+Q arms the draw tool, and the banner is what says so", async ({ page 
   // keys off the draw store alone, so it is the one thing that cannot be dismissed
   // while the map is still swallowing clicks, and it is now the only narration.
   //
-  // THE DRAW BUTTON ITSELF IS ELSEWHERE NOW — on the Inspector panel's tool rail
-  // (components/shell/inspector/InspectorRail.tsx) — and it arms the same gesture
-  // without opening anything either. tests/e2e/inspector-rail.spec.ts covers that
-  // door; this case is about the key.
+  // THE DRAW BUTTON ITSELF IS ELSEWHERE NOW — in the sidebar's Areas panel — and it arms
+  // the same gesture. tests/e2e/inspector-rail.spec.ts covers that door; this case is
+  // about the key.
   //
   // TWO OBSERVABLES, DELIBERATELY. The banner proves the app believes a draw is
   // running; the crosshair proves the MAP does. A shortcut that set the store and
@@ -83,12 +82,10 @@ test("Ctrl+Q arms the draw tool, and the banner is what says so", async ({ page 
   await expect(page.locator(".map-canvas canvas").first()).toHaveCSS("cursor", "crosshair");
 
   // And nothing opened anywhere: no panel on the map's edge (the stage rail is
-  // deleted), and the Inspector rail not even mounted — Ctrl+Q arms the map, it does
-  // not open the Sources rail or a tool on it. The Draw button there is an action
-  // rather than a tool, and it shows its own armed state only when the panel is on
-  // screen to show it with.
+  // deleted), and no panel beside the sidebar — Ctrl+Q arms the map, it does not open
+  // anything to do it with.
   await expect(page.locator(".tnx-maprail-pop-draw")).toHaveCount(0);
-  await expect(page.locator("#inspector-rail")).toHaveCount(0);
+  await expect(page.locator(RAIL)).toHaveCount(0);
 
   // Escape abandons the ring, and the banner goes with it — the gesture ending is
   // the only thing that can remove it.
@@ -105,10 +102,10 @@ test("a rebound key works, and it is still bound after a reload", async ({ page 
   await page.goto("/app");
   await openShortcuts(page);
 
-  const chip = page.getByRole("button", { name: /^Sources rail: Ctrl\+K/ });
+  const chip = page.getByRole("button", { name: /^Sources panel: Ctrl\+K/ });
   await chip.click();
   await page.keyboard.press("Control+g");
-  await expect(page.getByRole("button", { name: /^Sources rail: Ctrl\+G/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Sources panel: Ctrl\+G/ })).toBeVisible();
 
   await page.keyboard.press("Escape"); // shut the settings drawer
   await expect(page.locator(RAIL)).toHaveCount(0);
@@ -140,8 +137,8 @@ test("taking the only key off another action is REFUSED, and says which one", as
 
   const err = page.locator(".tn-keymap-err");
   await expect(err).toBeVisible();
-  await expect(err).toContainText("Sources rail");
-  await expect(page.getByRole("button", { name: /^Sources rail: Ctrl\+K/ })).toBeVisible();
+  await expect(err).toContainText("Sources panel");
+  await expect(page.getByRole("button", { name: /^Sources panel: Ctrl\+K/ })).toBeVisible();
 });
 
 test("an armed chip owns the arrow keys — they do not switch tab", async ({ page }) => {
@@ -193,7 +190,7 @@ test("the drawer opens on Main, and the tabs are reachable by keyboard", async (
   await page.keyboard.press("ArrowUp");
   await page.keyboard.press("ArrowUp");
   await expect(page.getByRole("tab", { name: "Shortcuts" })).toHaveAttribute("aria-selected", "true");
-  await expect(page.getByRole("button", { name: /^Sources rail: Ctrl\+K/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Sources panel: Ctrl\+K/ })).toBeVisible();
 
   // ←/→ still step, because below 540px this same list is a horizontal strip and a user
   // who learned one axis must not find it dead at the other width.
@@ -208,6 +205,8 @@ test("the rail is a vertical tablist, and says so only while it is one", async (
 
   const rail = page.getByRole("tablist", { name: "Settings sections" });
   await expect(rail).toHaveAttribute("aria-orientation", "vertical");
+  // The drawer slides in, and two boxes read one after the other during that slide disagree.
+  await page.locator(".tn-settings").evaluate((el) => Promise.all(el.getAnimations().map((a) => a.finished)));
   // The rail sits BESIDE the panel, not above it — the whole point of the layout. Comparing
   // boxes rather than asserting a width is what makes this survive a retune of either.
   const railBox = await rail.boundingBox();

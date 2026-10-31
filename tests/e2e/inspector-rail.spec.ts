@@ -1,16 +1,15 @@
 import { test, expect, type Page } from "@playwright/test";
 
-// The INSPECTOR TOOL RAIL: Search, View, Map settings and Draw, on the right edge of
-// the Sources rail's INSPECTOR tab. It replaces tests/e2e/map-rail.spec.ts, which
-// covered the two icon groups that used to float on the map's right edge — those
-// buttons moved here on 2026-09-16, and Draw an area moved with them off the Sources
-// tab. The cases below are that file's assertions repointed at the new surface, plus
-// the two claims the move itself makes: that a tool TAKES the panel rather than
-// covering it, and that the map's edge is now plain map.
+// THE INSPECTOR AND ITS TOOLS: Map settings, Areas and Notifications, opened from the
+// console's sidebar. It replaced tests/e2e/map-rail.spec.ts, which covered the two icon groups
+// that used to float on the map's right edge, and until 2026-10-31 these were buttons on a tool
+// column on the Sources panel. The cases below are those assertions repointed at the rows,
+// plus the claim the moves make: a tool TAKES the panel rather than covering it, and the map's
+// edge is plain map. tests/e2e/console-sidebar.spec.ts holds the sidebar and the search pill.
 //
 // WHY THIS FILE EXISTS AT ALL. vitest here is `environment: "node"` and collects
 // `tests/unit/**/*.test.ts` only — .tsx is not collected and no React testing library
-// is installed, so the rail's *rendered* behaviour cannot be tested anywhere else.
+// is installed, so the rendered behaviour cannot be tested anywhere else.
 // tests/unit/inspector-rail.test.ts holds the pure reducers; everything that needs a
 // DOM, a focus ring or a real map is here.
 //
@@ -20,9 +19,9 @@ import { test, expect, type Page } from "@playwright/test";
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
     window.localStorage.setItem("tn.terminal.boot.v1", JSON.stringify({ v: 1, d: { seenVersion: 1 } }));
-    // ONE AREA, so the Sources tab has an areas LIST — which is also the only
-    // remaining way to open an object without depending on what the globe happens to
-    // be drawing. Its row calls overlay.open(), which is the door a map click uses.
+    // ONE AREA, so the Areas panel has a LIST — which is also the only remaining way to
+    // open an object without depending on what the globe happens to be drawing. Its row
+    // calls overlay.open(), which is the door a map click uses.
     //
     // SEEDED ONLY IF ABSENT, and that guard is load-bearing for the colour test: this
     // script runs on EVERY navigation, reloads included, so an unconditional write
@@ -57,130 +56,86 @@ test.beforeEach(async ({ page }) => {
   await expect(page.locator(".map-canvas")).toHaveCount(1);
 });
 
-const RAIL = "#inspector-rail";
-
-/** Open the console's left rail and point it at the Inspector tab. */
-async function openInspector(page: Page) {
-  await page.keyboard.press("ControlOrMeta+k");
-  await expect(page.locator(".tn-rail")).toBeVisible();
-  await page.click("#tn-rail-tab-inspector");
-  await expect(page.locator(RAIL)).toBeVisible();
-}
-
-/** The rail's slots, in render order, as the store's own ids. */
-function slots(page: Page): Promise<string[]> {
-  return page.locator(`${RAIL} button`).evaluateAll((els) =>
-    els.map((el) => (el as HTMLElement).dataset.slot ?? "?"),
-  );
-}
+const NAV = 'nav[data-rail="console"]';
+const row = (page: Page, id: string) => page.locator(`${NAV} [data-rail-entry="${id}"]`);
+const title = (page: Page) => page.locator(".tn-rail .tn-insp-tool-title");
 
 /**
  * Select an object through the UI. The seeded area's row is the only opener that does
- * not depend on what the globe happens to be drawing, and since the areas block moved
- * onto the rail it lives in the Draw tool's panel — its own test asserts that.
- *
- * The row calls overlay.open(), which points the rail at the Inspector AND closes any
- * open tool (see lib/overlay.ts), so this lands on the object's own view with the eye
- * filled in.
+ * not depend on what the globe happens to be drawing, and it lives in the Areas panel.
+ * The row calls overlay.open(), which brings up the Inspector AND closes any open tool
+ * (see lib/overlay.ts), so this lands on the object's own view.
  */
 async function selectArea(page: Page) {
-  await page.click(`${RAIL} .tn-insp-rail-btn-draw`);
+  await row(page, "draw").click();
   await expect(page.locator(".tn-insp-row")).toHaveCount(1);
-  await page.click(".tn-insp-row");
+  await page.click(".tn-insp-row-main");
   await expect(page.locator(".tn-inspector[role=dialog]")).toHaveCount(1);
 }
 
-test("the rail is one toolbar, it is on BOTH tabs, and the eye waits for a selection", async ({
-  page,
-}) => {
-  // The rail belongs to the PANEL, not to the Inspector tab — Sam's second pass:
-  // "the buttons on the right should exist on both sources and inspector".
-  await page.keyboard.press("ControlOrMeta+k");
-  await expect(page.locator(".tn-rail")).toBeVisible();
-  await expect(page.locator(RAIL)).toBeVisible();
-  await expect(page.locator("#tn-rail-tab-sources")).toHaveAttribute("aria-selected", "true");
+test("the sidebar is a nav, never a dialog, and Inspector is there with nothing selected", async ({ page }) => {
+  // A nav, never role=dialog: ConsoleShell's global keydown handler early returns while
+  // any dialog is mounted, so a dialog-flavoured column would kill the console's Escape
+  // ladder app-wide.
+  const nav = page.locator(NAV);
+  await expect(nav).toHaveAttribute("aria-label", "Dashboard tools");
+  await expect(page.locator('[role="dialog"]')).toHaveCount(0);
 
-  await page.click("#tn-rail-tab-inspector");
-  const rail = page.locator(RAIL);
-  // role=toolbar, never role=dialog: ConsoleShell's global keydown handler early
-  // returns while any dialog is mounted, so a dialog-flavoured rail would kill the
-  // console's Escape ladder app-wide.
-  await expect(rail).toHaveAttribute("role", "toolbar");
+  const ids = await nav.locator("[data-rail-entry]").evaluateAll((els) =>
+    els.map((el) => (el as HTMLElement).dataset.railEntry ?? "?"),
+  );
+  expect(ids).toEqual(["sources", "inspector", "rule-map", "settings", "draw", "rule-notify", "alerts", "controls"]);
 
-  // FOUR, and the names are asserted separately so a missing one reads as a missing
-  // one. Draw and Alerts each start a group and open panels like the rest.
-  expect(await slots(page)).toEqual(["search", "settings", "draw", "alerts"]);
-  await expect(rail.getByRole("button", { name: "Search for a place" })).toBeVisible();
-  await expect(rail.getByRole("button", { name: "Map settings" })).toBeVisible();
-  await expect(rail.getByRole("button", { name: "Draw an area" })).toBeVisible();
-  await expect(rail.getByRole("button", { name: "Notifications" })).toBeVisible();
-  // Sam's rule from the mockups: the eye APPEARS when a map click gives it something
-  // to show. An eye with nothing to view is a button that opens an empty pane.
-  await expect(rail.getByRole("button", { name: "View" })).toHaveCount(0);
+  // The row says what it is even with nothing to show. It used to wait for a selection,
+  // on the grounds that an eye with nothing to view opens an empty pane. Sam asked for a
+  // place you can see, and the pane says what to do.
+  await row(page, "inspector").click();
+  await expect(title(page)).toHaveText("Inspector");
+  await expect(page.locator(".tn-inspector-empty")).toContainText("Click something on the map to inspect it.");
+  await expect(row(page, "inspector")).toHaveAttribute("aria-expanded", "true");
+  await expect(row(page, "inspector")).toHaveAttribute("aria-controls", "tn-console-panel");
 });
 
-test("a rail button clicked from the Sources tab lands on the Inspector with that tool", async ({
-  page,
-}) => {
-  // "If any of the buttons on the right rail are clicked, it should automatically
-  // take you to the inspector page, and that button." The rail is mounted outside
-  // both tab panels precisely so this can be true from either of them.
+test("a row clicked from Sources lands on that tool", async ({ page }) => {
   await page.keyboard.press("ControlOrMeta+k");
-  await expect(page.locator("#tn-rail-tab-sources")).toHaveAttribute("aria-selected", "true");
+  await expect(title(page)).toHaveText("Sources");
 
-  await page.click(`${RAIL} .tn-insp-rail-btn-settings`);
-  await expect(page.locator("#tn-rail-tab-inspector")).toHaveAttribute("aria-selected", "true");
-  await expect(page.locator(".tn-insp-switch")).toHaveCount(2);
-  await expect(page.locator(`${RAIL} .tn-insp-rail-btn-settings`)).toHaveAttribute("aria-pressed", "true");
+  await row(page, "settings").click();
+  await expect(title(page)).toHaveText("Map settings");
+  await expect(page.locator(".tn-insp-switch").first()).toBeVisible();
+  await expect(row(page, "settings")).toHaveAttribute("data-active", "true");
+  await expect(row(page, "sources")).not.toHaveAttribute("data-active", "true");
 
-  // And it is not a one-off for one button: Draw behaves the same way, which is the
-  // path a user takes most often from the Sources tab.
-  await page.click("#tn-rail-tab-sources");
-  await expect(page.locator("#tn-rail-tab-sources")).toHaveAttribute("aria-selected", "true");
-  await page.click(`${RAIL} .tn-insp-rail-btn-draw`);
-  await expect(page.locator("#tn-rail-tab-inspector")).toHaveAttribute("aria-selected", "true");
+  await row(page, "sources").click();
+  await row(page, "draw").click();
+  await expect(title(page)).toHaveText("Areas");
   await expect(page.locator(".tn-insp-draw")).toBeVisible();
 });
 
 test("a tool TAKES the panel body — it is not a card over the object", async ({ page }) => {
-  await openInspector(page);
-  const rail = page.locator(RAIL);
-
   // Open an object first, so there is something a card could have covered.
   await selectArea(page);
+  await expect(title(page)).toHaveText("Inspector");
 
-  // The eye is here now, and it is the current view.
-  expect(await slots(page)).toEqual(["search", "view", "settings", "draw", "alerts"]);
-  await expect(rail.getByRole("button", { name: "View" })).toHaveAttribute("aria-pressed", "true");
-
-  // Open Map settings. Option D, and the assertion is an ABSENCE on purpose: if the
-  // tool were a card over the dossier (option A, the first mockup) the dialog would
-  // still be mounted underneath it, and every aria assertion about the tool would
-  // still pass. The panel shows one thing at a time.
-  await rail.getByRole("button", { name: "Map settings" }).click();
-  await expect(page.locator(".tn-insp-switch")).toHaveCount(2);
+  // Option D, and the assertion is an ABSENCE on purpose: if the tool were a card over the
+  // dossier (option A, the first mockup) the dialog would still be mounted underneath it,
+  // and every aria assertion about the tool would still pass.
+  await row(page, "settings").click();
+  await expect(page.locator(".tn-insp-switch").first()).toBeVisible();
   await expect(page.locator(".tn-inspector[role=dialog]")).toHaveCount(0);
 
   // Opening another tool REPLACES it rather than stacking.
-  await rail.getByRole("button", { name: "Search for a place" }).click();
-  await expect(page.locator("#inspector-search input")).toBeVisible();
+  await row(page, "alerts").click();
+  await expect(title(page)).toHaveText("Notifications");
   await expect(page.locator(".tn-insp-switch")).toHaveCount(0);
 
-  // Clicking the open tool again puts the object's view back. THAT IS THE ONLY WAY
-  // OUT BESIDES ESCAPE, since the ✕ left this panel's head on Sam's ask — it competed
-  // with the title it sat beside, and the button that opened the tool is the control
-  // the user already has in hand.
-  await expect(page.locator(".tn-insp-tool-close")).toHaveCount(0);
-  await rail.getByRole("button", { name: "Search for a place" }).click();
+  // The Inspector's own row brings the object back.
+  await row(page, "inspector").click();
   await expect(page.locator(".tn-inspector[role=dialog]")).toHaveCount(1);
-  await expect(rail.getByRole("button", { name: "View" })).toHaveAttribute("aria-pressed", "true");
 });
 
-test("Map settings: a projection pair, three basemap radios, and the map follows", async ({
-  page,
-}) => {
-  await openInspector(page);
-  await page.locator(RAIL).getByRole("button", { name: "Map settings" }).click();
+test("Map settings: a projection pair, three basemap radios, and the map follows", async ({ page }) => {
+  await row(page, "settings").click();
   const tool = page.locator(".tn-insp-tool");
 
   // A SEGMENTED PAIR NOW, both states visible, the current one checked. The first
@@ -200,9 +155,9 @@ test("Map settings: a projection pair, three basemap radios, and the map follows
   // offering either would mean the removal was incomplete.
   await expect(tool.getByRole("button", { name: /^(Dark|Light)$/ })).toHaveCount(0);
 
-  // A RADIOGROUP, not a strip of chips — the rail is a column now and each basemap is
-  // a full-width row. Full names, so the abbreviations the lateral strip needed are
-  // gone with it (lib/console/viewControls.ts).
+  // A RADIOGROUP, not a strip of chips, and each basemap is a full-width row. Full names,
+  // so the abbreviations the lateral strip needed are gone with it
+  // (lib/console/viewControls.ts).
   //
   // SCOPED TO ITS OWN GROUP, since the projection above is a radiogroup too: an
   // unscoped `getByRole("radio")` would count five and pass while one of them was
@@ -226,72 +181,36 @@ test("Map settings: a projection pair, three basemap radios, and the map follows
   });
 });
 
-test("Search opens focused, Escape hands focus back, and ; opens the whole panel", async ({ page }) => {
-  await openInspector(page);
-  const rail = page.locator(RAIL);
-  const input = page.locator("#inspector-search input");
-
-  await rail.getByRole("button", { name: "Search for a place" }).click();
-  await expect(input).toBeFocused();
-
-  // Escape closes the TOOL and hands focus back to the button that opened it. It must
-  // not close anything else on the same press — the rail's handler is capture-phase
-  // and stops propagation precisely so one key does one thing.
-  await page.keyboard.press("Escape");
-  await expect(input).toHaveCount(0);
-  await expect(rail.getByRole("button", { name: "Search for a place" })).toBeFocused();
-
-  // ";" is the search shortcut and it has to get all the way here: open the collapsed
-  // rail, point it at the Inspector, open the tool and land in the input. It was "/"
-  // until the keymap landed; "/" shadows Firefox's quick-find, which is a browser
-  // default worth leaving alone now that a plain ";" does the job.
-  // tests/e2e/shortcuts.spec.ts owns the rest of the keymap; this case stays here
-  // because it is about the RAIL — that the shortcut reaches the tool, not just the
-  // store.
-  await page.click(".tn-rail-collapse");
-  await expect(page.locator(".tn-rail-fab")).toBeVisible();
-  // Pressed at the BODY rather than after clicking the map, and that is not
-  // squeamishness: a bare map click selects whatever is under it and opens a dialog,
-  // and ConsoleShell hands Escape back to any mounted dialog on purpose.
-  await page.locator("body").press(";");
-  await expect(page.locator(".tn-rail")).toBeVisible();
-  await expect(page.locator("#tn-rail-tab-inspector")).toHaveAttribute("aria-selected", "true");
-  await expect(input).toBeFocused();
-  // And the ";" itself must not be typed into the field it just opened.
-  await expect(input).toHaveValue("");
-});
-
 test("Escape closes the tool first, then the object", async ({ page }) => {
   // The ladder, end to end, because it is asserted in two files and lives in three:
-  // lib/map/aoi.ts owns rung 1 for a live draw, InspectorRail owns rung 2, and
+  // lib/map/aoi.ts owns rung 1 for a live draw, ConsoleSidebar owns rung 2, and
   // InspectorPanel plus ConsoleShell own rung 3. A single unsequenced press that did
   // both jobs would be the bug — closing the tool AND dropping the user's selection.
-  await openInspector(page);
   await selectArea(page);
 
-  await page.locator(RAIL).getByRole("button", { name: "Search for a place" }).click();
-  await expect(page.locator("#inspector-search input")).toBeVisible();
+  await row(page, "alerts").click();
+  await expect(title(page)).toHaveText("Notifications");
 
   await page.keyboard.press("Escape");
-  await expect(page.locator("#inspector-search input")).toHaveCount(0);
+  await expect(title(page)).toHaveText("Inspector");
   await expect(page.locator(".tn-inspector[role=dialog]")).toHaveCount(1);
+  // Focus goes back to the row that opened the tool.
+  await expect(row(page, "alerts")).toBeFocused();
 
   await page.keyboard.press("Escape");
   await expect(page.locator(".tn-inspector[role=dialog]")).toHaveCount(0);
-  // A closed inspection returns the rail to Sources, which is what the ✕ says it does.
-  await expect(page.locator("#tn-rail-tab-sources")).toHaveAttribute("aria-selected", "true");
+  // A closed inspection goes back to what it replaced, and the area came from Areas.
+  await expect(title(page)).toHaveText("Areas");
 });
 
-test("Draw opens a panel, and the gesture starts from the button inside it", async ({ page }) => {
+test("Areas opens a panel, and the gesture starts from the button inside it", async ({ page }) => {
   // TWO CLICKS, ON PURPOSE. Sam: "when you click the draw area button on the
   // inspector, it shouldnt just automatically start drawing an area. A user should
-  // click draw area on that page." So the rail's button is the way IN to the tool,
-  // and the tool's own button arms the map.
-  await openInspector(page);
+  // click draw area on that page." So the row is the way IN to the tool, and the
+  // tool's own button arms the map.
 
-  // The Sources tab no longer carries the areas block at all — it moved onto the
-  // rail with the button that creates them.
-  await page.click("#tn-rail-tab-sources");
+  // The Sources panel does not carry the areas block at all.
+  await row(page, "sources").click();
   await expect(page.locator(".tn-insp-draw")).toHaveCount(0);
   await expect(page.locator(".tn-insp-row")).toHaveCount(0);
   // ...nor does the context switcher's menu, which lost its action row in the first
@@ -300,16 +219,15 @@ test("Draw opens a panel, and the gesture starts from the button inside it", asy
   await expect(page.locator(".tn-ctxbar-draw")).toHaveCount(0);
   await expect(page.getByRole("menuitem", { name: /Draw an area/ })).toHaveCount(0);
   await page.keyboard.press("Escape");
-
-  await page.click("#tn-rail-tab-inspector");
-  const draw = page.locator(`${RAIL} .tn-insp-rail-btn-draw`);
+  // That press closed the menu and nothing else.
+  await expect(title(page)).toHaveText("Sources");
 
   // FIRST CLICK — the panel, and nothing armed. The banner over the map is the
   // observable that would appear if the gesture had started, so its absence is the
-  // assertion that the rail button no longer arms anything.
-  await draw.click();
-  await expect(page.locator(`${RAIL} .tn-insp-rail-btn-draw`)).toHaveAttribute("aria-pressed", "true");
-  await expect(page.locator(".tn-insp-tool-title")).toHaveText(/Draw an area/i);
+  // assertion that the row does not arm anything.
+  await row(page, "draw").click();
+  await expect(row(page, "draw")).toHaveAttribute("aria-expanded", "true");
+  await expect(title(page)).toHaveText("Areas");
   await expect(page.locator(".tn-drawbanner")).toHaveCount(0);
   await expect(page.locator(".map-canvas canvas").first()).not.toHaveCSS("cursor", "crosshair");
 
@@ -330,7 +248,7 @@ test("Draw opens a panel, and the gesture starts from the button inside it", asy
   await expect(page.locator(".map-canvas canvas").first()).toHaveCSS("cursor", "crosshair");
 
   // Escape abandons the ring — and it has to do that rather than close the panel or
-  // drop the map selection, which is the ladder the rail's capture-phase handler
+  // drop the map selection, which is the ladder the sidebar's capture-phase handler
   // stands down for.
   await page.keyboard.press("Escape");
   await expect(page.locator(".tn-drawbanner")).toHaveCount(0);
@@ -340,11 +258,10 @@ test("Draw opens a panel, and the gesture starts from the button inside it", asy
 
 test("the map's right edge is plain map now, and the ⓘ attribution is not", async ({ page }) => {
   // Two assertions that have to travel together. The stage rail, the zoom/compass
-  // cluster and the centred search box are all gone from the stage — the map's own
-  // controls live on the Inspector tab now. The attribution was NOT removed, because
-  // OpenStreetMap/OpenMapTiles (ODbL), Esri and OpenTopoMap all require the credit
-  // (lib/map/attribution.ts); deleting it would be a licensing regression that no
-  // other test would notice.
+  // cluster and the centred search box are all gone from the right of the stage. The
+  // attribution was NOT removed, because OpenStreetMap/OpenMapTiles (ODbL), Esri and
+  // OpenTopoMap all require the credit (lib/map/attribution.ts); deleting it would be a
+  // licensing regression that no other test would notice.
   await expect(page.locator("#map-rail")).toHaveCount(0);
   await expect(page.locator(".tnx-maprail")).toHaveCount(0);
   await expect(page.locator(".maplibregl-ctrl-group")).toHaveCount(0);
@@ -360,22 +277,20 @@ test("the map's right edge is plain map now, and the ⓘ attribution is not", as
   await expect(btn).toHaveCount(1);
   await expect(btn).toHaveCSS("background-repeat", "no-repeat");
 
-  // AND THE RAIL SURVIVES THE NARROW PASS. The panel becomes a bottom sheet at this
-  // width; hiding the tool column with it would take the search box, the map settings
-  // and the only draw entry point off a phone — the strictly bigger loss the retired
-  // stage rail's own mobile pass already argued about once.
-  await openInspector(page);
-  const search = page.locator(`${RAIL} .tn-insp-rail-btn-search`);
-  await expect(search).toBeVisible();
-  const box = await search.boundingBox();
-  if (!box) throw new Error("the search button has no box on a phone");
-  expect(box.width).toBeGreaterThanOrEqual(40);
-  expect(box.height).toBeGreaterThanOrEqual(40);
+  // AND EVERY TOOL SURVIVES THE NARROW PASS. Hiding them would take the map settings and
+  // the only draw entry point off a phone, the strictly bigger loss the retired stage
+  // rail's own mobile pass already argued about once.
+  await page.locator(`${NAV} [data-rail-menu]`).click();
+  for (const id of ["sources", "inspector", "settings", "draw", "alerts", "controls"]) {
+    const box = await row(page, id).boundingBox();
+    if (!box) throw new Error(`the ${id} row has no box on a phone`);
+    expect(box.height, id).toBeGreaterThanOrEqual(44);
+    expect(box.width, id).toBeGreaterThanOrEqual(44);
+  }
 });
 
-test("areas are renamed from the Draw panel, and Escape puts it back", async ({ page }) => {
-  await openInspector(page);
-  await page.click(`${RAIL} .tn-insp-rail-btn-draw`);
+test("areas are renamed from the Areas panel, and Escape puts it back", async ({ page }) => {
+  await row(page, "draw").click();
   await page.waitForSelector(".tn-insp-row-edit", { timeout: 10_000 });
   await expect(page.locator(".tn-insp-label")).toHaveText("West Pacific");
 
@@ -386,7 +301,7 @@ test("areas are renamed from the Draw panel, and Escape puts it back", async ({ 
   await expect(field).toHaveValue("West Pacific");
 
   // ESCAPE PUTS THE OLD NAME BACK AND LEAVES THE PANEL OPEN. That second half is the
-  // rung-0 case in the rail's ladder: its Escape handler is capture phase, so without
+  // rung-0 case in the sidebar's ladder: its Escape handler is capture phase, so without
   // the stand-down this key would close the whole panel instead of the field.
   await field.fill("Cancelled name");
   await page.keyboard.press("Escape");
@@ -412,105 +327,55 @@ test("areas are renamed from the Draw panel, and Escape puts it back", async ({ 
   await expect(page.locator("[data-tn-area-label]")).toHaveValue("North Atlantic watch");
 
   // A BLANK NAME REVERTS rather than saving, because the label is the only thing
-  // identifying the row in four places at once.
-  await page.click(".tn-inspector-close");
-  await page.click(`${RAIL} .tn-insp-rail-btn-draw`);
+  // identifying the row in four places at once. "Clear" goes back to the Areas list.
+  await page.getByRole("button", { name: "Clear this selection" }).click();
+  await expect(title(page)).toHaveText("Areas");
   await page.click(".tn-insp-row-edit");
   await page.locator(".tn-insp-rename").fill("   ");
   await page.keyboard.press("Enter");
   await expect(page.locator(".tn-insp-label")).toHaveText("North Atlantic watch");
 });
 
-test("the rail's marks are big enough to hit and to read", async ({ page }) => {
-  // Sam asked for the icons "50% bigger" and the number is 18px → 27px, but the
-  // assertion is on the RENDERED box rather than on the token: a future rule that
-  // sizes `.tn-insp-rail-btn svg` from somewhere else would leave the token correct
-  // and the mark small, which is the failure this is for.
-  await openInspector(page);
-  const glyph = page.locator(`${RAIL} .tn-insp-rail-btn-search svg`);
-  const box = await glyph.boundingBox();
-  if (!box) throw new Error("the search glyph has no box");
-  expect(box.width).toBeGreaterThanOrEqual(26);
-  expect(box.height).toBeGreaterThanOrEqual(26);
-
-  // And the button around it grew with the mark, or the fill would be a hairline.
-  const btn = await page.locator(`${RAIL} .tn-insp-rail-btn-search`).boundingBox();
-  if (!btn) throw new Error("the search button has no box");
-  expect(btn.width).toBeGreaterThanOrEqual(40);
-  expect(box.width / btn.width).toBeLessThan(0.72);
-});
-
-/** Every rail button, measured against the rail's centre (inside its left border). */
-function measureRail(page: Page) {
-  return page.locator(RAIL).evaluate((rail) => {
-    const rb = rail.getBoundingClientRect();
-    const bl = parseFloat(getComputedStyle(rail).borderLeftWidth);
-    const cx = rb.x + bl + (rb.width - bl) / 2;
-    return [...rail.querySelectorAll<HTMLElement>(".tn-insp-rail-btn")].map((b) => {
-      const r = b.getBoundingClientRect();
-      const ink = [...b.querySelectorAll("svg path, svg circle, svg line")].map((s) =>
-        s.getBoundingClientRect(),
-      );
+test("every mark on the closed sidebar is centred in its column", async ({ page }) => {
+  // Leon, on the column these rows replaced: "centre the elements horizontally on the bar".
+  // The drawn INK's centre is measured against the 64px column's centre, within 1px. The
+  // column's right border is 1px, so the centre of what you can see is 31.5.
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const rows = await page.locator(NAV).evaluate((nav) => {
+    const n = nav.getBoundingClientRect();
+    const cx = n.x + (n.width - 1) / 2;
+    return [...nav.querySelectorAll<HTMLElement>("[data-rail-entry] svg")].map((svg) => {
+      const ink = [...svg.querySelectorAll("path, circle, line")].map((s) => s.getBoundingClientRect());
       const left = Math.min(...ink.map((k) => k.left));
       const right = Math.max(...ink.map((k) => k.right));
-      const name = b.querySelector<HTMLElement>(".tn-insp-rail-name");
-      const nr = name?.getBoundingClientRect();
-      return {
-        slot: b.dataset.slot ?? "?",
-        aria: b.getAttribute("aria-label") ?? "",
-        button: r.x + r.width / 2 - cx,
-        ink: (left + right) / 2 - cx,
-        name:
-          name && nr && nr.width > 0
-            ? { text: name.textContent ?? "", h: nr.height, inside: nr.left >= r.left && nr.right <= r.right }
-            : null,
-        strays: [...b.querySelectorAll("*")].filter(
-          (e) =>
-            !e.closest(".tn-insp-rail-tip") &&
-            e.getBoundingClientRect().width > 0 &&
-            e.getBoundingClientRect().left < rb.left + bl - 0.01,
-        ).length,
-      };
+      const box = svg.getBoundingClientRect();
+      return { id: svg.closest<HTMLElement>("[data-rail-entry]")?.dataset.railEntry, ink: (left + right) / 2 - cx, w: box.width, h: box.height };
     });
   });
-}
-
-test("every mark on the rail is centred, and desktop shows no word", async ({ page }) => {
-  // Leon: "centre the elements horizontally on the bar, and remove those two lines poking
-  // out from the left side". The lines were rule spans in the cell's flex row that shrank
-  // to a 5px stub and pushed Draw and Notifications 2.5px right of centre; the glyph art
-  // itself sat up to 1.2 units off its own 24-unit box. Both are measured: the BUTTON's
-  // centre and the drawn INK's centre, each against the rail's centre, within half a px.
-  await page.setViewportSize({ width: 1440, height: 900 });
-  await openInspector(page);
-  const rows = await measureRail(page);
-  expect(rows.map((r) => r.slot)).toEqual(["search", "settings", "draw", "alerts"]);
+  expect(rows.map((r) => r.id)).toEqual(["sources", "inspector", "settings", "draw", "alerts", "controls"]);
   for (const r of rows) {
-    expect(Math.abs(r.button), `${r.slot} button`).toBeLessThanOrEqual(0.5);
-    expect(Math.abs(r.ink), `${r.slot} drawing`).toBeLessThanOrEqual(0.5);
-    // Desktop names a tool with the hover label; the word under the icon is phone-only.
-    expect(r.name, `${r.slot} word`).toBeNull();
-    expect(r.strays, `${r.slot} painted left of the rail border`).toBe(0);
+    expect(Math.abs(r.ink), `${r.id} drawing`).toBeLessThanOrEqual(1);
+    expect(r.w, `${r.id} glyph`).toBe(18);
+    expect(r.h, `${r.id} glyph`).toBe(18);
   }
 });
 
-test("a phone names every tool under its icon, centred", async ({ page }) => {
+test("a phone names every tool in words", async ({ page }) => {
   // Leon: "There should be labels on mobile so the user can tell what they are". There
-  // is no hover on a phone, so each tool carries one word under its icon, in a 60px
-  // column. The word is also INSIDE the button's accessible name (WCAG 2.5.3), which is
-  // why the bell is announced "Notifications and alerts" while its word is "Alerts".
+  // is no hover on a phone, so the sheet carries the word beside each icon, inside its
+  // button's accessible name.
   await page.setViewportSize({ width: 390, height: 844 });
-  await openInspector(page);
-  const rows = await measureRail(page);
-  expect(rows.map((r) => r.name?.text)).toEqual(["Search", "Settings", "Draw", "Alerts"]);
-  for (const r of rows) {
-    expect(Math.abs(r.button), `${r.slot} button`).toBeLessThanOrEqual(0.5);
-    expect(Math.abs(r.ink), `${r.slot} drawing`).toBeLessThanOrEqual(0.5);
-    expect(r.strays, `${r.slot} painted left of the rail border`).toBe(0);
-    if (!r.name) throw new Error(`${r.slot} has no word on a phone`);
-    expect(r.name.h, `${r.slot} word is one line`).toBeLessThanOrEqual(14);
-    expect(r.name.inside, `${r.slot} word sits inside its tile`).toBe(true);
-    expect(r.aria.toLowerCase(), `${r.slot} accessible name`).toContain(r.name.text.toLowerCase());
+  await page.locator(`${NAV} [data-rail-menu]`).click();
+  for (const [id, word] of [
+    ["sources", "Sources"],
+    ["inspector", "Inspector"],
+    ["settings", "Map settings"],
+    ["draw", "Areas"],
+    ["alerts", "Notifications"],
+    ["controls", "Controls"],
+  ]) {
+    await expect(row(page, id)).toBeVisible();
+    await expect(page.locator(NAV).getByRole("button", { name: word, exact: true })).toBeVisible();
   }
 });
 
@@ -519,8 +384,7 @@ test("the panel's hierarchy is measurable, not just intended", async ({ page }) 
   // thing a later retune undoes without noticing. So the three claims are MEASURED:
   // the title outweighs a section heading, a section heading outweighs the rows under
   // it, and the rows are indented past the heading they belong to.
-  await openInspector(page);
-  await page.click(`${RAIL} .tn-insp-rail-btn-settings`);
+  await row(page, "settings").click();
 
   const css = (sel: string, prop: string) =>
     page.locator(sel).first().evaluate((el, p) => getComputedStyle(el).getPropertyValue(p), prop);
@@ -542,65 +406,51 @@ test("the panel's hierarchy is measurable, not just intended", async ({ page }) 
 
   // The rows sit inside the section, to the right of their heading.
   const head = await page.locator(".tn-insp-group .tn-src-sec-head").first().boundingBox();
-  const row = await page.locator(".tn-insp-group .tn-insp-field").first().boundingBox();
-  if (!head || !row) throw new Error("no box for the heading or its first row");
-  expect(row.x).toBeGreaterThan(head.x + 4);
+  const field = await page.locator(".tn-insp-group .tn-insp-field").first().boundingBox();
+  if (!head || !field) throw new Error("no box for the heading or its first row");
+  expect(field.x).toBeGreaterThan(head.x + 4);
 
-  // The ✕ that competed with the title is gone.
-  await expect(page.locator(".tn-insp-tool-close")).toHaveCount(0);
+  // THE ✕ DOES NOT COMPETE WITH THE TITLE. Sam asked for that once, about a ✕ at the
+  // title's own weight. It came back because the plan asks for a close button on every
+  // panel's top edge, and it is the quiet kind: smaller than the title, no box at rest.
+  const close = page.getByRole("button", { name: "Close map settings" });
+  await expect(close).toBeVisible();
+  expect(await close.evaluate((el) => getComputedStyle(el).backgroundColor)).toBe("rgba(0, 0, 0, 0)");
+  expect(await close.evaluate((el) => getComputedStyle(el).borderTopWidth)).toBe("0px");
 });
 
-test("Alerts is its own rail button AND its own group, and the Draw panel is only areas", async ({
-  page,
-}) => {
+test("Notifications is its own row AND its own group, and Areas is only areas", async ({ page }) => {
   // IT WAS A SECTION INSIDE THE DRAW PANEL, for one round. Sam: "i cant see the alerts
   // and bell" — which is the whole argument for it being a tool. Then it was a BUTTON
   // IN THE DRAW GROUP for one build, and he reported that too: "the alerts isnt its own
   // separate section, its part of the drawing". Both halves are asserted here, because
   // both were wrong in turn.
-  await openInspector(page);
-  await expect(page.locator(`${RAIL} .tn-insp-rail-btn-alerts`)).toHaveCount(1);
-
-  // ITS OWN GROUP: Draw and Notifications each start one. Until 2026-10-28 a rule drew the
-  // boundary; Leon asked for the lines to go ("remove those two lines poking out from the
-  // left side") and the groups to stay as a GAP, so the gap is what is measured.
-  await expect(page.locator(`${RAIL} .tn-insp-rail-rule`)).toHaveCount(0);
-  const groups = await page.locator(`${RAIL} .tn-insp-rail-cell`).evaluateAll((els) =>
-    els.map((el) => ({
-      slot: (el.querySelector("button") as HTMLElement | null)?.dataset.slot ?? "?",
-      group: el.hasAttribute("data-group-start"),
-      top: el.getBoundingClientRect().top,
-      bottom: el.getBoundingClientRect().bottom,
-    })),
+  const ids = await page.locator(`${NAV} [data-rail-entry]`).evaluateAll((els) =>
+    els.map((el) => (el as HTMLElement).dataset.railEntry),
   );
-  expect(groups.map(({ slot, group }) => ({ slot, group }))).toEqual([
-    { slot: "search", group: false },
-    { slot: "settings", group: false },
-    { slot: "draw", group: true },
-    { slot: "alerts", group: true },
-  ]);
-  const step = (i: number) => groups[i].top - groups[i - 1].bottom;
-  expect(step(2)).toBeGreaterThanOrEqual(step(1) + 6);
-  expect(Math.abs(step(3) - step(2))).toBeLessThan(0.5);
+  // ITS OWN GROUP: a rule stands between Areas and Notifications, and between Inspector
+  // and Map settings.
+  expect(ids.indexOf("rule-notify")).toBe(ids.indexOf("draw") + 1);
+  expect(ids.indexOf("alerts")).toBe(ids.indexOf("rule-notify") + 1);
+  expect(ids.indexOf("rule-map")).toBe(ids.indexOf("inspector") + 1);
 
-  await page.click(`${RAIL} .tn-insp-rail-btn-alerts`);
-  await expect(page.locator(".tn-insp-tool-title")).toHaveText(/Notifications/i);
+  await row(page, "alerts").click();
+  await expect(title(page)).toHaveText("Notifications");
   // The composer is here, in a section of its own panel.
   const alerts = page.locator(".tn-insp-group", { has: page.getByText("Alerts", { exact: true }) });
   await expect(alerts).toHaveCount(1);
   await expect(alerts.locator(".tn-alert")).toHaveCount(1);
   await expect(alerts.locator(".tn-alert-head")).toBeVisible();
 
-  // The Draw panel is the areas list and nothing else now.
-  await page.click(`${RAIL} .tn-insp-rail-btn-draw`);
-  await expect(page.locator(".tn-insp-tool-title")).toHaveText(/Draw an area/i);
+  // The Areas panel is the areas list and nothing else now.
+  await row(page, "draw").click();
+  await expect(title(page)).toHaveText("Areas");
   await expect(page.locator(".tn-alert")).toHaveCount(0);
   await expect(page.locator(".tn-insp-group")).toHaveCount(1);
 });
 
 test("an area's colour can be changed, and the MAP is what changes", async ({ page }) => {
-  await openInspector(page);
-  await page.click(`${RAIL} .tn-insp-rail-btn-draw`);
+  await row(page, "draw").click();
   await page.waitForSelector(".tn-insp-row-color", { timeout: 10_000 });
 
   // The swatch shows the area's colour, so the list and the map agree before anything
@@ -644,17 +494,15 @@ test("an area's colour can be changed, and the MAP is what changes", async ({ pa
   // than being a view setting.
   await page.reload();
   await page.waitForSelector(".map-canvas", { timeout: 30_000 });
-  await openInspector(page);
-  await page.click(`${RAIL} .tn-insp-rail-btn-draw`);
+  await row(page, "draw").click();
   await expect(page.locator(".tn-insp-row-color")).toHaveCSS("--c", "#f59e0b");
 });
 
 test("Escape closes the colour picker and leaves the panel open", async ({ page }) => {
-  // Rung 0 of the rail's Escape ladder, for the second surface that uses it. Capture
-  // phase means the rail sees the key first, so without the stand-down Escape here would
-  // close the whole Draw panel instead of the popover.
-  await openInspector(page);
-  await page.click(`${RAIL} .tn-insp-rail-btn-draw`);
+  // Rung 0 of the sidebar's Escape ladder, for the second surface that uses it. Capture
+  // phase means the sidebar sees the key first, so without the stand-down Escape here would
+  // close the whole Areas panel instead of the popover.
+  await row(page, "draw").click();
   await page.click(".tn-insp-row-color");
   const pop = page.locator(".tn-insp-color-pop");
   await expect(pop).toBeVisible();
@@ -662,18 +510,5 @@ test("Escape closes the colour picker and leaves the panel open", async ({ page 
   await page.keyboard.press("Escape");
   await expect(pop).toHaveCount(0);
   await expect(page.locator(".tn-insp-tool")).toHaveCount(1);
-  await expect(page.locator(".tn-insp-tool-title")).toHaveText(/Draw an area/i);
-});
-
-test("shots", async ({ page }) => {
-  // Viewport, not fullPage: the map animates behind the board and a fullPage capture
-  // reframes the page to catch it mid-flight.
-  await page.setViewportSize({ width: 1440, height: 900 });
-  await openInspector(page);
-  await page.screenshot({ path: "persona-shots/inspector-rail-desktop.png" });
-
-  await page.locator(RAIL).getByRole("button", { name: "Map settings" }).click();
-  await page.mouse.move(900, 720);
-  await expect(page.locator(".tn-insp-switch")).toHaveCount(2);
-  await page.screenshot({ path: "persona-shots/inspector-rail-settings-desktop.png" });
+  await expect(title(page)).toHaveText("Areas");
 });

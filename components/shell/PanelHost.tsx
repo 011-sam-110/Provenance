@@ -3,7 +3,7 @@
 //
 // This component had NO importer between the console rebuild (5f14051 swapped
 // <PanelHost/> for <ConsoleWorkspace/> in ConsoleShell) and now, which is why
-// `.tn-rail`, `.tn-rail-fab` and `.tn-layer-row` all measured 0 in the DOM at
+// `.tn-rail` and `.tn-layer-row` both measured 0 in the DOM at
 // 1440, 390 and 360. ConsoleWorkspace mounts it again, inside `.tn-cw-shell` so
 // the rail inherits the console's `--tn-lw` column-width var.
 //

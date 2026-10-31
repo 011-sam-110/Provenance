@@ -1,13 +1,12 @@
-// In the God's eye view the Sources tray, the Sources button, "Show all" and the pins are
-// ALWAYS the console's dark mode, whatever the console itself is set to. Leon's words:
-// "GEV sources list should be dark mode to match, keep UI same."
+// The God's eye view is ALWAYS the console's dark mode, whatever the console itself is set to.
+// Leon's words: "GEV sources list should be dark mode to match, keep UI same."
 //
 // The console's dark mode is one attribute on <html> (`data-tnx-skin="dark"`, PR #325,
 // lib/terminal/skin.ts), and every one of its rules in app/globals.css hangs off it. So
 // this view switches that attribute ON for itself, before it paints, and changes none of
-// the console's CSS. The tray is the console's own rail inside a `.tn-terminal` scope, so
-// it picks the dark tokens up by itself. This view's own frame (header, ledger, credits,
-// Turn, Places, place chips, tags, cards) is not under that scope and does not change.
+// the console's CSS. The console's rows and popovers that this view borrows and every native
+// control see it. This view's own frame and its Sources tray (EyeHud.module.css,
+// EyeSources.module.css) have their own dark look and sit in no `.tn-terminal` scope.
 //
 // IT NEVER READS OR WRITES THE CONSOLE'S SAVED CHOICE (`tn.terminal.skin.v2`). The script
 // below ignores storage altogether, and nothing under components/eye or app/(console)/eye

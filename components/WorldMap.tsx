@@ -2817,7 +2817,12 @@ export default function WorldMap({ openAt, onStyleReady, legend }: WorldMapProps
   // the full viewport), so dragging a side/bottom panel wall changes the map's box
   // WITHOUT a window resize — a ResizeObserver re-fits the globe on those drags.
   useEffect(() => {
-    const onResize = () => mapRef.current?.resize();
+    // redraw() AS WELL. resize() sets the canvas size, which clears it, and a ResizeObserver
+    // runs after layout and before the browser paints, so without a draw here the empty canvas
+    // is what gets painted. MapLibre's own observer also resizes and redraws, but at most once
+    // in 50 ms. That covers one change, such as a panel opening. A drag on the panel's edge
+    // changes the size on every frame, and the frames between its calls are drawn here.
+    const onResize = () => mapRef.current?.resize().redraw();
     window.addEventListener("resize", onResize);
     const el = containerRef.current;
     const ro = el ? new ResizeObserver(onResize) : null;
@@ -2974,8 +2979,16 @@ export default function WorldMap({ openAt, onStyleReady, legend }: WorldMapProps
     const map = mapRef.current;
     if (!map || !readyRef.current) return;
     (map.getSource(PLANE_SRC) as GeoJSONSource | undefined)?.setData(toPlaneFC(drawnPlanes.objects));
+  }, [drawnPlanes.objects]);
+
+  // Its own effect, because the array only changes when a line did. With the Full flight trail
+  // switch off that is every poll, as it always was. With it on, the long lines keep their array
+  // until a new snapshot or a stored line arrives (lib/planes/usePlanes.ts).
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !readyRef.current) return;
     (map.getSource(TRAIL_SRC) as GeoJSONSource | undefined)?.setData(toTrailFC(drawnPlanes.trails));
-  }, [drawnPlanes]);
+  }, [drawnPlanes.trails]);
 
   // THE LIGHT FOLLOWS THE DRAWN DATA. A preview's marks land after the hover has settled,
   // and a layer's rows can arrive late, so the lit ids are worked out again whenever what
@@ -3407,7 +3420,7 @@ export default function WorldMap({ openAt, onStyleReady, legend }: WorldMapProps
       {/* Gating feeds: a layer's data hook is mounted only while it is visible,
           so a hidden layer does not fetch or tick. They render no DOM. */}
       {(layers.livecams || layers.staticcams) && <CamerasFeed onData={setPts} />}
-      {layers.planes && <PlanesFeed onData={setPlanesLayer} />}
+      {layers.planes && <PlanesFeed onData={setPlanesLayer} fullTrail />}
       {layers.satellites && <SatellitesFeed onData={setSatellites} />}
       {/* The same two feeds, mounted for a PREVIEW of the layer while it is off and the
           pointer is on its row. Their data goes to the preview states, never to the live
@@ -3579,8 +3592,17 @@ function CamerasFeed({ onData }: { onData: (pts: Pt[]) => void }) {
   return null;
 }
 
-function PlanesFeed({ onData, unscoped }: { onData: (layer: PlanesLayer) => void; unscoped?: boolean }) {
-  const layer = usePlanes({ unscoped });
+function PlanesFeed({
+  onData,
+  unscoped,
+  fullTrail,
+}: {
+  onData: (layer: PlanesLayer) => void;
+  unscoped?: boolean;
+  /** The map's own feed. A preview keeps the short line. */
+  fullTrail?: boolean;
+}) {
+  const layer = usePlanes({ unscoped, fullTrail });
   useEffect(() => {
     onData(layer);
   }, [layer, onData]);

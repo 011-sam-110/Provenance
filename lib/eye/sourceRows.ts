@@ -2,8 +2,7 @@
 //
 // SERVER ONLY. It reads the catalogue and the signal registry, which are far too big for
 // /eye's browser bundle, so only app/(console)/eye/page.tsx may import it, and the rows go
-// down as a prop (the repo has no `server-only` package; lib/eye/railCount.ts keeps to the
-// same rule). The browser half is lib/eye/sources.ts.
+// down as a prop (the repo has no `server-only` package). The browser half is lib/eye/sources.ts.
 //
 // THE RULE, BY PROPERTY AND NOT BY A LIST. The rows are the rail's rows (RAIL_SOURCES,
 // grouped by buildSourceSections, so its six sections and its order), minus any row that

@@ -1,11 +1,11 @@
 // components/shell/inspector/ToolIcons.tsx
 //
-// The marks on the Inspector rail. Search and Map settings were traced from Sam's
-// reference art (opaque PNGs) and redrawn as stroke geometry so they take the
-// skin's ink colour instead of shipping a black raster that vanishes against the
-// panel. They moved here verbatim from components/console/maprail/RailIcons.tsx
-// when the rail left the stage; that file's rules came with them, and two more are
-// now load-bearing rather than theoretical.
+// The marks on the console's sidebar (components/shell/ConsoleSidebar.tsx). Search and
+// Map settings were traced from Sam's reference art (opaque PNGs) and redrawn as stroke
+// geometry so they take the skin's ink colour instead of shipping a black raster that
+// vanishes against the panel. They moved here verbatim from
+// components/console/maprail/RailIcons.tsx when the rail left the stage; that file's rules
+// came with them, and two more are now load-bearing rather than theoretical.
 //
 //   REDRAW, NEVER EMBED. This is the rule the fourth glyph arrived under. Sam sent
 //   the eye as a raster ("images (1).png") and it is a WATERMARKED VectorStock comp
@@ -33,8 +33,8 @@
 //   corner dot, the bell's badge) one group translate holds the measured correction, so
 //   the geometry above stays as drawn. Measured with getBBox, 2026-10-28.
 //
-// No size props. The CSS sizes them (`.tn-insp-rail-btn svg`), so one rule moves
-// every mark on the rail and two glyphs in the same place can never disagree.
+// No size props. The CSS sizes them (`.icon svg` in components/rail/rail.module.css), so one
+// rule moves every mark on the sidebar and two glyphs in the same place can never disagree.
 
 const BASE = {
   viewBox: "0 0 24 24",
@@ -147,6 +147,33 @@ export function AlertGlyph() {
         <path d="M18.45 6.2v1.9" />
         <circle cx={18.45} cy={8.9} r={0.5} />
       </g>
+    </svg>
+  );
+}
+
+/**
+ * Sources — three stacked sheets, the usual mark for map layers.
+ *
+ * The lower two are OPEN paths that stop at the sheet above them, which is the trim rule in
+ * this file's header: three closed diamonds would pile strokes onto the same pixels at 18px.
+ */
+export function LayersGlyph() {
+  return (
+    <svg {...BASE} strokeWidth={1.8}>
+      <path d="M12 3.2 21 8l-9 4.8L3 8z" />
+      <path d="M3.6 12.2 12 16.7l8.4-4.5" />
+      <path d="M3.6 16.2 12 20.7l8.4-4.5" />
+    </svg>
+  );
+}
+
+/** Controls — a question mark in a ring. */
+export function HelpGlyph() {
+  return (
+    <svg {...BASE} strokeWidth={1.8}>
+      <circle cx={12} cy={12} r={9} />
+      <path d="M9.4 9.3a2.7 2.7 0 0 1 5.2.9c0 1.8-2.6 2.2-2.6 3.8" />
+      <circle cx={12} cy={17} r={0.6} />
     </svg>
   );
 }

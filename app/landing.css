@@ -3,11 +3,10 @@
 
    EVERY RULE IS UNDER `.lp-root`. The (site) layout wraps this page, /privacy and
    nothing else in `.pv-root`, and app/provenance.css still styles /privacy and
-   the Discord note from there. This sheet must not reach either, so each
-   selector starts at `.lp-root` and each class carries the `lp-` prefix. Two
-   rules leave the root, both at the bottom and both behind `:has(.lp-root)`, so
-   they only match while this page is mounted: the document ground, and the
-   corner the Discord note sits in.
+   nothing else here. This sheet must not reach either, so each selector starts
+   at `.lp-root` and each class carries the `lp-` prefix. One rule leaves the
+   root, at the bottom and behind `:has(.lp-root)`, so it only matches while this
+   page is mounted: the document ground.
 
    ONE NIGHT SYSTEM. Space is the ground, amber is the only action colour, and
    three fields (cobalt, amber, frost) each fill one whole section. The four
@@ -52,7 +51,7 @@
      another palette for /privacy, and none of that may show through. */
   position: relative;
   /* Its own stacking context: the z-indexes below (canvas 1, pinned copy 2, footer 3,
-     nav 20) are local, and the Discord note outside this root always sits above it. */
+     nav 20) are local, and the Discord pop-up, in <body>, always sits above it. */
   isolation: isolate;
   background: var(--space);
   color: var(--frost);
@@ -95,6 +94,21 @@
 .lp-root .lp-btn-ghost:hover { border-color: var(--frost); }
 .lp-root .lp-btn-sm { height: 44px; padding: 0 18px; font-size: .9375rem; }
 .lp-root .lp-ctas { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
+
+/* The button that offers a different place (components/marketing/CtaRotor.tsx). ITS WIDTH IS
+   FIXED, wide enough for the longest phrase (tests/e2e/landing-cta.spec.ts measures every one),
+   so a phrase never moves the button beside it under someone's pointer. It is in em so the
+   server's first paint is already this wide: no shift when the script arrives. */
+.lp-root .lp-btn[data-rotor] { width: 16.75em; padding-inline: 12px; }
+.lp-root .lp-rotor { position: relative; display: block; flex: 1 1 auto; min-width: 0; height: 1.25em; line-height: 1.25; text-align: center; white-space: pre; font-variant-ligatures: none; }
+.lp-root .lp-rotor-probe { position: absolute; left: 0; top: 0; width: max-content; visibility: hidden; }
+/* A cell stands at a character's middle, with no width of its own: `.lp-rs` turns about that
+   point, and each face is pulled back by half its own width to centre on it. */
+.lp-root .lp-rc { position: absolute; left: 0; top: 0; width: 0; will-change: transform; }
+.lp-root .lp-rs { display: block; width: 0; transform-style: preserve-3d; transform-origin: 0 50%; will-change: transform; }
+.lp-root .lp-rf { position: absolute; left: 0; top: 0; width: max-content; transform: translateX(-50%); transform-origin: 0 50%; }
+.lp-root .lp-rs > .lp-rf { -webkit-backface-visibility: hidden; backface-visibility: hidden; }
+.lp-root .lp-rs > .lp-rb { transform: rotateY(180deg) translateX(-50%); }
 
 /* a layer swatch is always a dot on a piece of the globe's ocean */
 .lp-root .lp-chip { display: inline-grid; place-items: center; flex: none; width: 18px; height: 18px; border-radius: 50%; background: var(--ink); border: 1px solid rgba(238, 242, 247, .16); }
@@ -378,6 +392,10 @@
   .lp-root .lp-nav-link { display: none; }
   .lp-root .lp-hero { padding-bottom: 40px; }
   .lp-root .lp-hero .lp-ctas { margin-top: 26px; }
+  .lp-root .lp-ctas .lp-btn { width: 100%; }
+  /* The nav holds the brand and this button side by side, with a gap between them. A narrower
+     phone gets smaller words, not fewer of them, and the rotor moves on from what will not fit. */
+  .lp-root .lp-nav .lp-btn[data-rotor] { width: min(12.5em, calc(100vw - 2 * var(--gutter) - 164px)); padding-inline: 8px; font-size: clamp(.8125rem, 3.85vw, .9375rem); }
   .lp-root .lp-hero::after { width: 100%; height: 56%; background: linear-gradient(to top, rgba(5, 7, 13, .5) 62%, rgba(5, 7, 13, 0) 100%); }
   .lp-root .lp-close::after { background: radial-gradient(ellipse 90% 50% at 50% 42%, rgba(5, 7, 13, .5) 60%, rgba(5, 7, 13, 0) 100%); }
   .lp-root .lp-bridge { height: 48vh; }
@@ -502,15 +520,3 @@
    that hold this page: on /privacy and /app it matches nothing. Literal hexes, because the
    tokens above live on `.lp-root` and are not in scope on `html`. */
 html:has(.lp-root) { background: #05070d; scrollbar-color: #2a3552 #05070d; }
-
-/* ------------------------------------------------------------------ the Discord note, on this page only
-
-   app/provenance.css parks the note bottom LEFT. On this page that corner holds the hero
-   buttons and the copy of every photograph, so at its 40-second mark the note landed on
-   the primary button. Bottom right is this page's emptiest corner (the Earth, a
-   photograph, the flat map). Wide screens only: on a phone the note spans the width either
-   way. `:has()` again, so /privacy keeps the left corner. This is the second and last rule
-   that leaves `.lp-root`. */
-@media (min-width: 721px) {
-  .pv-root:has(.lp-root) .tn-note { left: auto; right: 16px; }
-}
