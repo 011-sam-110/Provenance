@@ -23,10 +23,12 @@ import {
   cameraCountWords,
   camerasInRing,
   cardPlace,
+  visibleMapBox,
   dropHref,
   dropOutcome,
   edgePan,
-  edgePanHasWorld,
+  edgePanArea,
+  edgePanArmed,
   isDrag,
   legendHint,
   needsMarker,
@@ -143,7 +145,7 @@ describe("where the card goes", () => {
   const card = { width: 204, height: 170 };
   const win = { width: 1440, height: 900 };
   const screenBox = (ring: { x: number; y: number }, c = card, w = win, type = "mouse") => {
-    const p = cardPlace(ring, c, w, type);
+    const p = cardPlace(ring, c, { left: 0, top: 0, right: w.width, bottom: w.height }, type);
     return { ...p, left: ring.x + p.x, top: ring.y + p.y, right: ring.x + p.x + c.width, bottom: ring.y + p.y + c.height };
   };
 
@@ -207,9 +209,56 @@ describe("where the card goes", () => {
     }
   });
 
+  it("keeps to the part of the map that shows, not to the window", () => {
+    const area = { left: 232, top: 120, right: 1440, bottom: 900 };
+    const near = cardPlace({ x: 240, y: 500 }, card, area, "mouse");
+    expect(240 + near.x).toBe(232 + 8);
+    expect(near.arrowX).toBeGreaterThan(0);
+    const high = cardPlace({ x: 700, y: 130 }, card, area, "touch");
+    expect(high.side).toBe("below");
+    expect(130 + high.y).toBeGreaterThanOrEqual(120);
+  });
+
   it("does not break on a card wider than the window", () => {
-    const b = cardPlace({ x: 100, y: 100 }, { width: 500, height: 100 }, { width: 320, height: 500 }, "mouse");
+    const b = cardPlace({ x: 100, y: 100 }, { width: 500, height: 100 }, { left: 0, top: 0, right: 320, bottom: 500 }, "mouse");
     expect(100 + b.x).toBe(8);
+  });
+});
+
+describe("the part of the map that shows", () => {
+  const map = { left: 64, top: 48, right: 1440, bottom: 900 };
+  const box = (left: number, top: number, right: number, bottom: number) => ({ left, top, right, bottom });
+
+  it("is the map's own box with nothing over it", () => {
+    expect(visibleMapBox(map, {})).toEqual(map);
+    // The closed sidebar sits beside the map, so it changes nothing.
+    expect(visibleMapBox(map, { left: [box(0, 48, 64, 900)] })).toEqual(map);
+  });
+
+  it("starts past the open column, and past a panel slid along with it", () => {
+    expect(visibleMapBox(map, { left: [box(0, 48, 232, 900)] }).left).toBe(232);
+    expect(visibleMapBox(map, { left: [box(0, 48, 232, 900), box(232, 48, 684, 900)] }).left).toBe(684);
+  });
+
+  it("starts under a phone's pill, and ends at a phone's sheet", () => {
+    const phone = { left: 0, top: 56, right: 390, bottom: 844 };
+    const v = visibleMapBox(phone, { top: [box(8, 64, 52, 108), box(60, 64, 382, 108)], bottom: [box(0, 500, 390, 844)] });
+    expect(v).toEqual({ left: 0, top: 108, right: 390, bottom: 500 });
+  });
+
+  it("never turns inside out", () => {
+    const v = visibleMapBox(map, { left: [box(0, 0, 2000, 900)], top: [box(0, 0, 10, 2000)], bottom: [box(0, -5, 10, 0)] });
+    expect(v.left).toBeLessThanOrEqual(v.right);
+    expect(v.top).toBeLessThanOrEqual(map.bottom);
+    expect(v.bottom).toBeGreaterThanOrEqual(map.top);
+  });
+
+  it("gives the edge pan its band there", () => {
+    const v = visibleMapBox(map, { left: [box(0, 48, 232, 900)] });
+    const y = 400;
+    // 10 px past the column: panning left. 10 px past the window's own edge of the map: not.
+    expect(edgePan({ x: 242, y }, { x: 242, y: y + HANG_PX }, v).x).toBeLessThan(0);
+    expect(edgePan({ x: 300, y }, { x: 300, y: y + HANG_PX }, v).x).toBe(0);
   });
 });
 
@@ -251,17 +300,74 @@ describe("the edge pan", () => {
     expect(at(100 - EDGE_BAND_PX - 1, 300)).toEqual({ x: 0, y: 0 });
     expect(at(1100 + EDGE_BAND_PX + 1, 300)).toEqual({ x: 0, y: 0 });
     expect(at(600, 50 - HANG_PX - EDGE_BAND_PX - 1)).toEqual({ x: 0, y: 0 });
+    // Past the band above the map, with the ring still on it.
+    expect(at(600, 50 - EDGE_BAND_PX - 1)).toEqual({ x: 0, y: 0 });
   });
 });
 
-describe("the edge pan's world", () => {
-  it("is there when the ring is on a globe, even a few px past its edge", () => {
-    // Radius 300 about (500, 400). The ring is 10 px past the disc, moving right.
-    expect(edgePanHasWorld(fakeGlobe(), { x: 810, y: 400 }, { x: 800, y: 0 })).toBe(true);
+describe("the edge pan's area", () => {
+  // A window with the map at 100..1100 x 50..750, so its middle is (600, 400).
+  const mapBox = { left: 100, top: 50, right: 1100, bottom: 750 };
+  const middle = { x: 500, y: 350 };
+  /** A globe of this radius in the map's px, at this zoom. */
+  const globe = (radius: number, zoom: number) => ({
+    ...fakeGlobe(),
+    getZoom: () => zoom,
+    unproject: ([x, y]: [number, number]) => {
+      const d = Math.hypot(x - middle.x, y - middle.y);
+      return d <= radius ? { lat: (middle.y - y) / 100, lng: (x - middle.x) / 100 } : { lat: 0, lng: 170 };
+    },
+    project: ([lng, lat]: [number, number]) =>
+      lng === 170 ? { x: -9999, y: -9999 } : { x: lng * 100 + middle.x, y: middle.y - lat * 100 },
+  });
+  const pointerAt = (x: number, y: number) => ({ pointer: { x, y }, ring: { x, y: y + HANG_PX } });
+
+  it("is the part of the map that shows, on a globe wider than the map", () => {
+    const area = edgePanArea(globe(5000, 6), mapBox, mapBox);
+    expect(area).toEqual({ from: mapBox, until: mapBox, speed: 1 });
   });
 
-  it("is not there out in the space beside a small globe", () => {
-    expect(edgePanHasWorld(fakeGlobe(), { x: 980, y: 400 }, { x: 800, y: 0 })).toBe(false);
+  it("is the same on a flat map", () => {
+    const flat = { ...globe(100, 2), getProjection: () => ({ type: "mercator" }) };
+    expect(edgePanArea(flat, mapBox, mapBox).from).toEqual(mapBox);
+  });
+
+  it("starts at the globe's own edge when the globe stops short of the map", () => {
+    const area = edgePanArea(globe(430, 3), mapBox, mapBox);
+    expect(area.from.right).toBeCloseTo(600 + 430, -1);
+    expect(area.from.left).toBeCloseTo(600 - 430, -1);
+    const { pointer, ring } = pointerAt(600 + 425, 380);
+    expect(edgePan(pointer, ring, area.from, area.until).x).toBeGreaterThan(0);
+  });
+
+  it("still pans out to the map's edge when the space beside the globe is narrow", () => {
+    const area = edgePanArea(globe(430, 3), mapBox, mapBox);
+    expect(area.until.right).toBe(1100);
+    const { pointer, ring } = pointerAt(1095, 380);
+    expect(edgePan(pointer, ring, area.from, area.until).x).toBe(EDGE_MAX_PX_S);
+  });
+
+  it("does not spin for a pointer out in the wide space beside a small globe", () => {
+    const area = edgePanArea(globe(120, 1), mapBox, mapBox);
+    expect(area.until.right).toBeLessThan(800);
+    const { pointer, ring } = pointerAt(1095, 380);
+    expect(edgePan(pointer, ring, area.from, area.until)).toEqual({ x: 0, y: 0 });
+    // At the small globe's own edge it does turn, towards the side that cannot be seen.
+    const near = pointerAt(600 + 116, 380);
+    expect(edgePan(near.pointer, near.ring, area.from, area.until).x).toBeGreaterThan(0);
+  });
+
+  it("turns a small globe no faster than about a radian a second", () => {
+    expect(edgePanArea(globe(120, 1), mapBox, mapBox).speed).toBeCloseTo(0.12, 1);
+    expect(edgePanArea(globe(430, 3), mapBox, mapBox).speed).toBeCloseTo(0.43, 1);
+  });
+
+  it("arms only once he is well inside, so a pick-up in the corner does not pan", () => {
+    const area = edgePanArea(globe(430, 3), mapBox, mapBox);
+    const corner = pointerAt(1080, 700);
+    expect(edgePanArmed(corner.pointer, corner.ring, area)).toBe(false);
+    const inside = pointerAt(600, 300);
+    expect(edgePanArmed(inside.pointer, inside.ring, area)).toBe(true);
   });
 });
 
@@ -767,7 +873,7 @@ describe("the old buttons are gone", () => {
 
   it("Map settings has no God's eye view section and no zoom gate", () => {
     const tool = read("components", "shell", "inspector", "tools", "SettingsTool.tsx");
-    expect(tool).not.toMatch(/God's eye/);
+    expect(tool).not.toMatch(/title="God's eye/);
     expect(tool).not.toContain("eyeSpotHref");
     expect(tool).not.toContain("EYE_LINK_MIN_CONSOLE_ZOOM");
   });

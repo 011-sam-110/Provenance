@@ -161,6 +161,10 @@ obligations and are not satisfied by the licence.
   before the release. A click toggles coverage and a legend, and a click on the map then opens the
   same search's result; on the keyboard the ring sits at the map's centre, arrows pan, Enter drops.
   Always a full page load, at `EYE_SPOT_ZOOM` or closer, with the map's bearing as its heading.
+  The edge pan's band and the card keep to the part of the map that shows: past the open sidebar and
+  a panel slid along with it, and under a phone's pill (`visibleMapBox`). A globe smaller than the map
+  pans from its own edge and turns at most a radian a second (`edgePanArea`). A draw or a camera pick
+  ends the toggle, because both need the map's clicks.
   Four rules are not style preferences. **A drag sends no location**: the index comes once from
   `/api/eye/coverage`, every search runs on the browser's copy, and `lib/console/eyeCoverageClient.ts`
   is the only code in it that asks the network, never with the pointer's place. **The link carries

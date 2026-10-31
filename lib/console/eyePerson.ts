@@ -286,25 +286,48 @@ export interface CardPlace {
 export function cardPlace(
   ring: Point,
   card: { width: number; height: number },
-  win: { width: number; height: number },
+  area: Box,
   pointerType: string,
 ): CardPlace {
   const below = ring.y + CARD_GAP_PX;
   const above = ring.y - FIGURE_TOP_PX - card.height - EDGE_MARGIN_PX;
-  const fitsBelow = below + card.height + EDGE_MARGIN_PX <= win.height;
-  const fitsAbove = above >= EDGE_MARGIN_PX;
+  const fitsBelow = below + card.height + EDGE_MARGIN_PX <= area.bottom;
+  const fitsAbove = above >= area.top + EDGE_MARGIN_PX;
   const prefersAbove = pointerType === "touch";
   let side: "below" | "above";
   if (prefersAbove ? fitsAbove : !fitsBelow && fitsAbove) side = "above";
   else if (fitsBelow) side = "below";
-  else if (prefersAbove && !fitsAbove && !fitsBelow) side = win.height - ring.y > ring.y ? "below" : "above";
-  else side = win.height - ring.y > ring.y ? "below" : "above";
-  const top = clamp(side === "below" ? below : above, EDGE_MARGIN_PX, Math.max(EDGE_MARGIN_PX, win.height - card.height - EDGE_MARGIN_PX));
-  const lo = EDGE_MARGIN_PX;
-  const hi = Math.max(lo, win.width - card.width - EDGE_MARGIN_PX);
+  else side = area.bottom - ring.y > ring.y - area.top ? "below" : "above";
+  const firstTop = area.top + EDGE_MARGIN_PX;
+  const top = clamp(side === "below" ? below : above, firstTop, Math.max(firstTop, area.bottom - card.height - EDGE_MARGIN_PX));
+  const lo = area.left + EDGE_MARGIN_PX;
+  const hi = Math.max(lo, area.right - card.width - EDGE_MARGIN_PX);
   const left = clamp(ring.x - card.width / 2, lo, hi);
   const arrowX = clamp(ring.x - left, ARROW_INSET_PX, Math.max(ARROW_INSET_PX, card.width - ARROW_INSET_PX));
   return { x: Math.round(left - ring.x), y: Math.round(top - ring.y), side, arrowX: Math.round(arrowX) };
+}
+
+// ── The part of the map that shows ──
+
+/**
+ * The map's box less what lies over it. The open sidebar (232 px, `--rail-w`) and a panel slid along
+ * with it overlay the map's left side without resizing it, and on a phone the ☰ and the search pill
+ * hold its top and a panel its bottom. `overLeft`, `overTop` and `overBottom` are the boxes of those
+ * things. One that does not reach the map changes nothing, and the box never turns inside out.
+ */
+export function visibleMapBox(
+  map: Box,
+  over: { left?: readonly Box[]; top?: readonly Box[]; bottom?: readonly Box[] },
+): Box {
+  const left = Math.max(map.left, ...(over.left ?? []).map((b) => b.right));
+  const top = Math.max(map.top, ...(over.top ?? []).map((b) => b.bottom));
+  const bottom = Math.min(map.bottom, ...(over.bottom ?? []).map((b) => b.top));
+  return {
+    left: Math.min(left, map.right),
+    right: map.right,
+    top: Math.min(top, map.bottom),
+    bottom: Math.max(bottom, map.top),
+  };
 }
 
 // ── The edge pan ────────────────────────────────────────────────────────────────────────────
@@ -318,37 +341,102 @@ export interface Box {
 
 function edgeSpeed(inside: number): number {
   if (inside >= EDGE_BAND_PX) return 0;
-  if (inside < -EDGE_BAND_PX) return 0;
   const closeness = clamp(1 - inside / EDGE_BAND_PX, 0, 1);
   return EDGE_MAX_PX_S * closeness * closeness;
 }
 
 /**
- * How fast to pan, in the map's px a second, from a pointer near the map's edge. Up to
- * EDGE_MAX_PX_S at the edge and just past it, and nothing once the pointer is well outside, so
- * dragging off the map to cancel does not also spin the world. The figure hangs between the pointer
- * and the ring, so the top edge reads the higher of the two and the bottom edge the lower: otherwise
- * the bottom edge could only be reached with the ring already off the map.
+ * The map's speed in px/s, from where the pointer and the ring are. Each axis ramps up over the
+ * band inside `from`, to EDGE_MAX_PX_S at its edge and past it, and nothing once the pointer is
+ * more than the band outside `until`, so a drag out to cancel leaves the world alone. The ring
+ * counts at the bottom, because it hangs below the pointer and has to be able to reach that edge,
+ * and on a finger it counts at the top, where it leads.
  */
-export function edgePan(pointer: Point, ring: Point, box: Box): Point {
+export function edgePan(pointer: Point, ring: Point, from: Box, until: Box = from): Point {
   const high = Math.min(pointer.y, ring.y);
   const low = Math.max(pointer.y, ring.y);
-  const inX = pointer.x >= box.left - EDGE_BAND_PX && pointer.x <= box.right + EDGE_BAND_PX;
-  const inY = high <= box.bottom + EDGE_BAND_PX && low >= box.top - EDGE_BAND_PX;
+  const inX = pointer.x >= until.left - EDGE_BAND_PX && pointer.x <= until.right + EDGE_BAND_PX;
+  const inY = high <= until.bottom + EDGE_BAND_PX && low >= until.top - EDGE_BAND_PX;
   if (!inX || !inY) return { x: 0, y: 0 };
-  const x = edgeSpeed(box.right - pointer.x) - edgeSpeed(pointer.x - box.left);
-  const y = edgeSpeed(box.bottom - low) - edgeSpeed(high - box.top);
+  const x = edgeSpeed(from.right - pointer.x) - edgeSpeed(pointer.x - from.left);
+  // The top counts its leading point and the bottom its trailing one, each only while that point
+  // is near the map: a pointer past the band above the map is off it, with the ring still on it.
+  const up = high >= until.top - EDGE_BAND_PX ? edgeSpeed(high - from.top) : 0;
+  const down = low <= until.bottom + EDGE_BAND_PX ? edgeSpeed(from.bottom - low) : 0;
+  const y = down - up;
   return { x: x === 0 ? 0 : x, y: y === 0 ? 0 : y };
 }
 
+/** At this zoom the globe is wider than any window, so its edge cannot be on the map. */
+const WHOLE_MAP_FROM_ZOOM = 5;
+/** A globe turns at most this fast, in radians a second: about 57 degrees. */
+const GLOBE_MAX_RAD_S = 1;
+const LIMB_SEARCH_STEPS = 8;
+
+export interface PanArea {
+  /** Where the band is measured from. */
+  from: Box;
+  /** Where the pan gives up. */
+  until: Box;
+  /** The share of the full speed to use. */
+  speed: number;
+}
+
 /**
- * Is there world to pan towards? The point tested is the ring pulled back in from the edge, because
- * at zoom 3 a globe nearly fills a wide map, and the last few px beside it are worth panning from,
- * while at zoom 1 the same px are out in space, and a pointer there must not spin the world.
+ * Where the edge pan works, in window px. On a flat map, or a globe wider than the map, that is the
+ * part of the map that shows. A globe at zoom 3 stops 140 px short of a 1,328 px map (measured
+ * 2026-10-31) and a globe at zoom 1 far shorter, so the band starts at the world's own edge, or a
+ * pointer at the map's edge would be the only thing that pans and the globe's far side could not be
+ * reached by going to its edge. The space beside it counts while it is narrower than the globe's
+ * radius, so a throw to the edge of the map still pans at zoom 3. Past that, out in the space beside
+ * a small globe, nothing spins.
  */
-export function edgePanHasWorld(map: PersonMap, ringOnMap: Point, pan: Point): boolean {
-  const back = EDGE_BAND_PX * 2;
-  return spotAtPoint(map, ringOnMap.x - Math.sign(pan.x) * back, ringOnMap.y - Math.sign(pan.y) * back) != null;
+export function edgePanArea(map: PersonMap, mapBox: Box, visible: Box): PanArea {
+  const whole: PanArea = { from: visible, until: visible, speed: 1 };
+  if (map.getProjection()?.type !== "globe" || map.getZoom() >= WHOLE_MAP_FROM_ZOOM) return whole;
+  const cx = (mapBox.left + mapBox.right) / 2;
+  const cy = (mapBox.top + mapBox.bottom) / 2;
+  const onWorld = (x: number, y: number) => spotAtPoint(map, x - mapBox.left, y - mapBox.top) != null;
+  if (!onWorld(cx, cy)) return whole;
+  /** The last point on the world, on the way from the middle to `to`. */
+  const reach = (to: number, isOn: (at: number) => boolean, middle: number) => {
+    if (isOn(to)) return to;
+    let lo = middle;
+    let hi = to;
+    for (let i = 0; i < LIMB_SEARCH_STEPS; i++) {
+      const mid = (lo + hi) / 2;
+      if (isOn(mid)) lo = mid;
+      else hi = mid;
+    }
+    return lo;
+  };
+  const alongX = (x: number) => onWorld(x, cy);
+  const alongY = (y: number) => onWorld(cx, y);
+  const world = {
+    left: reach(visible.left, alongX, cx),
+    right: reach(visible.right, alongX, cx),
+    top: reach(visible.top, alongY, cy),
+    bottom: reach(visible.bottom, alongY, cy),
+  };
+  const radius = (world.right - world.left) / 2;
+  return {
+    from: world,
+    until: {
+      left: world.left - visible.left <= radius ? visible.left : world.left,
+      right: visible.right - world.right <= radius ? visible.right : world.right,
+      top: world.top - visible.top <= radius ? visible.top : world.top,
+      bottom: visible.bottom - world.bottom <= radius ? visible.bottom : world.bottom,
+    },
+    speed: Math.min(1, (radius * GLOBE_MAX_RAD_S) / EDGE_MAX_PX_S),
+  };
+}
+
+/** Is the pointer well inside the area? Only then has he left the corner he was picked up from. */
+export function edgePanArmed(pointer: Point, ring: Point, area: PanArea): boolean {
+  const pan = edgePan(pointer, ring, area.from, area.until);
+  if (pan.x !== 0 || pan.y !== 0) return false;
+  const { left, right, top, bottom } = area.from;
+  return pointer.x > left && pointer.x < right && ring.y > top && ring.y < bottom;
 }
 
 // ── The swing ───────────────────────────────────────────────────────────────────────────────

@@ -59,6 +59,7 @@ const card = (page: Page) => page.locator("[data-eye-person-card]");
 const plate = (page: Page) => page.locator("[data-eye-person-label]");
 const legend = (page: Page) => page.locator("[data-eye-person-legend]");
 const iButton = (page: Page) => page.locator(".maplibregl-ctrl-attrib-button");
+const railRow = (page: Page, id: string) => page.locator(`nav[data-rail="console"] [data-rail-entry="${id}"]`);
 /** The i as it is drawn. On main its button sits 1 px off this circle; PR #339 lines them up. */
 const iCircle = (page: Page) => page.locator(".maplibregl-ctrl-attrib");
 
@@ -921,6 +922,41 @@ test.describe("1440 px", () => {
       await page.mouse.up();
     });
 
+    test("a small globe turns at its own edge, towards the side that cannot be seen", async ({ page }) => {
+      await seed(page);
+      await openMap(page, at(20, 10, 1.2));
+      const stage = await box(page.locator(".tn-cw-stage"));
+      const middle = centre(stage);
+      // Find the globe's edge on the pointer's row, by the map's own answer.
+      const row = stage.height * 0.4;
+      const limb = await page.evaluate(
+        ({ width, y }) => {
+          const m = (window as unknown as Win).__map;
+          let x = width / 2;
+          for (; x < width; x += 4) {
+            const a = m.unproject([x, y]);
+            const b = m.project([a.lng, a.lat]);
+            if (Math.hypot(b.x - x, b.y - y) > 4) break;
+          }
+          return x;
+        },
+        { width: stage.width, y: row },
+      );
+      expect(limb).toBeLessThan(stage.width - 200);
+      const from = centre(await box(person(page)));
+      await page.mouse.move(from.x, from.y);
+      await page.mouse.down();
+      await page.mouse.move(middle.x, stage.y + row, { steps: 6 });
+      await page.waitForTimeout(120);
+      await page.mouse.move(stage.x + limb, stage.y + row, { steps: 4 });
+      const start = await mapCentre(page);
+      await page.waitForTimeout(600);
+      const end = await mapCentre(page);
+      expect(Math.abs(end.lon - start.lon)).toBeGreaterThan(5);
+      await page.keyboard.press("Escape");
+      await page.mouse.up();
+    });
+
     test("a release at the edge stops the pan", async ({ page }) => {
       await seed(page);
       await openMap(page, at(30, -50, 3));
@@ -951,11 +987,16 @@ test.describe("1440 px", () => {
       await page.mouse.down();
       await page.mouse.move(stage.x + stage.width / 2, stage.y + stage.height * 0.4, { steps: 6 });
       const start = await mapCentre(page);
-      // Over the header: the ring is off the map's top, and the pointer is past the band.
-      await page.mouse.move(stage.x + stage.width / 2, header.y + 2 - HANG / 2, { steps: 6 });
-      await page.waitForTimeout(300);
+      // At the very top of the window: the pointer is past the band above the map.
+      expect(stage.y - (header.y + 2)).toBeGreaterThan(30);
+      await page.mouse.move(stage.x + stage.width / 2, header.y + 2, { steps: 2 });
+      await page.waitForTimeout(100);
+      const mid = await mapCentre(page);
+      await page.waitForTimeout(400);
       const end = await mapCentre(page);
-      expect(Math.abs(end.lat - start.lat)).toBeLessThan(1.5);
+      // It may have moved for a frame on its way through the band. It does not move there.
+      expect(Math.abs(end.lat - mid.lat)).toBeLessThan(0.01);
+      expect(Math.abs(end.lat - start.lat)).toBeLessThan(6);
       await page.keyboard.press("Escape");
       await page.mouse.up();
     });
@@ -1016,7 +1057,7 @@ test.describe("1440 px", () => {
     test("Esc turns it off, with one press, and an open panel stays", async ({ page }) => {
       await seed(page);
       await openMap(page, at(53, -2, 6));
-      await page.keyboard.press("ControlOrMeta+k");
+      await railRow(page, "sources").click();
       await expect(page.locator("aside.tn-rail").first()).toBeVisible();
       await person(page).click();
       await expect(person(page)).toHaveAttribute("aria-pressed", "true");
@@ -1115,7 +1156,7 @@ test.describe("1440 px", () => {
       await page.goto("/eye?lat=55.86&lon=-4.25&z=16&tilt=55&heading=0&name=Hacked&title=Hacked&place=nowhere");
       await page.waitForSelector('main[data-eye-state="ready"]', { timeout: 90_000 });
       await expect(page.getByRole("heading", { level: 1 })).toHaveText("Glasgow");
-      await expect(page.locator("header p").first()).toContainText(/55\.8600°\sN,\s4\.2500°\sW/);
+      await expect(page.locator("[data-eye-place] p")).toContainText(/55\.8600°\sN,\s4\.2500°\sW/);
       await expect(page.locator("main")).not.toContainText("Hacked");
     });
 
@@ -1125,7 +1166,7 @@ test.describe("1440 px", () => {
       await page.waitForSelector('main[data-eye-state="ready"]', { timeout: 90_000 });
       await page.waitForTimeout(500);
       await expect(page.getByRole("heading", { level: 1 })).toHaveText(/^35\.0000°\sN,\s40\.0000°\sW$/);
-      await expect(page.locator("header p").first()).toHaveText(/^Heading/);
+      await expect(page.locator("[data-eye-place] p")).toHaveCount(0);
     });
 
     test("a film asks for no name", async ({ page }) => {
@@ -1138,6 +1179,155 @@ test.describe("1440 px", () => {
       await page.waitForSelector("main[data-eye-state]", { timeout: 90_000 });
       await page.waitForTimeout(800);
       expect(asked).toEqual([]);
+    });
+  });
+
+  test.describe("beside the sidebar", () => {
+    const openColumn = async (page: Page) => {
+      await page.locator('nav[data-rail="console"] [data-rail-menu]').click();
+      await expect(page.locator('nav[data-rail="console"]')).toHaveAttribute("data-expanded", "true");
+      // The plates and the panel slide over .18 s.
+      await page.waitForTimeout(350);
+    };
+    const overlap = (a: { x: number; width: number }, b: { x: number; width: number }) =>
+      Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x);
+
+    /** How far the map moved in about a second, with the pointer held at x, on the map's middle line. */
+    async function panAt(page: Page, x: number) {
+      const stage = await box(page.locator(".tn-cw-stage"));
+      const y = stage.y + stage.height * 0.4;
+      await page.mouse.move(x, y, { steps: 6 });
+      const before = await page.evaluate(() => {
+        const m = (window as unknown as Win).__map;
+        return { lng: m.getCenter().lng, zoom: m.getZoom() };
+      });
+      await page.waitForTimeout(800);
+      const after = await page.evaluate(() => (window as unknown as Win).__map.getCenter().lng);
+      return Math.abs(after - before.lng);
+    }
+
+    for (const [name, setUp] of [
+      ["the closed sidebar", async () => {}],
+      ["the open column", openColumn],
+      [
+        "the open column and a panel",
+        async (page: Page) => {
+          await railRow(page, "sources").click();
+          await expect(page.locator(".tn-rail")).toHaveCount(1);
+          await openColumn(page);
+        },
+      ],
+    ] as const) {
+      test(`the edge pan's band starts at the map's real edge, with ${name}`, async ({ page }) => {
+        await seed(page);
+        // At zoom 5 the globe is wider than the map, so the band is the map's own edge.
+        await openMap(page, at(30, 10, 5));
+        await setUp(page);
+        const nav = await box(page.locator('nav[data-rail="console"]'));
+        const panel = page.locator(".tn-rail");
+        const covered = (await panel.count()) ? Math.max(nav.x + nav.width, ...[await box(panel)].map((b) => b.x + b.width)) : nav.x + nav.width;
+        const b = await box(person(page));
+        const stage = await box(page.locator(".tn-cw-stage"));
+        await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
+        await page.mouse.down();
+        await page.mouse.move(stage.x + stage.width / 2, stage.y + stage.height * 0.4, { steps: 8 });
+        await expect(layer(page)).toHaveCount(1);
+        // Past the band: the map holds still, however near the window's own edge this is.
+        expect(await panAt(page, covered + 60)).toBeLessThan(0.05);
+        // In the band: the map moves. A band read from the window's edge would not.
+        expect(await panAt(page, covered + 6)).toBeGreaterThan(0.5);
+        await page.mouse.move(stage.x + stage.width / 2, stage.y + stage.height * 0.4, { steps: 4 });
+        await page.keyboard.press("Escape");
+        await page.mouse.up();
+      });
+    }
+
+    test("the card and the plate stay clear of the open column", async ({ page }) => {
+      await seed(page);
+      await openMap(page, at(53.48, -2.24, 6));
+      await openColumn(page);
+      const nav = await box(page.locator('nav[data-rail="console"]'));
+      const stage = await box(page.locator(".tn-cw-stage"));
+      await carryRingTo(page, { x: nav.x + nav.width + 20, y: stage.y + stage.height * 0.5 });
+      await expect(layer(page)).toHaveCount(1);
+      await page.waitForTimeout(500);
+      const shown = (await card(page).count()) ? card(page) : plate(page);
+      expect((await box(shown)).x).toBeGreaterThanOrEqual(nav.x + nav.width);
+      await page.keyboard.press("Escape");
+      await page.mouse.up();
+    });
+
+    for (const width of [1440, 1000]) {
+      test(`the legend stays clear of the column and a panel at ${width} px`, async ({ page }) => {
+        await page.setViewportSize({ width, height: 800 });
+        await seed(page);
+        await openMap(page, at(53, -2, 6));
+        await person(page).click();
+        await expect(legend(page)).toBeVisible();
+        await openColumn(page);
+        const nav = await box(page.locator('nav[data-rail="console"]'));
+        expect(overlap(await box(legend(page)), nav)).toBeLessThanOrEqual(0);
+        await railRow(page, "sources").click();
+        await expect(page.locator(".tn-rail")).toHaveCount(1);
+        await page.waitForTimeout(400);
+        expect(overlap(await box(legend(page)), await box(page.locator(".tn-rail")))).toBeLessThanOrEqual(0);
+        // And the person himself stays on the map, right of everything.
+        expect((await box(person(page))).x).toBeGreaterThan((await box(page.locator(".tn-rail"))).x + (await box(page.locator(".tn-rail"))).width);
+      });
+    }
+
+    test("Escape's order: the Controls popover and a field of its own go before the toggle", async ({ page }) => {
+      await seed(page);
+      await openMap(page, at(53, -2, 6));
+      await person(page).click();
+      await expect(person(page)).toHaveAttribute("aria-pressed", "true");
+
+      // The popover: one press closes it, and the toggle stays on.
+      await railRow(page, "controls").click();
+      await expect(page.locator(".tn-sidebar-controls")).toHaveCount(1);
+      await page.keyboard.press("Escape");
+      await expect(page.locator(".tn-sidebar-controls")).toHaveCount(0);
+      await expect(person(page)).toHaveAttribute("aria-pressed", "true");
+
+      // The search pill holds its own Escape.
+      const search = page.locator(".tn-mapsearch-bar input");
+      await search.fill("Lon");
+      // Its list first, then its words.
+      await search.press("Escape");
+      await search.press("Escape");
+      await expect(search).toHaveValue("");
+      await expect(person(page)).toHaveAttribute("aria-pressed", "true");
+
+      // From the map or the button, the toggle takes it, with one press.
+      await person(page).focus();
+      await page.keyboard.press("Escape");
+      await expect(person(page)).toHaveAttribute("aria-pressed", "false");
+    });
+
+    test("Escape's order: with a tool open and focus in it, the tool closes first", async ({ page }) => {
+      await seed(page);
+      await openMap(page, at(53, -2, 6));
+      await person(page).click();
+      await railRow(page, "settings").click();
+      await expect(page.locator(".tn-insp-tool")).toHaveCount(1);
+      await page.keyboard.press("Escape");
+      await expect(page.locator(".tn-insp-tool")).toHaveCount(0);
+      await expect(person(page)).toHaveAttribute("aria-pressed", "true");
+      // Focus went back to the row, and nothing else claims the key now.
+      await page.keyboard.press("Escape");
+      await expect(person(page)).toHaveAttribute("aria-pressed", "false");
+    });
+
+    test("a draw ends the toggle, because a draw needs the map's clicks", async ({ page }) => {
+      await seed(page);
+      await openMap(page, at(53, -2, 6));
+      await person(page).click();
+      await expect(person(page)).toHaveAttribute("aria-pressed", "true");
+      await railRow(page, "draw").click();
+      await page.locator(".tn-rail").getByRole("button", { name: /Draw an area/ }).click();
+      await expect(person(page)).toHaveAttribute("aria-pressed", "false");
+      await expect.poll(() => overlayShown(page)).toEqual({ has: true, visible: false });
+      await page.keyboard.press("Escape");
     });
   });
 
@@ -1218,10 +1408,8 @@ test.describe("1440 px", () => {
       await seed(page);
       await openMap(page, at(48, 2, 4));
       // A selection (the area's own row, as tests/e2e/inspector-rail.spec.ts does it).
-      await page.keyboard.press("ControlOrMeta+k");
-      await page.click("#tn-rail-tab-inspector");
-      await page.click("#inspector-rail .tn-insp-rail-btn-draw");
-      await page.click(".tn-insp-row");
+      await railRow(page, "draw").click();
+      await page.click(".tn-insp-row-main");
       const dossier = page.locator(".tn-inspector[role=dialog]");
       await expect(dossier).toHaveCount(1);
 
@@ -1317,14 +1505,12 @@ test.describe("1440 px", () => {
 
     /** Switch to the flat map the way a visitor does, and shut the rail again. */
     async function goFlat(page: Page, also?: () => Promise<void>) {
-      await page.keyboard.press("ControlOrMeta+k");
-      await page.click("#tn-rail-tab-inspector");
-      await page.locator("#inspector-rail").getByRole("button", { name: "Map settings" }).click();
+      await railRow(page, "settings").click();
       const tool = page.locator(".tn-insp-tool");
       await tool.getByRole("radiogroup", { name: "Projection" }).getByRole("radio", { name: "2D" }).click();
       await page.waitForFunction(() => (window as unknown as Win).__map.getProjection()?.type === "mercator");
       if (also) await also();
-      await page.keyboard.press("ControlOrMeta+k");
+      await railRow(page, "settings").click();
       await expect(page.locator(".tn-rail")).toHaveCount(0);
     }
 
@@ -1380,9 +1566,7 @@ test.describe("1440 px", () => {
       await openMap(page, at(48, 2, 4));
       await expect(page.locator(".tn-eye-return")).toHaveCount(0);
       await expect(page.getByRole("link", { name: /back to/i })).toHaveCount(0);
-      await page.keyboard.press("ControlOrMeta+k");
-      await page.click("#tn-rail-tab-inspector");
-      await page.locator("#inspector-rail").getByRole("button", { name: "Map settings" }).click();
+      await railRow(page, "settings").click();
       const tool = page.locator(".tn-insp-tool");
       // The tool did render: the row beside the section is there.
       await expect(tool.getByRole("switch", { name: "Buildings" })).toBeVisible();
@@ -1445,9 +1629,7 @@ test.describe("1440 px", () => {
       await openMap(page, at(53, -2, 6));
       await person(page).click();
       await expect.poll(() => overlayShown(page)).toEqual({ has: true, visible: true });
-      await page.keyboard.press("ControlOrMeta+k");
-      await page.click("#tn-rail-tab-inspector");
-      await page.locator("#inspector-rail").getByRole("button", { name: "Map settings" }).click();
+      await railRow(page, "settings").click();
       const tool = page.locator(".tn-insp-tool");
       await tool.getByRole("radiogroup", { name: "Basemap" }).locator('[aria-checked="false"]').first().click();
       await page.waitForTimeout(1500);
@@ -1571,6 +1753,48 @@ test.describe("a phone, 390 px, with a finger", () => {
     });
   }
 
+  test("the sheet takes Escape before the toggle", async ({ page }) => {
+    await seed(page);
+    await openMap(page, at(53, -2, 6));
+    await person(page).tap();
+    await expect(person(page)).toHaveAttribute("aria-pressed", "true");
+    const nav = page.locator('nav[data-rail="console"]');
+    await nav.locator("[data-rail-menu]").tap();
+    await expect(nav).toHaveAttribute("data-expanded", "true");
+    await page.keyboard.press("Escape");
+    await expect(nav).toHaveAttribute("data-expanded", "false");
+    await expect(person(page)).toHaveAttribute("aria-pressed", "true");
+  });
+
+  test("the card and the plate keep below the menu and the pill", async ({ page }) => {
+    await seed(page);
+    await openMap(page, at(53.48, -2.24, 6));
+    const pill = await box(page.locator(".tn-mapsearch-bar"));
+    const map = await box(page.locator(".maplibregl-map").first());
+    // A board with no cards: the map fills the screen under the header.
+    expect(map.height).toBeGreaterThan(600);
+    expect(map.width).toBeGreaterThanOrEqual(360);
+
+    // Up by the pill: whatever shows stays under it.
+    const b = await box(person(page));
+    const client = await page.context().newCDPSession(page);
+    const touch = (type: string, points: Pt[]) =>
+      client.send("Input.dispatchTouchEvent", { type, touchPoints: points.map((p) => ({ x: p.x, y: p.y })) });
+    await touch("touchStart", [centre(b)]);
+    for (let i = 1; i <= 8; i++) {
+      await touch("touchMove", [{ x: b.x + (195 - b.x) * (i / 8), y: b.y + (pill.y + pill.height + 90 - b.y) * (i / 8) }]);
+      await page.waitForTimeout(30);
+    }
+    await expect(layer(page)).toHaveCount(1);
+    await page.waitForTimeout(500);
+    const shown = (await card(page).count()) ? card(page) : plate(page);
+    expect((await box(shown)).y).toBeGreaterThanOrEqual(pill.y + pill.height);
+    await shot(page, `phone-near-pill`);
+    await touch("touchMove", [centre(b)]);
+    await touch("touchEnd", []);
+    await expect(layer(page)).toHaveCount(0, { timeout: 3000 });
+  });
+
   test("a tap toggles coverage, and a tap on the map opens the search's result", async ({ page }) => {
     await seed(page);
     await openMap(page, at(52.5, -2, 5.2));
@@ -1609,7 +1833,8 @@ test.describe("a phone, 390 px, with a finger", () => {
     const spots: Pt[] = [
       { x: stage.x + 40, y: stage.y + stage.height - 40 },
       { x: stage.x + stage.width - 40, y: stage.y + stage.height - 40 },
-      { x: stage.x + 40, y: stage.y + 110 },
+      // The ring is 72 px above the finger, and the pill holds the map's first 56 px.
+      { x: stage.x + 40, y: stage.y + 170 },
     ];
     let from = c;
     let first = true;
@@ -1619,7 +1844,7 @@ test.describe("a phone, 390 px, with a finger", () => {
       first = false;
       from = spot;
       await page.waitForTimeout(450);
-      const k = await card(page).boundingBox();
+      const k = (await card(page).count()) ? await card(page).boundingBox() : null;
       if (k) {
         expect(k.x).toBeGreaterThanOrEqual(0);
         expect(k.y).toBeGreaterThanOrEqual(0);

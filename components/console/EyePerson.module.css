@@ -138,7 +138,8 @@
 /* ── The legend ───────────────────────────────────────────────────────────────
    Bottom-centre, like Google's, and above the world clock, which holds the bottom 34 px of a wide
    map. It takes no pointer: a drop or a click can land under it. It stops short of the corner's
-   column on a phone, where there is no clock. */
+   column on a phone, where there is no clock. It centres on the part of the map that shows, so the
+   open sidebar (`--tn-cover`, app/console-sidebar.css) cannot reach it, and moves with the plates. */
 .legend {
   position: absolute;
   left: 50%;
@@ -151,7 +152,7 @@
   gap: 2px 10px;
   box-sizing: border-box;
   width: max-content;
-  max-width: calc(100% - 112px);
+  max-width: calc(100% - 112px - var(--tn-cover, 0px));
   padding: 6px 12px;
   border: 1px solid var(--tnx-line-strong);
   border-radius: 8px;
@@ -163,6 +164,7 @@
   font-weight: 600;
   line-height: 16px;
   transform: translateX(-50%);
+  translate: calc(var(--tn-cover, 0px) / 2) 0;
   pointer-events: none;
 }
 .legendKey {
@@ -448,6 +450,9 @@
    With reduced motion he hangs upright, nothing pulses or springs, and a cancel or a drop is
    instant (goHome and fall in EyePerson.tsx); the drag itself works the same. */
 @media (prefers-reduced-motion: no-preference) {
+  .legend {
+    transition: translate 0.18s ease;
+  }
   .dots {
     animation: personPulse 1000ms ease-in-out infinite;
   }

@@ -32,15 +32,21 @@
 // calls are listed in lib/console/eyeCoverageClient.ts, and tests/e2e/eye-person.spec.ts watches
 // for any other.
 //
-// ESCAPE follows the ladder in components/shell/inspector/InspectorRail.tsx. While carrying or
+// ESCAPE follows the ladder at the top of components/shell/ConsoleSidebar.tsx. While carrying or
 // while coverage is on, the focused button carries `data-owns-escape`, and so does the map (focus
-// lands on its canvas after a pan), so that handler stands down. This one (capture phase on window)
-// stops the key, so ConsoleShell's ladder does not also clear the map's selection. At rest, Escape
-// on the button still closes an open tool.
+// lands on its canvas after a pan), so that handler stands down. This one, also capture phase on
+// window, stops the key, so ConsoleShell's ladder does not also clear the map's selection. A carry
+// takes the key first, whatever else is open. The toggle takes it only if nothing else has a claim:
+// the Controls popover, a panel's tool, a field of its own (the search pill), the phone's sheet and
+// a dialog all go first (`toggleTakesEscape`). At rest, Escape on the button still closes an open tool.
+//
+// A DRAW OR A CAMERA PICK ENDS THE TOGGLE. Both need the clicks on the map that the toggle takes.
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { CONSOLE_PANEL_ID } from "@/lib/console/consolePanel";
 import { useShellLayout } from "@/lib/console/store";
+import { pickStore } from "@/lib/console/widgets/camslot.pick";
 import {
   DROP_WORDS,
   FALL_MS,
@@ -60,7 +66,8 @@ import {
   cardPlace,
   dropOutcome,
   edgePan,
-  edgePanHasWorld,
+  edgePanArea,
+  edgePanArmed,
   isDrag,
   legendHint,
   needsMarker,
@@ -71,6 +78,8 @@ import {
   swingAtRest,
   swingStep,
   targetOnMap,
+  visibleMapBox,
+  type Box,
   type Point,
   type Swing,
 } from "@/lib/console/eyePerson";
@@ -94,8 +103,10 @@ import {
   type DropResult,
 } from "@/lib/eye/coverage";
 import { hideCoverage, showCoverage, type OverlayMap } from "@/lib/map/coverageOverlay";
+import { aoiDrawStore } from "@/lib/map/aoi";
 import { ATTRIB_CONTROL_CLASS } from "@/lib/map/attribution";
 import { getMapInstance } from "@/lib/map/instance";
+import { RAIL_NARROW_QUERY, railOpenStore } from "@/lib/rail/railOpen";
 import styles from "./EyePerson.module.css";
 
 /** How often to look for the map until it exists. */
@@ -145,7 +156,7 @@ interface Run {
   swing: Swing;
   shownSwing: number;
   panning: boolean;
-  /** He is picked up from the map's corner, inside the band. It pans only once he has left it. */
+  /** He is picked up from the map's corner, in or past the band. It pans only once he is well inside. */
   edgeArmed: boolean;
   panSpeed: Point;
   panAimedAt: number;
@@ -231,6 +242,37 @@ function useCornerSlot(wanted: boolean): HTMLElement | null {
     };
   }, [wanted]);
   return slot;
+}
+
+/** A box to read if the thing is on screen. A closed or hidden element has no size. */
+function boxOf(selector: string): Box[] {
+  const r = document.querySelector(selector)?.getBoundingClientRect();
+  return r && r.width > 0 && r.height > 0 ? [r] : [];
+}
+
+/**
+ * The part of the map that shows, in window px. Read and not worked out from `--rail-w`: the column
+ * and a panel slide over .18 s, and the band has to follow what is on screen during that too.
+ */
+function visibleMapArea(map: { getContainer(): HTMLElement }): Box {
+  const box = map.getContainer().getBoundingClientRect();
+  if (window.matchMedia(RAIL_NARROW_QUERY).matches) {
+    return visibleMapBox(box, {
+      top: [...boxOf('nav[data-rail="console"] [data-rail-menu]'), ...boxOf(".tn-mapsearch-bar")],
+      bottom: boxOf(".tn-cw-shell > .tn-rail"),
+    });
+  }
+  return visibleMapBox(box, { left: [...boxOf('nav[data-rail="console"]'), ...boxOf(".tn-cw-shell > .tn-rail")] });
+}
+
+/** The ladder in this file's header: may the toggle take this press of Escape? */
+function toggleTakesEscape(e: KeyboardEvent, own: readonly (Element | null | undefined)[]): boolean {
+  if (e.defaultPrevented) return false;
+  const holder = (e.target as Element | null)?.closest?.("[data-owns-escape]");
+  if (holder && !own.includes(holder)) return false;
+  if (railOpenStore.isSheet("console")) return false;
+  const dialogs = document.querySelectorAll('[role="dialog"]');
+  return ![...dialogs].some((d) => !d.closest(`#${CONSOLE_PANEL_ID}`));
 }
 
 /** The map and a window point in the map's own px, if the point is over the map's canvas. */
@@ -354,7 +396,9 @@ export default function EyePerson() {
   const placePlate = (ring: Point, type: string) => {
     const plate = plateEl.current;
     if (!plate || plateSize.current.width === 0) return;
-    const place = cardPlace(ring, plateSize.current, { width: window.innerWidth, height: window.innerHeight }, type);
+    const map = getMapInstance();
+    if (!map) return;
+    const place = cardPlace(ring, plateSize.current, visibleMapArea(map), type);
     plate.style.transform = `translate3d(${place.x}px, ${place.y}px, 0)`;
   };
 
@@ -397,6 +441,7 @@ export default function EyePerson() {
     const map = getMapInstance();
     if (!r || !el || !map) return;
     const box = map.getContainer().getBoundingClientRect();
+    const visible = visibleMapArea(map);
     const p = press.current;
     const pointer: Point = r.aim
       ? { x: box.left + box.width / 2, y: box.top + box.height / 2 }
@@ -409,15 +454,16 @@ export default function EyePerson() {
     const over = overMap(ring);
     const spot = over ? spotAtPoint(over.map, over.point.x, over.point.y) : null;
 
-    // The edge pan, only with world to pan towards: a globe smaller than the map must not spin
-    // because the pointer is out in the space beside it. Short eases under one id, so MapLibre runs
-    // one smooth move and fires one `moveend`. A `jumpTo` per frame would fire one per frame, and the
-    // console writes its address and refreshes its thumbnails on each.
+    // The edge pan. Short eases under one id, so MapLibre runs one smooth move and fires one
+    // `moveend`. A `jumpTo` per frame would fire one per frame, and the console writes its address
+    // and refreshes its thumbnails on each.
     if (!r.aim) {
-      const pan = edgePan(pointer, ring, box);
+      const area = edgePanArea(map, box, visible);
+      const raw = edgePan(pointer, ring, area.from, area.until);
+      const pan = { x: raw.x * area.speed, y: raw.y * area.speed };
       const wants = pan.x !== 0 || pan.y !== 0;
-      if (!wants) r.edgeArmed = true;
-      if (wants && r.edgeArmed && edgePanHasWorld(map, { x: ring.x - box.left, y: ring.y - box.top }, pan)) {
+      if (!r.edgeArmed && edgePanArmed(pointer, ring, area)) r.edgeArmed = true;
+      if (wants && r.edgeArmed) {
         const since = now - r.panAimedAt;
         const changed = Math.hypot(pan.x - r.panSpeed.x, pan.y - r.panSpeed.y) > PAN_CHANGE * Math.hypot(pan.x, pan.y);
         if (!r.panning || since >= PAN_REAIM_MS || (changed && since >= PAN_CHANGE_MS)) {
@@ -497,9 +543,8 @@ export default function EyePerson() {
     const previewDue = !r.panning && moved >= PREVIEW_MS;
     if (previewDue && result !== "off" && result !== "miss") askForPreview(r, drop, key, inRing);
     const cardUp = r.previewKey !== "" && (inRing != null || drop?.kind === "snap");
-    const win = { width: window.innerWidth, height: window.innerHeight };
     if (cardUp && cardEl.current && cardSize.current.width > 0) {
-      const place = cardPlace(ring, cardSize.current, win, r.type);
+      const place = cardPlace(ring, cardSize.current, visible, r.type);
       cardEl.current.style.transform = `translate3d(${place.x}px, ${place.y}px, 0)`;
       cardEl.current.style.setProperty("--arrow-x", `${place.arrowX}px`);
       if (cardEl.current.dataset.side !== place.side) cardEl.current.dataset.side = place.side;
@@ -887,15 +932,33 @@ export default function EyePerson() {
     if (phase !== "carry" && !on) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
+      const carrying = phaseRef.current === "carry";
+      if (!carrying && !toggleTakesEscape(e, [button.current, getMapInstance()?.getContainer()])) return;
       e.preventDefault();
       e.stopPropagation();
-      if (phaseRef.current === "carry") goHome();
+      if (carrying) goHome();
       else setCoverage(false);
     };
     window.addEventListener("keydown", onKey, true);
     return () => window.removeEventListener("keydown", onKey, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, on]);
+
+  // A draw or a camera pick needs the map's clicks, which the toggle takes.
+  useEffect(() => {
+    if (!on) return;
+    const check = () => {
+      if (aoiDrawStore.get().active || pickStore.get().mode === "picking") setCoverage(false);
+    };
+    check();
+    const offDraw = aoiDrawStore.subscribe(check);
+    const offPick = pickStore.subscribe(check);
+    return () => {
+      offDraw();
+      offPick();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [on]);
 
   // The browser's Back button can bring this page back exactly as it was left, mid-drop.
   useEffect(() => {
