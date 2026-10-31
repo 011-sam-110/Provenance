@@ -1,0 +1,82 @@
+/* THE FOOT OF THE SETTINGS DRAWER: the Discord link (components/shell/SettingsPanel.tsx says
+   why it is here). A fifth cell of the drawer's grid, so these rules address the grid that
+   `.tn-settings` declares in app/globals.css.
+
+   Wide: the third row of the tab column, the same tint and divider as the rail above it, so
+   the column reads as one piece. The text lines up with the tab labels above it (the rail's
+   8px plus the tab's 12px).
+
+   Narrow (540px, the breakpoint at which the rail lies down as a strip): a bar across the
+   bottom of the drawer, on every tab, where a thumb already is. Same element, a new grid slot,
+   like every other cell on that pass. */
+
+.foot {
+  grid-column: 1;
+  grid-row: 3;
+  padding: 0 8px 10px;
+  background: var(--tn-surface-2);
+  border-right: 1px solid var(--tn-border);
+}
+
+.foot::before {
+  content: "";
+  display: block;
+  height: 1px;
+  margin-bottom: 6px;
+  background: var(--tn-border);
+}
+
+.link {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 0 4px 0 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-decoration: none;
+  color: var(--tn-text-muted);
+  transition: background-color 0.14s ease, color 0.14s ease;
+}
+
+.link svg {
+  flex: none;
+}
+
+.link:hover {
+  color: var(--tn-text);
+  background: var(--tn-hover, #f1f5f9);
+}
+
+.link:focus-visible {
+  outline: 2px solid var(--tn-accent);
+  outline-offset: -2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .link {
+    transition: none;
+  }
+}
+
+@media (max-width: 540px) {
+  .foot {
+    grid-column: 1 / -1;
+    grid-row: 4;
+    padding: 0 12px env(safe-area-inset-bottom, 0px);
+    border-right: 0;
+    border-top: 1px solid var(--tn-border);
+  }
+
+  .foot::before {
+    display: none;
+  }
+
+  .link {
+    justify-content: center;
+    min-height: 44px;
+    padding: 0 12px;
+  }
+}

@@ -42,6 +42,8 @@ test("the palette adds a widget instance", async ({ page }) => {
   await expect(page.locator(".map-canvas")).toHaveCount(1);
   const before = await page.locator(".tn-cw").count();
 
+  await page.locator(".tn-settings-trigger").click();
+  await page.getByRole("tab", { name: "Shortcuts" }).click();
   await page.locator(".tn-palette-trigger").click();
   // NOT getByPlaceholder(/Search/), which is a strict-mode violation: three inputs on
   // this page have a placeholder containing "Search" — the palette's "Search

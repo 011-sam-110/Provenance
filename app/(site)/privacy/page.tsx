@@ -15,6 +15,12 @@ const ISSUES_URL = `${REPO_URL}/issues`;
  * rule for writing it: verify first, then write, and if you cannot verify it either
  * leave it out or say plainly that you do not know.
  *
+ * WHAT CHANGED ON 2026-10-31:
+ *   - Camera stats strip: removed from the console's top bar on request, and with it
+ *     app/api/camera-stats, which nothing else read. It took no input from the visitor, read
+ *     no header and logged nothing, so no sentence on this page changes. The route count
+ *     is 55.
+ *
  * WHAT CHANGED ON 2026-10-29:
  *   - Vessels in the God's eye view: the view no longer reads /api/signals/ais. It asks
  *     /api/eye/vessels?bbox=west,south,east,north (app/api/eye/vessels/route.ts,
@@ -658,7 +664,7 @@ export default function PrivacyPage() {
           <div>
             <p className="pv-eyebrow">
               <span>The server</span>
-              <span>56 API routes</span>
+              <span>55 API routes</span>
             </p>
             <h2 className="pv-h2">What reaches our server, and where it goes.</h2>
           </div>
@@ -1053,7 +1059,7 @@ export default function PrivacyPage() {
           </div>
           <div className="pv-prose">
             <p>
-              Five log statements exist across the 56 API route files. Each records that a data
+              Five log statements exist across the 55 API route files. Each records that a data
               feed or a handler failed, with the error. None of them is given anything you typed:
               their inputs are our own feed names, a camera&rsquo;s stream address, camera
               coordinates and webcam ids. So the application&rsquo;s own code writes nothing you type

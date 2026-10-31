@@ -133,7 +133,7 @@
    the attribute is now decoration, but removing it would change the SSR markup for no
    gain. The console skin folded the same way in the commit before this one.
 
-   That 30-token block stays gone. The console's opt-in dark is something else: the
+   That 30-token block stays gone. The console's dark default is something else: the
    DARK SKIN block further down, on `<html data-tnx-skin="dark">`, written by
    lib/terminal/skin.ts. It is not a theme, and the console only — see that file. */
 
@@ -2961,8 +2961,9 @@ a { color: var(--tn-accent); }
 
 /* ── Settings drawer ──────────────────────────────────────────────────────── */
 .tn-settings-scrim { position: fixed; inset: 0; z-index: 60; background: rgba(15, 23, 42, .28); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); display: flex; justify-content: flex-end; animation: tn-fade-in .15s ease; }
-/* FOUR CELLS, TWO COLUMNS. Reading order down the DOM is railhead, head, rail, body, which
-   is also the grid order, so nothing needs `order` and the tab sequence is the visual one.
+/* FIVE CELLS, TWO COLUMNS. Reading order down the DOM is railhead, head, rail, body, foot,
+   so nothing needs `order`. The foot (the Discord link, settings/SettingsFoot.module.css) is
+   the third row of the first column, and the body spans that row beside it.
    536px, AND THE NUMBER IS ADDITION RATHER THAN TASTE: 150 rail + 1 divider + 385 panel,
    and 385 less the body's 2×18 padding leaves 349px of measure against the 347px the
    single 384px column actually had. Both figures were read out of a live browser rather
@@ -2971,7 +2972,7 @@ a { color: var(--tn-accent); }
    The first cut of this was 520px, which measured 333 and would have made every field,
    hint and key-cap row narrower than before the rail existed. The rail is paid for in
    drawer width, never out of the content.
-   `auto 1fr` on the rows is what keeps the divider straight — the head row is as tall as
+   `auto 1fr auto` on the rows is what keeps the divider straight — the head row is as tall as
    the taller of its two cells, so the rail's title and the panel's ✕ cannot drift apart. */
 .tn-settings {
   --tn-settings-rail-w: 150px;
@@ -2980,7 +2981,7 @@ a { color: var(--tn-accent); }
   box-shadow: var(--tn-shadow);
   display: grid;
   grid-template-columns: var(--tn-settings-rail-w) 1fr;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto 1fr auto;
   animation: tn-slide-in .2s ease;
 }
 @keyframes tn-fade-in { from { opacity: 0; } to { opacity: 1; } }
@@ -3011,7 +3012,7 @@ a { color: var(--tn-accent); }
 /* min-height/min-width: 0 — a grid item's automatic minimum is its content, which would
    let the long Main tab push the drawer's own scrollbar onto the page instead of scrolling
    here, and would let the api.telegram.org line in the Telegram hint widen the column. */
-.tn-settings-body { grid-column: 2; grid-row: 2; min-height: 0; min-width: 0; padding: 6px 18px 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 18px; }
+.tn-settings-body { grid-column: 2; grid-row: 2 / -1; min-height: 0; min-width: 0; padding: 6px 18px 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 18px; }
 .tn-settings-sec { display: flex; flex-direction: column; gap: 10px; }
 .tn-settings-sec-title { margin: 12px 0 0; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--tn-text-faint); }
 .tn-settings-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
@@ -3145,14 +3146,18 @@ a { color: var(--tn-accent); }
    spans both underneath. `--tn-settings-axis` flips with it, which is the whole reason
    SettingsPanel reads the property rather than repeating 520 in TypeScript. */
 @media (max-width: 540px) {
-  .tn-settings { grid-template-columns: 1fr auto; grid-template-rows: auto auto 1fr; }
+  .tn-settings { grid-template-columns: 1fr auto; grid-template-rows: auto auto 1fr auto; }
   /* The tint goes with the column. Keeping --tn-surface-2 here once the rail has lain
      down leaves the title cell shaded and the ✕ cell white, which reads as a header that
      failed to paint rather than as two cells — it is one bar at this width, so it is one
      colour. The rail keeps the tint, because down here the tint is what makes the strip
      a band instead of three loose buttons. */
-  .tn-settings-railhead { grid-column: 1; grid-row: 1; background: transparent; border-right: 0; padding-right: 0; }
-  .tn-settings-head { grid-column: 2; grid-row: 1; }
+  .tn-settings-railhead { grid-column: 1; grid-row: 1; background: transparent; border-right: 0; padding: 8px 0 8px 16px; }
+  .tn-settings-head { grid-column: 2; grid-row: 1; padding: 8px 10px; }
+  /* The strip's tabs get their 44px from the 900px pass. These are the drawer's other
+     controls a thumb has to hit, in the only place they are too small for one. */
+  .tn-settings-close { width: 44px; height: 44px; }
+  .tn-settings-seg-btn, .tn-settings-tg-test { min-height: 44px; }
   /* The blurb is the first thing to go: at this width the tab it describes is a strip
      button two centimetres away, and the ✕ needs the room more than the sentence does. */
   .tn-settings-blurb { display: none; }
@@ -3847,9 +3852,9 @@ a.tn-w-place { display: flex; align-items: center; }
    is dark because it is the Terminal, not because a theme said so, and the light
    console tokens are still intact underneath for /locate and any future surface.
 
-   (Written when the dark Terminal was the default. The console is light now; its
-   opt-in dark is the DARK SKIN block further down, which sidesteps the same trap with
-   an attribute of its own, `data-tnx-skin`, rather than a theme.)
+   (Written when the old dark Terminal was the default. Dark is the default again since
+   2026-10-31, and it is the DARK SKIN block further down, which sidesteps the same trap
+   with an attribute of its own, `data-tnx-skin`, rather than a theme.)
 
    Two blocks follow. The first defines the design's own --tnx-* palette. The
    second REMAPS the app's existing --tn-* tokens onto it, which is how ~1,500
@@ -4235,9 +4240,9 @@ a.tn-w-place { display: flex; align-items: center; }
    yanked back the first time a tab is clicked. The tokens stay scoped to
    `.tn-terminal`.
 
-   UPDATE 2026-10-29: one dark palette is back, as an OPT-IN. It is the DARK SKIN block
-   after the scrollbar rules below, keyed on `html[data-tnx-skin="dark"]`, and the
-   values above stay the default. */
+   UPDATE 2026-10-29: one dark palette is back. It is the DARK SKIN block after the
+   scrollbar rules below, keyed on `html[data-tnx-skin="dark"]`. UPDATE 2026-10-31: it is
+   the console's default, and the values above are what Settings > Display calls Light. */
 /* The five status INKS collapse onto their fills on near-black because the vivid
    hue is the legible one there. On white the opposite is true, so they are pointed
    at the light ramp rather than left inheriting the dark one. */
@@ -4251,10 +4256,11 @@ a.tn-w-place { display: flex; align-items: center; }
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
-   ██ DARK SKIN ██  opt-in, light stays the default.
+   ██ DARK SKIN ██  the console's default since 2026-10-31.
    ════════════════════════════════════════════════════════════════════════════
    PR #162 (Sam, 2026-09-05) removed both dark modes for "one palette". This block
-   brings ONE back as an opt-in, on Leon's request (2026-10-29). It is NOT the old
+   brought ONE back as an opt-in, on Leon's request (2026-10-29), and Sam made it the
+   default (2026-10-31: "set dark mode as the new default"). It is NOT the old
    blue-on-near-black Terminal palette: that one predates the white + olive redesign
    and white text on its #5cb1ff accent measured 2.29:1. These values are a dark
    reading of the CURRENT identity: olive near-black ground, cream ink, sage accent.
@@ -4385,10 +4391,6 @@ a.tn-w-place { display: flex; align-items: center; }
 :root[data-tnx-skin="dark"] .tn-terminal .tn-newsw-tabs button { background: var(--tnx-panel); border-color: var(--tnx-line-strong); color: var(--tnx-ink-dim); }
 :root[data-tnx-skin="dark"] .tn-terminal .tn-newsw-tabs button.is-on { background: var(--tnx-accent); border-color: var(--tnx-accent); color: var(--tnx-on-accent); }
 :root[data-tnx-skin="dark"] .tn-terminal :is(.tn-newsw-picker, .tn-newsw-custom) { border-color: var(--tnx-line-strong); }
-:root[data-tnx-skin="dark"] .tn-terminal .cs-skel { background: rgba(236, 238, 228, 0.08); }
-:root[data-tnx-skin="dark"] .tn-terminal .cs-skel::after { background: linear-gradient(90deg, transparent, rgba(236, 238, 228, 0.10), transparent); }
-:root[data-tnx-skin="dark"] .tn-terminal .cs-x:hover { background: rgba(236, 238, 228, 0.08); }
-:root[data-tnx-skin="dark"] .tn-terminal .cs-scrim { background: rgba(0, 0, 0, 0.55); }
 
 /* Control edges: --tn-srx-edge is olive at 50% (3.04 on white). Cream at 38% is
    3.24 on --tnx-panel (3.17 on the lightest ground, --tn-chip-bg), so a control
@@ -4416,14 +4418,6 @@ a.tn-w-place { display: flex; align-items: center; }
    the hint the edge is a hairline like every other dark edge. */
 :root[data-tnx-skin="dark"] .tn-terminal .tn-cw-shell > .tn-rail-fab { border-color: var(--tnx-line); }
 :root[data-tnx-skin="dark"] .tn-terminal .tn-cw-shell > .tn-rail-fab[data-hint] { border-color: color-mix(in srgb, var(--tnx-accent) 50%, transparent); }
-
-/* ── The header toggle (both skins) ───────────────────────────────────────
-   Icon-only and FIXED at 30px above 900px, its border included: the camera stats
-   strip's drop bands (1420/1320/1240/1180) leave about 32px of slack and a label
-   would not fit in it in every language. */
-.tn-terminal .tnx-hdr-skin { width: 30px; padding: 0; justify-content: center; flex: none; }
-.tn-terminal .tnx-hdr-skin svg { width: 15px; height: 15px; display: block; }
-@media (max-width: 900px) { .tn-terminal .tnx-hdr-skin { width: 44px; } }
 
 /* ── The mark, and the boot sequence ───────────────────────────────────────
    The mark is the camera sphere, its screens filled: a filtered screenshot of the landing
@@ -5704,7 +5698,7 @@ body:has(.tn-terminal) { background: #d6dde6; color: #10161d; }
   /* The marker before the sliding bar is measured (server render, no JS). An INSET
      shadow, because a border takes room from the content box: the 2px transparent
      bottom border this replaces shrank the box to 35px and lifted the label 1px
-     above the bar's middle. Same device as `.cs-score[aria-expanded="true"]`. */
+     above the bar's middle. */
   box-shadow: inset 0 -2px 0 var(--tnx-accent);
 }
 
@@ -5731,13 +5725,12 @@ body:has(.tn-terminal) { background: #d6dde6; color: #10161d; }
   border-left: 1px solid var(--tnx-line); flex: none;
 }
 
-/* ONE FAMILY for the whole right cluster: skin, Support, Source, Shortcuts.
+/* ONE FAMILY for the whole right cluster: Support, Source, Settings, Account.
    This is the shape CONSOLE/WALL had — flat segments divided by hairlines, no
    chip outlines, no bare accent links. Those buttons are gone; the shape stayed,
    because at 34px it was the only thing in this corner that read as a button.
-   Applied via `.tnx-hdr-btn` so `.tnx-hdr-skin` and `.tn-palette-trigger` can go
-   on keeping their own hooks (a store toggle and a tour target) without owning
-   any appearance. */
+   Applied via `.tnx-hdr-btn` so `.tn-settings-trigger` can go on keeping its own
+   hook without owning any appearance. */
 .tn-terminal .tnx-hdr-btn {
   display: inline-flex; align-items: center; gap: 5px;
   font: inherit; font-size: var(--tnx-fs-xs); font-weight: 700; letter-spacing: 0.1em;
@@ -5746,9 +5739,6 @@ body:has(.tn-terminal) { background: #d6dde6; color: #10161d; }
   text-decoration: none; white-space: nowrap;
 }
 .tn-terminal .tnx-hdr-btn:hover { color: var(--tnx-ink); background: var(--tnx-panel-head); }
-/* The skin toggle is the one member with an on-state, and it earns the accent:
-   it is the only one that changes the page rather than opening something. */
-.tn-terminal .tnx-hdr-btn[aria-pressed="true"] { color: var(--tnx-ink); }
 .tn-terminal .tnx-hdr-kbd {
   font-size: var(--tnx-fs-xs); font-weight: 700; padding: 1px 5px;
   border: 1px solid var(--tnx-line-strong); color: var(--tnx-ink);
@@ -5756,7 +5746,7 @@ body:has(.tn-terminal) { background: #d6dde6; color: #10161d; }
 
 /* ── "N online" ──────────────────────────────────────────────────────────────
    A READOUT, NOT A CONTROL, and it is styled to say so. It sits in the same
-   cluster as SHORTCUTS and SETTINGS but takes no `border-right`, no hover state
+   cluster as SUPPORT and SETTINGS but takes no `border-right`, no hover state
    and no pointer: the three things beside it do something when clicked and this
    does not, so giving it their chrome would make it look broken rather than
    consistent.
@@ -5789,13 +5779,6 @@ body:has(.tn-terminal) { background: #d6dde6; color: #10161d; }
    that says nothing. */
 @media (max-width: 720px) { .tn-terminal .tn-presence { display: none; } }
 .tn-terminal .tnx-hdr-btn-label { color: inherit; }
-/* THE STAND-IN MARK for a header button whose only content is its word (SHORTCUTS).
-   The ≤900px header pass hides every `.tnx-hdr-btn-label`; the other buttons keep a
-   glyph, and this mark is the glyph SHORTCUTS lacks. Hidden here so it costs the
-   desktop bar no width; shown by the ≤900px pass beside the rule that hides the words.
-   Same specificity, so that pass must stay LATER in the sheet than this rule.
-   tests/unit/header-phone-mark.test.ts pins both. */
-.tn-terminal .tnx-hdr-btn-mark { display: none; flex: none; }
 .tn-terminal .tnx-hdr-profile .tn-profile-avatar { width: 22px; height: 22px; font-size: var(--tnx-fs-sm); border-radius: var(--tnx-r-sm); }
 /* Focus has to stay visible on a dark, borderless bar — these buttons have no
    resting outline for a focus ring to thicken. */
@@ -6002,8 +5985,6 @@ body:has(.tn-terminal) { background: #d6dde6; color: #10161d; }
   .tn-terminal .tnx-hdr-spacer { display: none; }
   .tn-terminal .tnx-hdr-btn-label,
   .tn-terminal .tnx-hdr-utc-label { display: none; }
-  /* ...and the mark that stands in for a word with no glyph of its own (SHORTCUTS). */
-  .tn-terminal .tnx-hdr-btn-mark { display: block; }
   .tn-terminal .tnx-hdr-brand { flex: 1 1 auto; min-width: 0; border-right: 0; }
 
   /* Strip: the 37 cells are the payload. The view controls keep the projection
@@ -6054,14 +6035,33 @@ body:has(.tn-terminal) { background: #d6dde6; color: #10161d; }
 
   /* Board tabs get real height — they are the console's main menu, and a 26px tab
      in a horizontally-scrolling strip is the easiest thing on the page to miss. */
-  .tn-terminal .tnx-hdr-board { min-height: 34px; padding: 0 15px; }
+  .tn-terminal .tnx-hdr-board { min-height: 44px; padding: 0 15px; }
 
   /* (a) Real size. The right cluster is now one family of full-height segments
-     rather than four differently-shaped chips, so each one can simply BE 34px
+     rather than four differently-shaped chips, so each one can simply BE 44px
      tall instead of wearing a transparent ::before overlay to fake a hit box.
      That was technique (b) in the original pass, chosen because the chips had to
-     stay small; they no longer do. */
-  .tn-terminal .tnx-hdr-btn { min-height: 34px; padding: 0 12px; }
+     stay small; they no longer do. It was 34px until the bar lost its three extra
+     buttons on 2026-10-31, and min-width is for SETTINGS and ACCOUNT, which are one
+     glyph here. */
+  .tn-terminal .tnx-hdr-btn { min-height: 44px; min-width: 44px; justify-content: center; padding: 0 12px; }
+}
+
+/* TWO ROWS ON A PHONE, NOT THREE. Below 440px the brand and the right cluster no longer fit
+   on one line, and a third row of chrome would come straight out of the map. So the cluster
+   dissolves for the width of this rule (`display: contents`, the DOM and the reading order do
+   not change): the brand keeps the gear and the account on the top row, and Support and Source
+   share the second row with the board tabs. The line break between the rows is also the
+   hairline between them. */
+@media (max-width: 440px) {
+  .tn-terminal .tnx-hdr::after { content: ""; order: 3; flex: 0 0 100%; height: 1px; background: var(--tnx-line); }
+  .tn-terminal .tnx-hdr-right { display: contents; }
+  .tn-terminal .tnx-hdr-brand { order: 1; }
+  .tn-terminal .tnx-hdr-right > button.tnx-hdr-btn { order: 2; border-left: 1px solid var(--tnx-line); border-right: 0; }
+  .tn-terminal .tn-preset-pill.tnx-hdr-boards { order: 4; flex: 0 0 auto; border-top: 0; }
+  .tn-terminal .tnx-hdr-right > a.tnx-hdr-btn { order: 5; }
+  .tn-terminal .tnx-hdr-right > a.tnx-hdr-btn:first-of-type { margin-left: auto; border-left: 1px solid var(--tnx-line); }
+  .tn-terminal .tnx-hdr-right > a.tnx-hdr-btn:last-of-type { border-right: 0; }
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -8329,344 +8329,6 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
 /* The header door: a long username ends in an ellipsis instead of pushing the cluster. */
 .tn-account-trigger .tnx-hdr-btn-label { max-width: 16ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tn-account-trigger svg { flex: none; }
-
-/* ── CAMERA STATS STRIP (components/terminal/CameraStats.tsx) ─────────────────
-   VIDEO | STILLS | COUNTRIES | OPERATORS | COUNTED | WEBCAMS: a score bug after the
-   board tabs, each segment a small label over its number, one hairline between
-   neighbours. VIDEO and STILLS, the two headline counts, carry a camcorder and a
-   camera (StatGlyphs.tsx) and get a little more room (`.is-major`). One button; a
-   click opens the breakdown under it, a bottom sheet on a phone.
-
-   NO LIVE GREEN IN THIS BLOCK, and tests/unit/camera-stats-view.test.ts holds it:
-   most of these cameras are stills, so the green would read as "live". The time dot
-   is ink-faint while the count is fresh and alert-warn once it is older than 15 min.
-
-   Kept at the END of the sheet on purpose: the phone rules below re-shape the board
-   tabs' row, and only source order beats the 720px header block above. */
-.tn-terminal .cs-score {
-  display: flex; align-items: stretch; flex: none; padding: 0; margin: 0 0 0 6px;
-  font: inherit; color: inherit; background: none; border: 0;
-  border-left: 1px solid var(--tnx-line); border-right: 1px solid var(--tnx-line);
-  cursor: pointer; position: relative; text-align: left;
-}
-.tn-terminal .cs-score[aria-disabled="true"] { cursor: progress; }
-.tn-terminal .cs-score:hover { background: var(--tnx-panel-head); }
-/* Open = the same 2px marker the active board tab carries. */
-.tn-terminal .cs-score[aria-expanded="true"] { background: var(--tnx-panel-head); box-shadow: inset 0 -2px 0 var(--tnx-accent); }
-.tn-terminal .cs-seg {
-  display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: 3px;
-  padding: 0 8px; position: relative; white-space: nowrap;
-}
-/* The two headline counts get 12px each side instead of 8px, so the pair stands a
-   little apart from the four quieter numbers and neither feels cramped. */
-.tn-terminal .cs-seg.is-major { padding: 0 12px; }
-.tn-terminal .cs-seg.is-major .cs-lab { gap: 5px; }
-/* `.cs-retry` is in the list so that, when the counts fail to load, WEBCAMS still
-   gets the one hairline after RETRY. */
-.tn-terminal :is(.cs-seg, .cs-retry) + .cs-seg::before { content: ""; position: absolute; left: 0; top: 9px; bottom: 9px; width: 1px; background: var(--tnx-line); }
-.tn-terminal .cs-lab {
-  display: inline-flex; align-items: center; gap: 4px; font-size: var(--tnx-fs-xs); line-height: 1;
-  font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--tnx-ink-faint);
-}
-.tn-terminal .cs-num { font-size: var(--tnx-fs-lg); line-height: 18px; font-weight: 800; color: var(--tnx-ink); letter-spacing: -0.01em; }
-.tn-terminal .cs-seg.is-minor .cs-num { font-size: var(--tnx-fs-md); font-weight: 700; color: var(--tnx-ink-dim); }
-.tn-terminal .cs-chip { width: 7px; height: 7px; border-radius: 2px; flex: none; display: inline-block; }
-.tn-terminal .cs-chip.v { background: var(--tnx-accent); }
-.tn-terminal .cs-chip.s { background: transparent; box-shadow: inset 0 0 0 1.5px var(--tnx-ink-faint); }
-/* The camcorder and the camera. 14px beside the 11px label, and the -1.5px margins
-   give the 3px back, so the label row stays 11px tall and every number in the strip
-   keeps one baseline. */
-.tn-terminal .cs-glyph { width: 14px; height: 14px; margin: -1.5px 0; flex: none; color: var(--tnx-ink-dim); }
-.tn-terminal .cs-ftime { display: inline-flex; align-items: center; gap: 5px; font-size: var(--tnx-fs-sm); line-height: 18px; font-weight: 600; color: var(--tnx-ink-dim); }
-.tn-terminal .cs-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--tnx-ink-faint); flex: none; display: inline-block; }
-.tn-terminal .cs-chevwrap { display: flex; align-items: center; padding: 0 9px 0 1px; }
-.tn-terminal .cs-chev {
-  width: 8px; height: 8px; flex: none; border-right: 1.5px solid var(--tnx-ink-dim); border-bottom: 1.5px solid var(--tnx-ink-dim);
-  transform: translateY(-2px) rotate(45deg);
-}
-.tn-terminal .cs-score[aria-expanded="true"] .cs-chev { transform: translateY(2px) rotate(225deg); }
-@media (prefers-reduced-motion: no-preference) {
-  .tn-terminal .cs-chev { transition: transform 160ms cubic-bezier(.2, .8, .2, 1); }
-}
-
-/* States. Loading shows skeleton digits, never zeros. */
-.tn-terminal .cs-skel {
-  display: inline-block; height: 12px; margin: 3px 0; border-radius: 3px; background: rgba(38, 43, 21, 0.09);
-  position: relative; overflow: hidden; vertical-align: middle;
-}
-@media (prefers-reduced-motion: no-preference) {
-  .tn-terminal .cs-skel::after {
-    content: ""; position: absolute; inset: 0; transform: translateX(-100%);
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.75), transparent);
-    animation: cs-shim 1.3s ease-in-out infinite;
-  }
-}
-@keyframes cs-shim { to { transform: translateX(100%); } }
-.tn-terminal .cs-score.is-stale .cs-dot,
-.tn-terminal .is-stale > .cs-dot { background: var(--tnx-alert-warn); }
-.tn-terminal .cs-score.is-stale .cs-ftime,
-.tn-terminal .cs-when.is-stale,
-.tn-terminal .sh-when.is-stale { color: var(--tnx-alert-warn); font-weight: 700; }
-.tn-terminal .cs-score.is-stale .cs-num { color: var(--tnx-ink-dim); }
-/* The webcams have their own clock: a stale road count does not dim them. */
-.tn-terminal .cs-score.is-stale .cs-web .cs-num { color: var(--tnx-ink); }
-.tn-terminal .cs-err {
-  display: flex; align-items: stretch; flex: none; margin-left: 6px;
-  border-left: 1px solid var(--tnx-line); border-right: 1px solid var(--tnx-line);
-}
-.tn-terminal .cs-err .cs-errmsg { flex-direction: row; align-items: center; gap: 6px; color: var(--tnx-alert-critical); font-size: var(--tnx-fs-sm); font-weight: 700; }
-.tn-terminal .cs-err .cs-dot { background: var(--tnx-down); }
-.tn-terminal .cs-retry {
-  font: inherit; font-size: var(--tnx-fs-sm); font-weight: 700; letter-spacing: 0.1em; padding: 0 12px;
-  border: 0; border-left: 1px solid var(--tnx-line); background: none; color: var(--tnx-ink); cursor: pointer; text-transform: uppercase;
-}
-.tn-terminal .cs-retry:hover { background: var(--tnx-panel-head); }
-
-/* The phone form (two numbers over their time) is hidden above 720px. */
-.tn-terminal .cs-phone { display: none; }
-.tn-terminal .cs-pline { align-items: center; gap: 5px; white-space: nowrap; }
-.tn-terminal .cs-pline .cs-glyph { margin: 0; }
-.tn-terminal .cs-pline .cs-num { font-size: var(--tnx-fs); line-height: 16px; font-weight: 800; }
-.tn-terminal .cs-pline .cs-gap { width: 7px; }
-.tn-terminal .cs-pline .cs-chev { margin-left: auto; }
-.tn-terminal .cs-pfresh { align-items: center; gap: 5px; font-size: var(--tnx-fs-sm); line-height: 14px; color: var(--tnx-ink-faint); white-space: nowrap; }
-.tn-terminal .cs-pfresh .cs-dot { width: 5px; height: 5px; }
-.tn-terminal .cs-score.is-stale .cs-pfresh { color: var(--tnx-alert-warn); font-weight: 700; }
-
-/* Narrower desktops: the quieter numbers leave first (DROP_ORDER in
-   lib/cameras/statsView.ts: operators, then webcams, then countries), and below
-   1180px the strip takes a thin second row. Each stays one click away. The bands are
-   set from the bar as built (brand, two tabs, this strip, a 520px right cluster), and
-   tests/e2e/camera-stats.spec.ts sweeps the widths to check that nothing is cut off. */
-@media (min-width: 1320px) and (max-width: 1419px) {
-  .tn-terminal :is(.cs-score, .cs-err) .is-drop-1 { display: none; }
-}
-@media (min-width: 1240px) and (max-width: 1319px) {
-  .tn-terminal :is(.cs-score, .cs-err) :is(.is-drop-1, .is-drop-2) { display: none; }
-}
-@media (min-width: 1180px) and (max-width: 1239px) {
-  .tn-terminal :is(.cs-score, .cs-err) :is(.is-drop-1, .is-drop-2, .is-drop-3) { display: none; }
-}
-@media (min-width: 721px) and (max-width: 819px) {
-  .tn-terminal :is(.cs-score, .cs-err) .is-drop-1 { display: none; }
-}
-@media (min-width: 721px) and (max-width: 1179px) {
-  .tn-terminal .tnx-hdr { flex-wrap: wrap; height: auto; }
-  .tn-terminal .tnx-hdr > :is(.tnx-hdr-brand, .tnx-hdr-boards, .tnx-hdr-right) { height: var(--tnx-hdr-h); }
-  .tn-terminal :is(.cs-score, .cs-err) {
-    order: 10; flex: 1 0 100%; width: 100%; margin: 0; height: 30px;
-    border-left: 0; border-right: 0; border-top: 1px solid var(--tnx-line);
-  }
-  .tn-terminal .cs-score .cs-seg { flex-direction: row; align-items: center; gap: 6px; }
-  .tn-terminal .cs-score .cs-seg + .cs-seg::before { top: 8px; bottom: 8px; }
-  .tn-terminal .cs-score .cs-num { font-size: var(--tnx-fs-md); line-height: 1; }
-  .tn-terminal .cs-score .cs-chevwrap { margin-left: auto; }
-}
-
-/* The desktop breakdown: fixed, placed under the strip by the component. */
-.tn-terminal .cs-drop {
-  position: fixed; z-index: 45; width: 624px; max-width: calc(100vw - 16px); max-height: calc(100vh - 96px);
-  overflow-y: auto; overscroll-behavior: contain;
-  background: var(--tnx-panel); border: 1px solid var(--tnx-line-strong); border-radius: var(--tnx-r);
-  box-shadow: var(--tnx-shadow-1), var(--tn-shadow); font-family: var(--tnx-font-mono); color: var(--tnx-ink);
-  transform-origin: top left;
-}
-@media (prefers-reduced-motion: no-preference) {
-  .tn-terminal .cs-drop { animation: cs-drop-in 180ms cubic-bezier(.2, .8, .2, 1); }
-}
-@keyframes cs-drop-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
-.tn-terminal .cs-head {
-  display: flex; align-items: center; gap: 10px; height: 34px; padding: 0 6px 0 12px;
-  background: var(--tnx-panel-head); border-bottom: 1px solid var(--tnx-line); position: sticky; top: 0; z-index: 1;
-}
-.tn-terminal .cs-title { margin: 0; font-size: var(--tnx-fs-sm); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
-.tn-terminal .cs-title:focus { outline: none; }
-.tn-terminal .cs-scope { font-size: var(--tnx-fs-sm); color: var(--tnx-ink-faint); }
-.tn-terminal .cs-when { margin-left: auto; font-size: var(--tnx-fs-sm); color: var(--tnx-ink-faint); }
-.tn-terminal .cs-when b { color: inherit; font-weight: 700; }
-.tn-terminal .cs-x {
-  width: 28px; height: 28px; border: 0; background: none; border-radius: var(--tnx-r-sm); cursor: pointer;
-  color: var(--tnx-ink-dim); font-size: var(--tnx-fs-lg); line-height: 1;
-}
-.tn-terminal .cs-x:hover { background: rgba(38, 43, 21, 0.07); color: var(--tnx-ink); }
-
-/* The box score: regions, with a bar per region. */
-.tn-terminal .cs-box { width: 100%; border-collapse: collapse; font-size: var(--tnx-fs); }
-.tn-terminal .cs-box th {
-  font-size: var(--tnx-fs-sm); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
-  color: var(--tnx-ink-faint); text-align: right; padding: 10px 10px 6px; white-space: nowrap;
-}
-.tn-terminal .cs-box th:first-child { text-align: left; padding-left: 12px; }
-.tn-terminal .cs-box th.cs-barh { text-align: left; width: 150px; }
-.tn-terminal .cs-box td { height: 28px; padding: 0 10px; text-align: right; border-top: 1px solid var(--tnx-row-rule); white-space: nowrap; }
-.tn-terminal .cs-box td:first-child { text-align: left; padding-left: 12px; color: var(--tnx-ink); font-weight: 500; }
-.tn-terminal .cs-box td.cs-barcell { text-align: left; }
-.tn-terminal .cs-box td.n { font-weight: 600; }
-.tn-terminal .cs-box td.z { color: var(--tnx-ink-faint); font-weight: 400; }
-.tn-terminal .cs-box tr.is-none td:first-child { color: var(--tnx-ink-dim); }
-.tn-terminal .cs-none { font-size: var(--tnx-fs-sm); color: var(--tnx-ink-faint); margin-left: 6px; font-weight: 500; }
-.tn-terminal .cs-barcell .cs-none { margin-left: 0; }
-.tn-terminal .cs-box tfoot td { border-top: 1.5px solid var(--tnx-line-strong); font-weight: 800; height: 30px; }
-.tn-terminal .cs-box tfoot td:first-child {
-  font-weight: 700; letter-spacing: 0.06em; font-size: var(--tnx-fs-sm); text-transform: uppercase; color: var(--tnx-ink-dim);
-}
-.tn-terminal .cs-bar { display: flex; height: 8px; align-items: stretch; gap: 1px; }
-.tn-terminal .cs-bar i { display: block; border-radius: 1px; }
-.tn-terminal .cs-bar i.v { background: var(--tnx-accent); }
-.tn-terminal .cs-bar i.s { background: var(--tnx-key); }
-.tn-terminal .cs-key { display: inline-flex; align-items: center; gap: 5px; margin-right: 10px; font-weight: 700; }
-.tn-terminal .cs-key .cs-chip.s { background: var(--tnx-key); box-shadow: none; }
-.tn-terminal .cs-unplaced { margin: 6px 12px 0; font-size: var(--tnx-fs-sm); color: var(--tnx-ink-faint); }
-
-/* A number with a source: highlighted while its tooltip shows. */
-.tn-terminal :is(.cs-drop, .cs-sheet, .cs-err) [data-tip] { cursor: help; border-radius: 3px; }
-.tn-terminal :is(.cs-drop, .cs-sheet, .cs-err) [data-tip]:hover,
-.tn-terminal [data-tip].is-tipped { background: var(--tnx-accent-soft); }
-.tn-terminal :is(.cs-drop, .cs-sheet) :focus-visible { outline: 2px solid var(--tnx-accent); outline-offset: -2px; }
-/* The title takes focus when the panel opens, so a screen reader starts there. It is
-   not a control, so it gets no ring (the header's own :focus-visible rule reaches it). */
-.tn-terminal .tnx-hdr :is(.cs-title, .sh-head h2):focus-visible { outline: none; }
-
-/* Facts: one row per kind of camera, the plain sentence in the caption. */
-.tn-terminal .cs-facts { border-top: 1px solid var(--tnx-line); }
-.tn-terminal .cs-frow + .cs-frow { border-top: 1px solid var(--tnx-line); }
-.tn-terminal .cs-fcap { display: flex; align-items: baseline; gap: 7px; padding: 10px 12px 0; font-size: var(--tnx-fs-sm); color: var(--tnx-ink-dim); line-height: 1.45; }
-.tn-terminal .cs-fcap .cs-glyph { margin: 0; align-self: center; }
-.tn-terminal .cs-fcap b { color: var(--tnx-ink); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
-.tn-terminal .cs-fgrid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr) minmax(0, 1fr); }
-.tn-terminal .cs-fgrid.is-one { grid-template-columns: minmax(0, 1fr); }
-.tn-terminal .cs-fact { padding: 8px 12px 11px; min-width: 0; }
-.tn-terminal .cs-fact + .cs-fact { border-left: 1px solid var(--tnx-row-rule); }
-.tn-terminal .cs-fact h3 { margin: 0 0 3px; font-size: var(--tnx-fs-sm); font-weight: 600; color: var(--tnx-ink-faint); }
-.tn-terminal .cs-big { font-size: var(--tnx-fs-lg); font-weight: 800; letter-spacing: -0.01em; line-height: 1.2; }
-.tn-terminal .cs-big small { font-size: var(--tnx-fs-sm); font-weight: 600; color: var(--tnx-ink-dim); margin-left: 4px; letter-spacing: 0; }
-.tn-terminal .cs-sub { font-size: var(--tnx-fs-sm); color: var(--tnx-ink-dim); margin-top: 3px; line-height: 1.45; }
-.tn-terminal .cs-steps { display: flex; height: 8px; gap: 1px; margin-top: 8px; }
-.tn-terminal .cs-steps i { display: block; background: var(--tnx-key); }
-.tn-terminal .cs-steps i:nth-child(even) { background: var(--tnx-ink-dim); }
-.tn-terminal .cs-stepkey {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 1px 12px; margin-top: 5px;
-  font-size: var(--tnx-fs-sm); color: var(--tnx-ink-dim);
-}
-.tn-terminal .cs-stepkey span { display: flex; justify-content: space-between; gap: 6px; white-space: nowrap; }
-.tn-terminal .cs-stepkey b { color: var(--tnx-ink); font-weight: 700; }
-
-.tn-terminal .cs-also {
-  display: flex; align-items: baseline; gap: 10px; line-height: 1.45; padding: 10px 12px;
-  border-top: 1px solid var(--tnx-line); background: var(--tnx-panel-head); font-size: var(--tnx-fs-sm); color: var(--tnx-ink-dim);
-}
-.tn-terminal .cs-also strong { color: var(--tnx-ink); font-weight: 800; }
-.tn-terminal .cs-also-k { white-space: nowrap; }
-.tn-terminal .cs-also-k b { font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--tnx-ink-dim); margin-right: 4px; }
-.tn-terminal .cs-also .cs-when { white-space: nowrap; }
-.tn-terminal .cs-foot {
-  display: flex; align-items: center; gap: 12px; padding: 9px 12px; border-top: 1px solid var(--tnx-line);
-  font-size: var(--tnx-fs-sm); color: var(--tnx-ink-faint); line-height: 1.45;
-}
-.tn-terminal .cs-foot p { margin: 0; flex: 1; }
-.tn-terminal .cs-link {
-  flex: none; font: inherit; font-size: var(--tnx-fs-sm); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
-  color: var(--tnx-ink); background: none; border: 1px solid var(--tnx-line-strong); border-radius: var(--tnx-r-sm);
-  padding: 6px 9px; cursor: pointer;
-}
-.tn-terminal .cs-link:hover, .tn-terminal .cs-link[aria-expanded="true"] { background: var(--tnx-panel-head); }
-
-/* The per-operator list, with each operator's own licence text. */
-.tn-terminal .cs-ops { border-top: 1px solid var(--tnx-line); padding-top: 4px; }
-.tn-terminal .cs-ops-title { margin: 8px 12px 4px; font-size: var(--tnx-fs-sm); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--tnx-ink); }
-.tn-terminal .op-sum { margin: 0 12px 8px; font-size: var(--tnx-fs-sm); line-height: 1.45; color: var(--tnx-ink-dim); }
-.tn-terminal .op-lic { display: flex; gap: 14px; margin: 6px 12px 8px; font-size: var(--tnx-fs-sm); color: var(--tnx-ink-faint); }
-.tn-terminal .op-lic b { color: var(--tnx-ink); font-weight: 650; }
-.tn-terminal .op-list { list-style: none; margin: 0; padding: 0; }
-.tn-terminal .op { display: grid; grid-template-columns: 1fr auto; gap: 1px 12px; padding: 6px 12px; border-top: 1px solid var(--tnx-row-rule); }
-.tn-terminal .op-n { min-width: 0; font-size: var(--tnx-fs); font-weight: 500; color: var(--tnx-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.tn-terminal .op-c { text-align: right; font-size: var(--tnx-fs); font-weight: 650; }
-.tn-terminal .op-m { grid-column: 1 / -1; font-size: var(--tnx-fs-sm); color: var(--tnx-ink-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.tn-terminal .cl-more {
-  display: block; width: calc(100% - 24px); margin: 8px 12px 12px; padding: 7px 10px;
-  border: 1px solid var(--tnx-line-strong); border-radius: var(--tnx-r-sm); background: var(--tnx-panel);
-  font: inherit; font-size: var(--tnx-fs-sm); font-weight: 600; color: var(--tnx-accent); cursor: pointer; text-align: center;
-}
-.tn-terminal .cl-more:hover { background: var(--tnx-accent-soft); }
-
-/* Tooltip: what a number counts, its source and its time. */
-.tn-terminal .cs-tip {
-  position: fixed; z-index: 58; max-width: min(310px, calc(100vw - 16px)); padding: 9px 11px 10px;
-  background: var(--tnx-glass-solid); border: 1px solid var(--tnx-line-strong); border-radius: var(--tnx-r);
-  box-shadow: var(--tnx-shadow-1); font-family: var(--tnx-font-mono); font-size: var(--tnx-fs-sm); line-height: 1.5;
-  color: var(--tnx-ink-dim); pointer-events: none; text-align: left; white-space: normal;
-}
-.tn-terminal .cs-tip[hidden] { display: none; }
-.tn-terminal .cs-tip b { color: var(--tnx-ink); font-weight: 700; }
-.tn-terminal .cs-tip .t1 { color: var(--tnx-ink); font-size: var(--tnx-fs); font-weight: 600; margin-bottom: 3px; }
-.tn-terminal .cs-tip .src { margin-top: 5px; padding-top: 5px; border-top: 1px solid var(--tnx-row-rule); }
-
-/* Phone: two numbers and their time in the boards row; a bottom sheet. */
-.tn-terminal .cs-sheet, .tn-terminal .cs-scrim { display: none; }
-@media (max-width: 720px) {
-  /* A zero-height line break before the boards row, so the tabs and the strip share it. */
-  .tn-terminal .tnx-hdr::after { content: ""; order: 4; flex: 0 0 100%; height: 0; }
-  .tn-terminal .tn-preset-pill.tnx-hdr-boards { flex: 0 0 auto; }
-  .tn-terminal :is(.cs-score, .cs-err) {
-    order: 6; flex: 1 1 0; min-width: 0; min-height: 44px; margin: 0;
-    border-top: 1px solid var(--tnx-line); border-left: 1px solid var(--tnx-line); border-right: 0;
-  }
-  .tn-terminal .cs-score { flex-direction: column; justify-content: center; align-items: stretch; gap: 2px; padding: 0 12px 0 10px; }
-  .tn-terminal :is(.cs-score, .cs-err) .cs-desk { display: none; }
-  .tn-terminal .cs-score .cs-phone { display: flex; }
-  .tn-terminal .cs-scrim { display: block; position: fixed; inset: 0; background: rgba(38, 43, 21, 0.38); z-index: 55; }
-  .tn-terminal .cs-sheet {
-    display: flex; flex-direction: column; position: fixed; left: 0; right: 0; bottom: 0; top: max(72px, 14dvh); z-index: 56;
-    background: var(--tnx-panel); border-radius: var(--tnx-r-lg) var(--tnx-r-lg) 0 0; box-shadow: 0 -10px 34px rgba(16, 22, 29, 0.22);
-    font-family: var(--tnx-font-mono); color: var(--tnx-ink);
-  }
-}
-@media (max-width: 720px) and (prefers-reduced-motion: no-preference) {
-  .tn-terminal .cs-sheet { animation: cs-sheet-in 220ms cubic-bezier(.2, .8, .2, 1); }
-}
-@keyframes cs-sheet-in { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
-.tn-terminal .sh-grab { width: 36px; height: 4px; border-radius: 2px; background: var(--tnx-ink-ghost); margin: 7px auto 0; flex: none; }
-.tn-terminal .sh-head { display: flex; align-items: center; padding: 4px 4px 6px 16px; flex: none; }
-.tn-terminal .sh-head h2 { margin: 0; font-size: var(--tnx-fs-sm); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
-.tn-terminal .sh-head h2:focus { outline: none; }
-.tn-terminal .sh-x {
-  margin-left: auto; width: 44px; height: 44px; border: 0; background: none; font-size: calc(var(--tnx-fs) + 9px);
-  color: var(--tnx-ink-dim); border-radius: var(--tnx-r); cursor: pointer;
-}
-.tn-terminal .sh-body { overflow-y: auto; overscroll-behavior: contain; padding: 0 16px 20px; -webkit-overflow-scrolling: touch; }
-.tn-terminal .sh-pair { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--tnx-line); border-radius: var(--tnx-r); }
-.tn-terminal .sh-pair > div { padding: 10px 12px 11px; min-width: 0; }
-.tn-terminal .sh-pair > div + div { border-left: 1px solid var(--tnx-line); }
-.tn-terminal .sh-body .cs-lab { font-size: var(--tnx-fs-sm); }
-.tn-terminal .sh-pair .cs-lab { display: flex; align-items: center; gap: 6px; }
-.tn-terminal .sh-pair .cs-big { font-size: calc(var(--tnx-fs) + 11px); margin-top: 3px; min-height: 44px; display: flex; align-items: center; }
-.tn-terminal .sh-when { display: flex; align-items: center; gap: 6px; margin: 9px 2px 0; font-size: var(--tnx-fs-sm); color: var(--tnx-ink-faint); }
-.tn-terminal .sh-when b { color: inherit; }
-.tn-terminal .sh-minor { display: flex; gap: 18px; margin: 8px 2px 4px; font-size: var(--tnx-fs-sm); color: var(--tnx-ink-dim); }
-.tn-terminal .sh-minor > span { display: flex; align-items: center; min-height: 44px; }
-.tn-terminal .sh-minor b { color: var(--tnx-ink); font-weight: 800; font-size: var(--tnx-fs-md); margin-right: 4px; padding: 4px 2px; }
-.tn-terminal .sh-sec { margin: 16px 0 0; font-size: var(--tnx-fs-sm); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--tnx-ink-faint); }
-.tn-terminal .sh-body .cs-box th:first-child, .tn-terminal .sh-body .cs-box td:first-child { padding-left: 2px; }
-.tn-terminal .sh-body .cs-box th:last-child, .tn-terminal .sh-body .cs-box td:last-child { padding-right: 2px; }
-.tn-terminal .sh-body .cs-box td { height: 44px; }
-.tn-terminal .sh-facts { margin-top: 6px; border: 1px solid var(--tnx-line); border-radius: var(--tnx-r); }
-.tn-terminal .sh-facts .cs-fgrid { grid-template-columns: 1fr; }
-.tn-terminal .sh-facts .cs-fact + .cs-fact { border-left: 0; border-top: 1px solid var(--tnx-row-rule); }
-.tn-terminal .sh-web {
-  display: flex; align-items: center; gap: 14px; margin-top: 8px; padding: 10px 12px;
-  border: 1px solid var(--tnx-line); border-radius: var(--tnx-r); background: var(--tnx-panel-head);
-}
-.tn-terminal .sh-web > div:first-child { flex: none; }
-.tn-terminal .sh-web .cs-big { min-height: 44px; display: flex; align-items: center; }
-.tn-terminal .sh-web .cs-sub { margin: 0; }
-.tn-terminal .sh-ops { margin-top: 8px; }
-.tn-terminal .sh-ops .cs-link { min-height: 44px; width: 100%; }
-.tn-terminal .cs-sheet .cs-ops { border-top: 0; }
-.tn-terminal .cs-sheet .op { min-height: 44px; padding-left: 2px; padding-right: 2px; }
-.tn-terminal .cs-sheet :is(.op-sum, .op-lic, .cs-ops-title) { margin-left: 2px; margin-right: 2px; }
-.tn-terminal .cs-sheet .cl-more { min-height: 44px; width: 100%; margin: 8px 0 4px; }
-.tn-terminal .sh-foot { margin-top: 12px; font-size: var(--tnx-fs-sm); color: var(--tnx-ink-faint); line-height: 1.5; }
-/* ── END CAMERA STATS STRIP ── */
 
 /* ── Back to God's eye view (components/console/EyeReturn.tsx) ─────────────────
    Shown only on a console opened from /eye's Sources link (`eye=`). Top left of the

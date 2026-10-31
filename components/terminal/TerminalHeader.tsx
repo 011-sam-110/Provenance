@@ -3,7 +3,13 @@
 // components/shell/StatusBar.tsx.
 //
 // Left → right: brand block (logo · h1) │ board tabs │ ——— │
-// presence · DISCORD · ☕ SUPPORT · SOURCE · SHORTCUTS · ⚙ SETTINGS · DARK MODE · ACCOUNT.
+// presence · ☕ SUPPORT · SOURCE · ⚙ SETTINGS · ACCOUNT.
+//
+// THE SHORT BAR (Sam, 2026-10-31). The camera counts left with no new home: the map is the
+// product, and they spent the bar's middle on one row of numbers. Discord, the palette's door
+// and the theme moved into the settings drawer, which this file still owns
+// (components/shell/SettingsPanel.tsx). Support and Source stay out here, and Source has to:
+// see its comment below.
 //
 // The board tabs are the console's whole navigation: exactly TWO — Globe and
 // Streets. The other five boards (World, Nature, Skywatch, Infrastructure,
@@ -38,15 +44,12 @@ import { isBoardEdited } from "@/lib/console/boards";
 import { shellLayoutStore, useShellLayout } from "@/lib/console/store";
 import { appStatusLine } from "@/components/shell/a11y";
 import Mark from "@/components/brand/Mark";
-import DiscordMark from "@/components/brand/DiscordMark";
 import SettingsPanel from "@/components/shell/SettingsPanel";
 import AccountButton from "@/components/account/AccountButton";
 import type { SettingsTabId } from "@/lib/shell/settingsTabs";
 import LivePresence from "@/components/shell/LivePresence";
-import CameraStats from "@/components/terminal/CameraStats";
 import { BRAND } from "@/lib/brand";
-import { terminalSkinStore, useTerminalSkin } from "@/lib/terminal/skin";
-import { MoonGlyph, SunGlyph } from "@/components/terminal/SkinGlyphs";
+import { terminalSkinStore } from "@/lib/terminal/skin";
 
 /**
  * The tab label IS the board's title, uppercased. One string, one source:
@@ -231,10 +234,10 @@ export default function TerminalHeader({ onOpenPalette }: { onOpenPalette: () =>
   const activePresetId = useActivePreset();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsTab, setSettingsTab] = useState<SettingsTabId | undefined>(undefined);
-  // The dark skin lives in lib/terminal/skin.ts. Read the saved choice after mount (never
-  // during render: the server snapshot is always light), so the icon and aria-pressed
-  // catch up with what the before-paint script already put on <html>.
-  const skin = useTerminalSkin();
+  // The skin lives in lib/terminal/skin.ts, and its one control is the Theme row in the
+  // drawer below. Read the saved choice after mount (never during render: the server
+  // snapshot is always the default), so the store catches up with what the before-paint
+  // script already put on <html>, and the row is right when it opens.
   useEffect(() => { terminalSkinStore.hydrate(); }, []);
 
   // Board name for the spoken status line. Same source the tabs read, so the two can
@@ -314,61 +317,33 @@ export default function TerminalHeader({ onOpenPalette }: { onOpenPalette: () =>
             tablist with no tabpanel is a promise the DOM does not keep. */}
         <BoardTabs />
 
-        {/* ── Camera stats ─────────────────────────────────────────────────── */}
-        {/* VIDEO | STILLS | COUNTRIES | OPERATORS | COUNTED ‖ WEBCAMS, each number with
-            its source and time, one click from the breakdown. Video counts streams that
-            PLAYED at their last check, never stills, and the word "live" is not used;
-            see CameraStats.tsx and lib/cameras/statsView.ts. */}
-        <CameraStats />
-
         <div className="tnx-hdr-spacer" />
 
         {/* ── Entry points ─────────────────────────────────────────────────── */}
         {/*
-          ONE BUTTON FAMILY, not four styles in a row. The skin toggle, Support,
-          Source and the palette trigger were each dressed differently — a bordered
-          chip, two bare accent links, and a key-cap-plus-label — which made a
-          four-item cluster read as four unrelated things. They are all the same
-          kind of control (a way OUT of the console, or a way to change how it
-          looks), so they now share `.tnx-hdr-btn`: the flat segmented style
+          ONE BUTTON FAMILY, not a row of styles. This cluster has held a bordered
+          chip, two bare accent links and a key-cap-plus-label at once, and it read as
+          unrelated things. They are all the same kind of control (a way OUT of the
+          console, or the door to a drawer), so they share `.tnx-hdr-btn`: the flat segmented style
           CONSOLE/WALL used to have, kept on after those buttons were removed
           because it was the one shape in this cluster that read as a button at 34px.
 
-          The glyphs stay. They are the fastest way to tell four same-shaped
+          The glyphs stay. They are the fastest way to tell same-shaped
           segments apart at a glance, and each is aria-hidden so nothing is read out
           as a symbol.
 
           ⚙ IS BACK. It left when settings opened from the profile popover, and it
           returned when that popover did not survive the header trim — a drawer
-          holding theme, language, boards, sharing, notifications and the keymap
-          cannot be a room with no door. `.tn-settings-trigger` came back with it.
+          holding theme, language, boards, sharing, notifications, the keymap, the
+          palette's door and the Discord link cannot be a room with no door. `.tn-settings-trigger` came back with it.
         */}
         <div className="tnx-hdr-right">
           {/* HOW MANY PEOPLE ARE ON THE SITE, when that is worth saying.
               Renders NOTHING below the threshold — not a zero, not a gap — so it
               adds no width to this cluster on the ordinary day. It leads the
-              cluster because it is a readout rather than a control, and the three
+              cluster because it is a readout rather than a control, and the
               things after it are all controls. */}
           <LivePresence />
-          {/* THE PERMANENT DOOR TO THE DISCORD, and the reason CommunityNote's
-              dismissal is allowed to be permanent. That card asks once and then
-              never again; without a standing link, "No thanks" would close the
-              only route rather than just the prompt. It joins this cluster because
-              it is the same kind of control as the two beside it — a way OUT of the
-              console — and it uses `.tnx-hdr-btn-label` (as SHORTCUTS and SETTINGS
-              do, and SUPPORT and SOURCE do not) so it collapses to the mark alone
-              at 900px and below and adds no width on a phone. */}
-          <a
-            className="tnx-hdr-btn"
-            href={BRAND.discordUrl}
-            target="_blank"
-            rel="noreferrer noopener"
-            title={`Join the ${BRAND.name} Discord`}
-          >
-            <DiscordMark size={12} />
-            <span className="tnx-hdr-btn-label">DISCORD</span>
-          </a>
-
           {/* Buy Me a Coffee (Ko-fi) — the app is free + keyless; this is a calm,
               opt-in way to support it. */}
           <a
@@ -398,60 +373,14 @@ export default function TerminalHeader({ onOpenPalette }: { onOpenPalette: () =>
             <span>SOURCE</span>
           </a>
 
-          {/*
-            SHORTCUTS, not COMMAND. The palette is a command bar, but "COMMAND" told
-            a first-time reader nothing about what was behind it, and the ⌘K cap
-            beside it was doing all the explaining on its own. "Shortcuts" names what
-            people open it for. `.tn-palette-trigger` is unchanged — it is the
-            selector the e2e suite opens the palette with.
-
-            ON A PHONE IT IS A MAGNIFIER. At 900px and below the header hides every
-            label (globals.css, the max-width: 900px header pass), and once the ⌘K cap
-            left (#162) this button had nothing else in it, so phones showed an empty
-            box. The 12px mark below stands in for the word there and only there:
-            `.tnx-hdr-btn-mark` is display:none above 900px, so the desktop bar keeps
-            its width. A magnifier because on a phone the palette is what you search
-            and ask with ("Search actions, or ask"); it is the Inspector rail's Search
-            ring and handle redrawn on the header's 12-unit grid, at the account mark's
-            1.3 stroke. tests/e2e/header-phone.spec.ts holds it.
-          */}
-          <button
-            type="button"
-            className="tnx-hdr-btn tn-palette-trigger"
-            onClick={onOpenPalette}
-            aria-label="Shortcuts and command palette"
-            // NO ⌘K CAP, AND NO ⌘K IN THE TITLE. That chord opens the Sources rail
-            // now (ConsoleShell's keydown handler says why), so the cap would have
-            // been an instruction that does something else. This button is the
-            // palette's door; it does not have a chord of its own.
-            title="Shortcuts and commands"
-          >
-            <svg
-              className="tnx-hdr-btn-mark"
-              width={12}
-              height={12}
-              viewBox="0 0 12 12"
-              aria-hidden
-              focusable="false"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={1.3}
-              strokeLinecap="round"
-            >
-              <circle cx="5.1" cy="5.1" r="3.15" />
-              <path d="M7.45 7.45 10.3 10.3" />
-            </svg>
-            <span className="tnx-hdr-btn-label">SHORTCUTS</span>
-          </button>
-
           {/* ⚙ IS BACK, AND IT IS THE ONLY DOOR AGAIN.
 
               It was removed when Settings moved into the profile popover, on the
               grounds that a header icon was "a second door to a room that already
               had one". The popover has now gone with the "?" avatar, so that
               reasoning inverts: without this button the settings drawer — theme,
-              language, board loading, sharing, Telegram and the whole notifications
-              section — has no way in at all.
+              language, board loading, sharing, Telegram, the whole notifications
+              section, the palette's door and the Discord link — has no way in at all.
 
               `.tn-settings-trigger` is carried over VERBATIM: it is the selector
               tests/e2e/shortcuts.spec.ts opens the drawer with to rebind a key. */}
@@ -465,26 +394,13 @@ export default function TerminalHeader({ onOpenPalette }: { onOpenPalette: () =>
             <span aria-hidden>⚙</span>
             <span className="tnx-hdr-btn-label">SETTINGS</span>
           </button>
-          {/* DARK MODE. Icon-only and 30px wide on purpose: see .tnx-hdr-skin in globals.css.
-              The icon shows where a press takes you (moon in light, sun in dark); the name
-              stays "Dark mode" and aria-pressed carries the state. */}
-          <button
-            type="button"
-            className="tnx-hdr-btn tnx-hdr-skin"
-            onClick={() => terminalSkinStore.toggle()}
-            aria-label="Dark mode"
-            aria-pressed={skin === "dark"}
-            title={skin === "dark" ? "Switch to light" : "Switch to dark"}
-          >
-            {skin === "dark" ? <SunGlyph /> : <MoonGlyph />}
-          </button>
           {/* THE ACCOUNT DOOR. Last in the cluster: it is the newest control and the only one
               about the person rather than the console. Nothing renders when accounts are off. */}
           <AccountButton onOpen={() => { setSettingsTab("account"); setSettingsOpen(true); }} />
         </div>
       </header>
 
-      <SettingsPanel open={settingsOpen} initialTab={settingsTab} onClose={() => setSettingsOpen(false)} />
+      <SettingsPanel open={settingsOpen} initialTab={settingsTab} onClose={() => setSettingsOpen(false)} onOpenPalette={onOpenPalette} />
     </>
   );
 }

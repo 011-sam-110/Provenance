@@ -19,7 +19,7 @@
 //       glance, close) never sees it.
 //
 // WHAT IS THE SAME, AND IS LOAD-BEARING: resolving is PERMANENT. Nobody who has
-// joined or said no is asked twice. The console header carries a DISCORD button, so
+// joined or said no is asked twice. The settings drawer carries a Discord link, so
 // a permanent "no" here closes the prompt and not the door — which is what makes a
 // permanent no defensible rather than a one-way loss.
 
