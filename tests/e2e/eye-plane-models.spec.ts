@@ -11,7 +11,8 @@ import { expect, test, type Page } from "@playwright/test";
  *   - It draws only when the map does. Models that will not load bring the chevrons back, and one
  *     type's file that will not load leaves only that type plain.
  *   - The Sources tray's Planes switch hides the models and brings them back.
- *   - `/` and `/app` never ask for a model or for three.js.
+ *   - `/` and `/app` never ask for a model or load this layer's code. `/app` loads no three.js at
+ *     all. `/` loads it for its own photo sphere (lib/marketing/cameraSphere.ts), so it is not held to that.
  *
  * The planes are answered at /api/eye/planes from the rows below, so the test does not depend on
  * what is in the sky over London. THE HOOKS: `main[data-eye-state="ready"]` and `window.__map`
@@ -115,7 +116,7 @@ async function pageSpot(page: Page, r: Row, where: "body" | "ring" | "line") {
   );
 }
 
-const panel = (page: Page) => page.getByRole("complementary").filter({ hasText: /ICAO address/ });
+const panel = (page: Page, callsign: string) => page.getByRole("dialog", { name: callsign });
 
 async function open(page: Page, width = 1440, height = 900) {
   await page.setViewportSize({ width, height });
@@ -169,8 +170,8 @@ for (const where of ["body", "line", "ring"] as const) {
     await page.waitForTimeout(800);
     const at = await pageSpot(page, HIGH, where);
     await page.mouse.click(at.x, at.y);
-    const text = panel(page);
-    await expect(text).toContainText("HIGH1", { timeout: 15_000 });
+    const text = panel(page, "HIGH1");
+    await expect(text).toBeVisible({ timeout: 15_000 });
     await expect(text).toContainText("37,000 ft");
     await expect(text).toContainText("Drawn lower than its real height");
   });
@@ -181,8 +182,8 @@ test("a plane under the cap does not say it is drawn lower", async ({ page }) =>
   await page.waitForTimeout(800);
   const at = await pageSpot(page, LOW, "body");
   await page.mouse.click(at.x, at.y);
-  const text = panel(page);
-  await expect(text).toContainText("LOW2", { timeout: 15_000 });
+  const text = panel(page, "LOW2");
+  await expect(text).toBeVisible({ timeout: 15_000 });
   await expect(text).not.toContainText("Drawn lower");
 });
 
@@ -241,22 +242,31 @@ test("the Sources tray's Planes switch hides the models, and shows them again", 
 });
 
 for (const path of ["/", "/app"]) {
-  test(`${path} makes no request for a model or for three.js`, async ({ page }) => {
+  test(`${path} asks for no model and loads none of this layer's code`, async ({ page }) => {
     const asked: string[] = [];
+    const watching: Promise<void>[] = [];
     page.on("request", (r) => {
       const url = new URL(r.url());
       if (url.pathname.startsWith("/models/")) asked.push(url.pathname);
     });
-    page.on("response", async (r) => {
+    page.on("response", (r) => {
       const url = new URL(r.url());
       if (!url.pathname.endsWith(".js")) return;
-      const body = await r.text().catch(() => "");
-      // three.js's own revision string, in whatever chunk the build put it.
-      if (body.includes("WebGLRenderer") && body.includes("InstancedMesh")) asked.push(url.pathname);
+      watching.push(
+        r.text().then(
+          (body) => {
+            if (body.includes("eye-plane-models")) asked.push(`layer in ${url.pathname}`);
+            // three.js's own class names, in whatever chunk the build put them. `/` has its own use for it.
+            if (path === "/app" && body.includes("WebGLRenderer") && body.includes("InstancedMesh")) asked.push(`three.js in ${url.pathname}`);
+          },
+          () => {},
+        ),
+      );
     });
     await page.goto(path);
     await page.waitForLoadState("load");
     await page.waitForTimeout(4000);
+    await Promise.all(watching);
     expect(asked).toEqual([]);
   });
 }
