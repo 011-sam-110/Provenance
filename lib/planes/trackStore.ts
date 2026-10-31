@@ -20,7 +20,7 @@
 // THE CAPS ARE HARD AND WERE MEASURED, by `scripts/track-store-memory.mts`, 2026-10-31. Twelve
 // hours of a simulated pull of 10,000 held 21,000 planes, 374,000 points and 23 MB. Filled to
 // TRACK_CAPS it holds 70 MB, on a box that had 1,133 MB free of 1,907 MB that day. One pull spends
-// about 12 ms here, 23 ms at worst, against the second or so the pull itself takes.
+// 7 to 12 ms here, under 40 ms at worst, against the second or so the pull itself takes.
 
 import type { WorldObject } from "@/lib/world";
 import { heardAt, newLine, pointCount, stepLine, toStoredTrack, trimOlderThan, type TrackLine } from "@/lib/planes/trackLine";
