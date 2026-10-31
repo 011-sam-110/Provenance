@@ -39,18 +39,10 @@ describe("the Sources link", () => {
     expect(state.basemap).toBe("satellite");
   });
 
-  it("carries this view's own link last, as eye=, and still reads as a Sources link", () => {
-    const back = "place=tower-bridge&lat=51.50531&lon=-0.08056&z=15.7&heading=247&tilt=48";
-    const href = consoleHref(VIEW, { sources: true, back });
-    expect(href).toMatch(/^\/app\?lat=[-\d.]+&lon=[-\d.]+&z=[\d.]+.*sources=open/);
-    expect(href.endsWith(`&eye=${encodeURIComponent(back)}`)).toBe(true);
-    expect(href.indexOf("sources=open")).toBeLessThan(href.indexOf("eye="));
-    const q = query(href);
-    expect(q.get("eye")).toBe(back);
+  it("no longer carries this view's own link as eye=", () => {
+    const q = query(consoleHref(VIEW, { sources: true, scene: true }));
+    expect(q.has("eye")).toBe(false);
     expect(wantsSourcesOpen(q)).toBe(true);
-    // The scene's keys sit before it too.
-    const withScene = consoleHref(VIEW, { sources: true, scene: true, back });
-    expect(withScene.indexOf("base=satellite")).toBeLessThan(withScene.indexOf("eye="));
   });
 
   it("keeps the old plain link when no option is given", () => {

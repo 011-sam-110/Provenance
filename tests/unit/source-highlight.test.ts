@@ -168,15 +168,17 @@ describe("every map source is classed", () => {
   ];
   const aoi = idsIn(read("lib/map/aoi.ts"), /const\s+[A-Z_]+_SRC\s*=\s*"([^"]+)"/g);
   const buildings = idsIn(read("lib/map/buildings.ts"), /export const BUILDING_SRC\s*=\s*"([^"]+)"/g);
+  const coverage = idsIn(read("lib/map/coverageOverlay.ts"), /export const COVERAGE_SRC\s*=\s*"([^"]+)"/g);
 
   test("the scan finds the sources it is meant to", () => {
     expect(worldMap.length).toBeGreaterThanOrEqual(19);
     expect(aoi).toHaveLength(3);
     expect(buildings).toEqual(["tn-buildings"]);
+    expect(coverage).toEqual(["eye-coverage"]);
   });
 
   test("each is either in SOURCE_OWNERS or in NEVER_FADE_SOURCES, and never both", () => {
-    for (const id of [...worldMap, ...aoi, ...buildings]) {
+    for (const id of [...worldMap, ...aoi, ...buildings, ...coverage]) {
       const fades = id in SOURCE_OWNERS;
       const stays = NEVER_FADE_SOURCES.includes(id);
       expect(fades || stays, `${id} is not classed in lib/map/sourceHighlight.ts`).toBe(true);
@@ -185,7 +187,7 @@ describe("every map source is classed", () => {
   });
 
   test("nothing in either table names a source the map no longer has", () => {
-    const all = new Set([...worldMap, ...aoi, ...buildings]);
+    const all = new Set([...worldMap, ...aoi, ...buildings, ...coverage]);
     for (const id of [...Object.keys(SOURCE_OWNERS), ...NEVER_FADE_SOURCES]) {
       expect(all.has(id), `${id} is classed but is not a map source`).toBe(true);
     }

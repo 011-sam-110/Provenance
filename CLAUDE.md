@@ -145,15 +145,40 @@ obligations and are not satisfied by the licence.
   `lib/console/sourcesLink.ts`) is now the landing page's alone. A browser with no saved board
   also gets `layers=` and `base=` from this view's way out, so the console does not open empty;
   a saved board (`tn.variant.v1`) keeps its own. `tests/unit/landing-doors.test.ts` holds
-  the doors. The same link carries `eye=`, the view's own link (place or camera, centre,
-  zoom, heading, tilt): ConsoleShell reads it once after mount through `parseEyeReturn`,
-  which rebuilds it from checked values and never uses it as a URL, drops it from the
-  address, and the console's map then shows "God's eye view / Back to <place>" at its top
-  left for the rest of that visit (`components/console/EyeReturn.tsx`, in memory only, so
-  a reload drops it). "Exit to dashboard" is the view's way out, in the sidebar's foot and in
-  the sheet behind the menu on a phone (`getDashboardHref()`), so the console opens at the spot
-  on screen with its rail as the visitor left it, plus the way back; a recording or a film
-  draws none (`tests/e2e/eye-exit.spec.ts`).
+  the doors. A link kept from before 2026-10-31 may carry `eye=`, which fed a "Back to <place>" chip
+  that left that day and which this view no longer sends. The console reads nothing from it and only drops it
+  from the address (`withoutArrivalFlags`).
+  **The way in from the console is the person** (`components/console/EyePerson.tsx`, the rules
+  in `lib/console/eyePerson.ts` and `lib/eye/coverage.ts`, 2026-10-31, on the map stage only, not on
+  a Streets wall): a round button directly above the map's i, with the behaviour of Google's
+  Pegman on our own data and our own figure. Drag him onto the map: he hangs from the pointer, the
+  ring 58 px below it is the drop point, and coverage lights up on the first move. At zoom 12 and
+  closer a drop opens at the ring. Wider out it searches a radius (500 km at zoom 6 and wider,
+  halving per zoom) and ranks by cameras over distance, because our cameras are far sparser than
+  Google's roads: Manchester at zoom 6 opens London, and the mid-Atlantic is a miss that flies home
+  with the address unchanged. A hand-framed preset wins when near, and otherwise it lands on a real
+  camera in the densest cluster, never on an average. A marker, a line and a card show the choice
+  before the release. A click toggles coverage and a legend, and a click on the map then opens the
+  same search's result; on the keyboard the ring sits at the map's centre, arrows pan, Enter drops.
+  Always a full page load, at `EYE_SPOT_ZOOM` or closer, with the map's bearing as its heading.
+  The edge pan's band and the card keep to the part of the map that shows: past the open sidebar and
+  a panel slid along with it, and under a phone's pill (`visibleMapBox`). A globe smaller than the map
+  pans from its own edge and turns at most a radian a second (`edgePanArea`). A draw or a camera pick
+  ends the toggle, because both need the map's clicks.
+  Four rules are not style preferences. **A drag sends no location**: the index comes once from
+  `/api/eye/coverage`, every search runs on the browser's copy, and `lib/console/eyeCoverageClient.ts`
+  is the only code in it that asks the network, never with the pointer's place. **The link carries
+  no name**: `/eye` looks up a spot's name from its own coordinates, so a crafted link cannot title
+  the page. `map.unproject` answers with the horizon for a point off the globe, so a drop opens
+  nothing unless `map.project` brings the answer back to the point (`spotAtPoint`), and a latitude
+  past `EYE_MAX_LAT` opens nothing either, because /eye reads it as a broken link and opens
+  Westminster. And the button is absolute against the corner's bottom edge, in a slot of its own
+  directly before the credit, so a credit that wraps does not move it and anything MapLibre adds
+  later lands above it (`tests/e2e/eye-person.spec.ts`). The acceptance table is in
+  `tests/unit/eye-coverage.test.ts`, on production's own cells (`tests/fixtures/eye-coverage.json`).
+  "Exit to dashboard" is the view's way out, in the sidebar's foot and in the sheet behind the
+  menu on a phone (`getDashboardHref()`), so the console opens at the spot on screen with its rail
+  as the visitor left it; a recording or a film draws none (`tests/e2e/eye-exit.spec.ts`).
   **Both map pages ask for WebGL before they mount MapLibre**
   (`lib/map/webgl.ts`, `components/map/*`): without it they show a plain fallback with the
   camera directory and the source link, not Next's "Application error" page.
@@ -275,6 +300,7 @@ obligations and are not satisfied by the licence.
   (signed snapshots pushed from provenance-1, see `lib/relay`), `eye/streets` (TfL's road
   disruptions for `/eye`), `eye/vessels` (the boats around the God's eye view's box), `eye/planes`
   (the aircraft around it),
+  `eye/coverage` (where the cameras are, for the person on the console's map, `lib/eye/coverage.ts`),
   `camera-road` (what the road operators say about each camera's
   road, for the camera detail, the camera wall and the `/eye` cards; `lib/roads/nearCamera.ts`),
   and the two doors

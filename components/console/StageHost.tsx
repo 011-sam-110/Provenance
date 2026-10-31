@@ -8,7 +8,7 @@ import { getWidgetType } from "@/lib/console/registry";
 import WidgetDetail from "@/components/console/WidgetDetail";
 import Hud from "@/components/hud/Hud";
 import IssOrbit from "@/components/console/IssOrbit";
-import EyeReturn from "@/components/console/EyeReturn";
+import EyePerson from "@/components/console/EyePerson";
 import MapSearch from "@/components/console/MapSearch";
 import MapBoundary from "@/components/map/MapBoundary";
 import MapFallback from "@/components/map/MapFallback";
@@ -48,9 +48,9 @@ export default function StageHost({ stage }: { stage: StageId }) {
   // (`.tn-cw-stage` is the positioned ancestor they anchor inside). MapSearch is the
   // search pill, top left. Hud renders null while its Map-settings pref is off;
   // IssOrbit renders null ALWAYS — it exists to drive the camera while the
-  // ISS-orbit pref is on; EyeReturn renders null unless the console was opened
-  // from God's eye view's Sources link (its way back, under the pill). A focused
-  // widget unmounts all five together.
+  // ISS-orbit pref is on; EyePerson, the way into God's eye view, draws itself into
+  // the map's bottom-right corner, and not on a Streets wall. A focused widget, or a
+  // browser with no WebGL, gets none of them: the early returns above come first.
   if (gl === false) return <MapFallback tone="light" />;
   return (
     <MapBoundary fallback={<MapFallback tone="light" />}>
@@ -58,7 +58,7 @@ export default function StageHost({ stage }: { stage: StageId }) {
       <MapSearch />
       <Hud />
       <IssOrbit />
-      <EyeReturn />
+      <EyePerson />
     </MapBoundary>
   );
 }

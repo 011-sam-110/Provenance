@@ -24,6 +24,11 @@ export interface GeocodeResult {
    * A code has one spelling.
    */
   countryCode?: string;
+  /**
+   * The town or city a place is in, or its county where it has none: "Glasgow" for a street in
+   * Glasgow, whose `name` starts with the street. What the person's card and /eye's title say.
+   */
+  locality?: string;
   /** [west, south, east, north] — present only when the feature carries an extent. */
   bbox?: [number, number, number, number];
 }
@@ -98,6 +103,7 @@ export function normalizePhoton(json: unknown, limit = 8): GeocodeResult[] {
       lon,
       type: p.osm_value || p.type || p.osm_key || undefined,
       countryCode: p.countrycode ? p.countrycode.trim().toUpperCase() : undefined,
+      locality: p.city || p.county || undefined,
       bbox: toBbox(p.extent),
     });
     if (out.length >= limit) break;

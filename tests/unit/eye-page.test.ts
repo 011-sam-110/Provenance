@@ -52,11 +52,11 @@ describe("/eye", () => {
 describe("the ways in are full page loads", () => {
   // The view writes the console's layer and basemap stores in memory. A client-side
   // route would carry a booted console's state into it, and its writes back out.
-  it("Map settings links with a plain anchor", () => {
-    const src = code("components/shell/inspector/tools/SettingsTool.tsx");
-    expect(src).toContain("eyeSpotHref(");
-    expect(src).toMatch(/<a\s[^>]*href="\/eye"/);
-    expect(src).not.toMatch(/router\.push\([^)]*eye/);
+  it("the person on the console's map assigns the address", () => {
+    const src = code("components/console/EyePerson.tsx");
+    expect(code("lib/console/eyePerson.ts")).toContain("eyeSpotHref(");
+    expect(src).toContain("window.location.assign(");
+    expect(src).not.toMatch(/router\.push\([^)]*/);
   });
 
   it("a camera's detail links with a plain anchor", () => {

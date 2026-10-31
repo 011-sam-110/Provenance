@@ -1,14 +1,14 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { EYE_PLACES, consoleHref, eyeLinkQuery, parseEyeReturn, type EyeView } from "@/lib/eye/places";
+import { consoleHref, type EyeView } from "@/lib/eye/places";
 import { EXIT_LABEL } from "@/lib/eye/wording";
 import { wantsSourcesOpen, withoutArrivalFlags } from "@/lib/console/sourcesLink";
 import { decodeViewState } from "@/lib/share/url";
 
 /**
  * "Exit to dashboard" in God's eye view's sidebar (components/eye/EyeHud.tsx): the console at
- * the spot on screen, with its rail as the visitor left it and the way back to this view.
+ * the spot on screen, with its rail as the visitor left it.
  * These are the rules behind it, held without a browser; tests/e2e/eye-exit.spec.ts
  * drives the real journey.
  */
@@ -16,7 +16,6 @@ import { decodeViewState } from "@/lib/share/url";
 const read = (...p: string[]) => readFileSync(join(process.cwd(), ...p), "utf8");
 const query = (href: string) => new URLSearchParams(href.slice(href.indexOf("?") + 1));
 
-const tower = EYE_PLACES.find((p) => p.id === "tower-bridge")!;
 const MOVED: EyeView = { lat: 51.50531, lon: -0.08056, zoom: 15.7, tilt: 48, heading: 247 };
 
 describe("the words", () => {
@@ -27,8 +26,7 @@ describe("the words", () => {
 });
 
 describe("the link", () => {
-  const back = eyeLinkQuery({ kind: "place", place: tower, view: tower.wide }, MOVED);
-  const href = consoleHref({ lat: MOVED.lat, lon: MOVED.lon, zoom: MOVED.zoom }, { back });
+  const href = consoleHref({ lat: MOVED.lat, lon: MOVED.lon, zoom: MOVED.zoom });
 
   it("opens the console at the same spot, and does not open the Sources rail", () => {
     expect(href.startsWith("/app?")).toBe(true);
@@ -41,17 +39,15 @@ describe("the link", () => {
     expect(q.has("sources")).toBe(false);
   });
 
-  it("carries the way back to this view, which the console reads and then drops", () => {
+  it("no longer carries this view's own link, and the console drops one kept from before", () => {
     const q = query(href);
-    const ret = parseEyeReturn(q.get("eye"));
-    expect(ret?.kind).toBe("place");
-    expect(ret?.placeName).toBe("Tower Bridge");
-    expect(ret?.href).toBe(`/eye?${back}`);
+    expect(q.has("eye")).toBe(false);
+    q.set("eye", "place=tower-bridge&lat=51.5&lon=-0.08");
     expect(withoutArrivalFlags("/app", `?${q.toString()}`)).toBe("/app?lat=51.50531&lon=-0.08056&z=15.7");
   });
 
   it("gives a browser with no saved board this view's layers and ground", () => {
-    const q = query(consoleHref(MOVED, { scene: true, back }));
+    const q = query(consoleHref(MOVED, { scene: true }));
     expect(q.get("layers")).toBe("livecams,staticcams,planes");
     expect(q.get("base")).toBe("satellite");
     expect(q.has("sources")).toBe(false);

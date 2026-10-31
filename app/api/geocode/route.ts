@@ -26,14 +26,18 @@ export async function GET(req: Request) {
 
   // REVERSE mode — coordinates but no query: name the place under a dropped pin.
   // Dormant-safe (empty results on any failure); the caller keeps its coord label.
+  // `lang=en` asks for English names ("Taichung", not its local spelling). Nothing else passes.
+  // Without it Photon writes each country's own, which other callers rely on.
   if (q.length < 2 && hasCoord) {
-    const key = `rev|${Number(lat).toFixed(4)},${Number(lon).toFixed(4)}`;
+    const english = url.searchParams.get("lang") === "en";
+    const key = `rev|${english ? "en|" : ""}${Number(lat).toFixed(4)},${Number(lon).toFixed(4)}`;
     const hit = cache.get(key);
     if (hit && Date.now() - hit.at < TTL_MS) return Response.json(hit.body);
     const upstream = new URL(PHOTON_REVERSE);
     upstream.searchParams.set("lat", lat as string);
     upstream.searchParams.set("lon", lon as string);
     upstream.searchParams.set("limit", "1");
+    if (english) upstream.searchParams.set("lang", "en");
     try {
       const res = await fetch(upstream, {
         headers: { Accept: "application/json", "User-Agent": UA, Referer: REFERER },

@@ -7,15 +7,19 @@
 // READ ONCE, IN THE BROWSER, AFTER MOUNT. app/(console)/app/page.tsx must not take
 // `searchParams` (tests/unit/console-static.test.ts says why), so ConsoleShell reads
 // the flag from window.location in its boot effect and then drops it from the
-// address. The flags only open the rail and offer the way back to God's eye view
-// (`eye=`, lib/eye/places.ts). They write no layer, no board and nothing to
-// localStorage, so the variant spine (lib/variants) stays the one owner of layer
-// state.
-
-import { EYE_RETURN_PARAM } from "@/lib/eye/places";
+// address. The flag only opens the rail. It writes no layer, no board and nothing to
+// localStorage, so the variant spine (lib/variants) stays the one owner of layer state.
+//
+// `eye=` IS DROPPED AND NOTHING ELSE. It used to carry God's eye view's own link for a "Back
+// to <place>" chip on the map, which was removed on Sam's word (2026-10-31): the person on the
+// map (components/console/EyePerson.tsx) is the way in now. /eye no longer sends the param, but
+// links kept from before that day carry it, so the address has to shed it, and nothing here
+// reads what it holds.
 
 export const SOURCES_PARAM = "sources";
 export const SOURCES_OPEN = "open";
+/** What an old God's eye view link carried. Dropped from the address, never read. */
+export const OLD_EYE_PARAM = "eye";
 
 /** True only for `sources=open`. Any other value, or none, leaves the rail as it is. */
 export function wantsSourcesOpen(params: URLSearchParams): boolean {
@@ -24,13 +28,13 @@ export function wantsSourcesOpen(params: URLSearchParams): boolean {
 
 /**
  * The same address without the arrival flags (`sources=` and `eye=`), so a reload or a
- * copied link does not open the rail again or carry the way back. `search` is
+ * copied link does not open the rail again or keep a dead param. `search` is
  * `location.search` (with or without its "?").
  */
 export function withoutArrivalFlags(pathname: string, search: string, hash = ""): string {
   const params = new URLSearchParams(search);
   params.delete(SOURCES_PARAM);
-  params.delete(EYE_RETURN_PARAM);
+  params.delete(OLD_EYE_PARAM);
   const qs = params.toString();
   return `${pathname}${qs ? `?${qs}` : ""}${hash}`;
 }

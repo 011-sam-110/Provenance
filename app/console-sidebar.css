@@ -206,11 +206,7 @@
   top: 68px; left: 12px;
   max-width: calc(100% - 24px);
 }
-.tn-terminal .tn-cw-stage .tn-eye-return {
-  top: var(--tn-eye-return-top, 68px); left: var(--tn-eye-return-left, 12px);
-}
 .tn-terminal .tn-cw-stage [data-tn-hud],
-.tn-terminal .tn-cw-stage .tn-eye-return,
 .tn-terminal .tn-cw-stage .tn-pinnav,
 .tn-terminal .tn-cw-stage .tn-mapsearch {
   translate: var(--tn-cover) 0;
@@ -218,7 +214,6 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .tn-terminal .tn-cw-stage [data-tn-hud],
-  .tn-terminal .tn-cw-stage .tn-eye-return,
   .tn-terminal .tn-cw-stage .tn-pinnav,
   .tn-terminal .tn-cw-stage .tn-mapsearch { transition: none; }
 }

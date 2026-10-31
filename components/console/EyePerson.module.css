@@ -1,0 +1,496 @@
+/* The person on the console's map (EyePerson.tsx). Tokens for the plates, so they match the i
+   beside them in both skins, and they are inside `.tn-terminal`, where the tokens start. Two literal
+   colours, both the figure's: #e8c25a is the person's own colour in the HUD v2 plan, and it is
+   1.6:1 on the light plate, so the light skin draws it in #8a6a12 (5.1:1). */
+
+/* ── In the corner ─────────────────────────────────────────────────────────────
+   The slot only takes up room in the corner's stack, between the i and whatever is above it.
+   It is NOT a `.maplibregl-ctrl`: that class carries a transform, which would make the slot the
+   box the button measures from, and the button would ride up with a credit that wraps. */
+.slot {
+  float: right;
+  clear: both;
+  width: 30px;
+  height: 36px;
+  margin: 0 0 8px;
+  pointer-events: none;
+}
+
+/* 36 px, centred on the i's 30 px (3 px wider each side), 8 px above it. The i is 30 px tall at
+   the corner's bottom edge, so `bottom` is its height and the gap. The open credit's words stop
+   34 px or more short of the corner's right edge, and this reaches 33 px in from it. */
+.person {
+  position: absolute;
+  z-index: 1;
+  right: -3px;
+  bottom: 38px;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--tnx-line-strong);
+  border-radius: 999px;
+  background: var(--tnx-panel);
+  box-shadow: var(--tnx-shadow-1);
+  color: #8a6a12;
+  cursor: grab;
+  pointer-events: auto;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+:global(html[data-tnx-skin="dark"]) .person {
+  color: #e8c25a;
+}
+/* Hover and focus change it at once: the sign that it can be picked up. */
+.person:hover {
+  background: var(--tnx-panel-head);
+  border-color: currentColor;
+}
+.person:focus-visible {
+  outline: 2px solid var(--tnx-accent);
+  outline-offset: 2px;
+}
+.person:active {
+  cursor: grabbing;
+}
+.figure {
+  display: block;
+  pointer-events: none;
+}
+/* Coverage is on: pressed, and it reads as pressed on both skins. */
+.person[aria-pressed="true"],
+:global(html[data-tnx-skin="dark"]) .person[aria-pressed="true"] {
+  border-color: #6d5410;
+  background: #e8c25a;
+  color: #1c1602;
+}
+/* An empty slot while he is carried: his place is here, and he is not in it. */
+.person:not([data-state="idle"]):not([data-state="aim"]) {
+  border-color: var(--tnx-line-strong);
+  background: var(--tnx-panel);
+  cursor: grabbing;
+}
+.person:not([data-state="idle"]):not([data-state="aim"]):focus-visible {
+  outline: none;
+}
+.person:not([data-state="idle"]):not([data-state="aim"]) .figure {
+  visibility: hidden;
+}
+.person:not([data-state="idle"]):not([data-state="aim"])::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  box-sizing: border-box;
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  border: 1.5px dashed var(--tnx-ink-faint);
+  border-radius: 50%;
+}
+
+/* The tooltip comes about a second after a hover (TIP_MS). Beside the button, away from the edge. */
+.tip {
+  position: absolute;
+  right: calc(100% + 8px);
+  top: 50%;
+  z-index: 3;
+  width: max-content;
+  max-width: min(260px, 60vw);
+  padding: 6px 10px;
+  border: 1px solid var(--tnx-line-strong);
+  border-radius: 8px;
+  background: var(--tnx-panel);
+  box-shadow: var(--tnx-shadow-1);
+  color: var(--tnx-ink);
+  font-family: var(--tn-sans);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 16px;
+  text-align: left;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+/* A phone: a 44 px target, with the visible plate still 36 px. 12 px above the i, so a 44 px area
+   on the i (#339 adds one) meets this one and does not overlap it. */
+@media (max-width: 900px) {
+  .slot {
+    margin-bottom: 12px;
+  }
+  .person {
+    bottom: 42px;
+  }
+  .person::before {
+    content: "";
+    position: absolute;
+    inset: -5px;
+  }
+  .legend {
+    bottom: 12px;
+  }
+}
+
+/* ── The legend ───────────────────────────────────────────────────────────────
+   Bottom-centre, like Google's, and above the world clock, which holds the bottom 34 px of a wide
+   map. It takes no pointer: a drop or a click can land under it. It stops short of the corner's
+   column on a phone, where there is no clock. It centres on the part of the map that shows, so the
+   open sidebar (`--tn-cover`, app/console-sidebar.css) cannot reach it, and moves with the plates. */
+.legend {
+  position: absolute;
+  left: 50%;
+  bottom: 44px;
+  z-index: 3;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 2px 10px;
+  box-sizing: border-box;
+  width: max-content;
+  max-width: calc(100% - 112px - var(--tn-cover, 0px));
+  padding: 6px 12px;
+  border: 1px solid var(--tnx-line-strong);
+  border-radius: 8px;
+  background: var(--tnx-panel);
+  box-shadow: var(--tnx-shadow-1);
+  color: var(--tnx-ink);
+  font-family: var(--tn-sans);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 16px;
+  transform: translateX(-50%);
+  translate: calc(var(--tn-cover, 0px) / 2) 0;
+  pointer-events: none;
+}
+.legendKey {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+}
+.legendDot {
+  width: 9px;
+  height: 9px;
+  border: 1px solid rgba(16, 13, 4, 0.82);
+  border-radius: 50%;
+  background: #e8c25a;
+  box-shadow: 0 0 0 3px rgba(232, 194, 90, 0.3);
+}
+.legendHint {
+  color: var(--tnx-ink-faint);
+  font-weight: 500;
+  text-align: center;
+}
+
+/* ── Carried ───────────────────────────────────────────────────────────────────
+   A zero-size box whose origin IS the drop point: the ring is centred on it, he hangs above it,
+   and the card and the plate are placed from it. Only transforms move, so nothing re-lays out per
+   frame. */
+.layer {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 2500;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  will-change: transform;
+}
+
+/* Moving or a miss: a soft fuzz and a dotted circle. Dark edges, because it crosses a satellite
+   picture, a pale basemap and the console's panels. */
+.fuzz {
+  position: absolute;
+  left: -24.5px;
+  top: -24.5px;
+  width: 49px;
+  height: 49px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(232, 194, 90, 0.38) 0%, rgba(232, 194, 90, 0.14) 52%, rgba(232, 194, 90, 0) 72%);
+}
+.dots {
+  position: absolute;
+  left: -11px;
+  top: -11px;
+  box-sizing: border-box;
+  width: 22px;
+  height: 22px;
+  border: 2px dotted #e8c25a;
+  border-radius: 50%;
+  filter: drop-shadow(0 0 1px rgba(10, 13, 16, 0.95));
+}
+/* A hit: an 8 px dot and a solid 32 px ring. */
+.hit {
+  position: absolute;
+  left: -16px;
+  top: -16px;
+  display: none;
+  box-sizing: border-box;
+  width: 32px;
+  height: 32px;
+  border: 2px solid #e8c25a;
+  border-radius: 50%;
+  background: rgba(232, 194, 90, 0.16);
+  box-shadow: 0 0 0 1px rgba(10, 13, 16, 0.7), inset 0 0 0 1px rgba(10, 13, 16, 0.35);
+}
+.hit i {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  margin: -4px 0 0 -4px;
+  border-radius: 50%;
+  background: #e8c25a;
+  box-shadow: 0 0 0 1px rgba(10, 13, 16, 0.7);
+}
+.layer[data-ring="hit"] .hit {
+  display: block;
+}
+.layer[data-ring="hit"] .dots,
+.layer[data-ring="hit"] .fuzz {
+  display: none;
+}
+
+/* Where the result is, when it is not under the ring, and a thin line to it. The line is a 1 px
+   box stretched by its transform (scaleX is its length), so it costs no layout. Its dark edges are
+   in the gradient, across the line: a box-shadow would be stretched with it, and ran hundreds of px
+   past both ends. */
+.line,
+.marker {
+  display: none;
+}
+.layer[data-marker="true"] .line,
+.layer[data-marker="true"] .marker {
+  display: block;
+}
+.line {
+  position: absolute;
+  left: 0;
+  top: -1.5px;
+  width: 1px;
+  height: 3px;
+  background: linear-gradient(180deg, rgba(10, 13, 16, 0.6) 0 22%, #e8c25a 22% 78%, rgba(10, 13, 16, 0.6) 78% 100%);
+  transform-origin: 0 50%;
+}
+.marker {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+}
+.marker::before {
+  content: "";
+  position: absolute;
+  left: -11px;
+  top: -11px;
+  box-sizing: border-box;
+  width: 22px;
+  height: 22px;
+  border: 2px solid #e8c25a;
+  border-radius: 50%;
+  background: rgba(232, 194, 90, 0.2);
+  box-shadow: 0 0 0 1px rgba(10, 13, 16, 0.7);
+}
+.marker::after {
+  content: "";
+  position: absolute;
+  left: -3.5px;
+  top: -3.5px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #e8c25a;
+  box-shadow: 0 0 0 1px rgba(10, 13, 16, 0.7);
+}
+
+/* He hangs with his head at the pointer (HANG_PX above the ring), and his feet well clear of it,
+   so the fall has somewhere to go. The dark outline keeps him readable on a pale map, and the
+   shadow lifts him off the ground. */
+.carried {
+  position: absolute;
+  left: -18px;
+  bottom: 30px;
+  width: 36px;
+  height: 36px;
+  color: #e8c25a;
+  filter: drop-shadow(0 6px 5px rgba(0, 0, 0, 0.45));
+}
+/* The pendulum: pivoted at the head, written by the frame loop as --swing. */
+.swing {
+  display: block;
+  width: 36px;
+  height: 36px;
+  transform: rotate(var(--swing, 0deg));
+  transform-origin: 50% 7.4px;
+}
+.carried svg {
+  display: block;
+  overflow: visible;
+}
+.carried svg * {
+  stroke: rgba(14, 16, 10, 0.86);
+  stroke-width: 1.1px;
+  stroke-linejoin: round;
+  paint-order: stroke fill;
+}
+/* The legs trail the body a little more, from the hips. */
+.legs {
+  transform: rotate(calc(var(--swing, 0deg) * 0.5));
+  transform-box: view-box;
+  transform-origin: 12px 15.2px;
+}
+
+.plate {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: none;
+  padding: 6px 10px;
+  border: 1px solid var(--tnx-line-strong);
+  border-radius: 8px;
+  background: var(--tnx-panel);
+  box-shadow: var(--tnx-shadow-1);
+  color: var(--tnx-ink);
+  font-family: var(--tn-sans);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 16px;
+  white-space: nowrap;
+}
+.layer[data-plate="true"] .plate {
+  display: block;
+}
+
+/* The preview: fixed width, so one measurement holds until its contents change. */
+.card {
+  position: absolute;
+  left: 0;
+  top: 0;
+  box-sizing: border-box;
+  width: 204px;
+  border: 1px solid var(--tnx-line-strong);
+  border-radius: 10px;
+  background: var(--tnx-panel);
+  box-shadow: var(--tnx-shadow-1);
+  color: var(--tnx-ink);
+  font-family: var(--tn-sans);
+}
+.still {
+  display: block;
+  width: 100%;
+  height: 112px;
+  border-radius: 9px 9px 0 0;
+  background: var(--tnx-panel-head);
+  object-fit: cover;
+}
+.words {
+  display: grid;
+  gap: 1px;
+  padding: 7px 10px 8px;
+  font-size: 12px;
+  line-height: 16px;
+}
+.words b {
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.words span {
+  color: var(--tnx-ink-faint);
+}
+.arrow {
+  position: absolute;
+  left: var(--arrow-x, 50%);
+  width: 12px;
+  height: 12px;
+  margin-left: -6px;
+  border: 1px solid var(--tnx-line-strong);
+  border-width: 1px 0 0 1px;
+  background: var(--tnx-panel);
+  transform: rotate(45deg);
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+}
+.card[data-side="below"] .arrow {
+  top: -7px;
+}
+.card[data-side="above"] .arrow {
+  bottom: -7px;
+  transform: rotate(225deg);
+}
+
+/* A keyboard's ring needs no fuzz: nothing is moving it but the map. */
+.layer[data-state="aim"] .fuzz {
+  display: none;
+}
+
+/* On its way home the ring, the card and the words are done, and he shrinks to his place. */
+.layer[data-state="return"] .fuzz,
+.layer[data-state="return"] .dots,
+.layer[data-state="return"] .hit,
+.layer[data-state="return"] .plate,
+.layer[data-state="return"] .card,
+.layer[data-state="return"] .line,
+.layer[data-state="return"] .marker {
+  display: none;
+}
+.layer[data-state="return"] .carried {
+  transform: scale(0.61);
+}
+
+/* ── Motion, only where the visitor allows it ─────────────────────────────────
+   With reduced motion he hangs upright, nothing pulses or springs, and a cancel or a drop is
+   instant (goHome and fall in EyePerson.tsx); the drag itself works the same. */
+@media (prefers-reduced-motion: no-preference) {
+  .legend {
+    transition: translate 0.18s ease;
+  }
+  .dots {
+    animation: personPulse 1000ms ease-in-out infinite;
+  }
+  .carried {
+    animation: personLift 216ms cubic-bezier(0.2, 0.9, 0.3, 1);
+  }
+  /* 500 ms home, with no bounce: Google's `transition: left .5s, top .5s`. */
+  .layer[data-state="return"] {
+    transition: transform 500ms ease;
+  }
+  .layer[data-state="return"] .carried {
+    animation: none;
+    transition: transform 500ms ease;
+  }
+  /* He falls straight down, about 40 px, and the curve is Google's own. */
+  .layer[data-state="dropped"] .carried {
+    animation: none;
+    transform: translateY(40px);
+    transition: transform 300ms cubic-bezier(0.33, 0, 0.67, 0.33);
+  }
+}
+
+/* 20 to 26 px, from a 22 px box, on a 1 s loop. */
+@keyframes personPulse {
+  0%,
+  100% {
+    transform: scale(0.91);
+  }
+  50% {
+    transform: scale(1.18);
+  }
+}
+
+@keyframes personLift {
+  from {
+    transform: translateY(22px) scale(0.61);
+  }
+  to {
+    transform: none;
+  }
+}

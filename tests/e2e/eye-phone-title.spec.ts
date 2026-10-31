@@ -113,6 +113,8 @@ for (const size of PHONES) {
     test.use({ viewport: size });
 
     test("a spot: coordinates break after the comma, clear of the clock", async ({ page }) => {
+      // A spot with a name is titled by it (useSpotName). This test is about the coordinates.
+      await page.route("**/api/geocode?**", (r) => r.fulfill({ json: { results: [] } }));
       await answerNear(page, near("tfl:JamCams_00001.06520", "Trafalgar Square", 51.5077, -0.1277));
       await page.goto("/eye?lat=51.5072&lon=-0.1268&z=16&tilt=50&heading=320");
       await ready(page);
@@ -122,6 +124,7 @@ for (const size of PHONES) {
     });
 
     test("a three-digit south and east spot", async ({ page }) => {
+      await page.route("**/api/geocode?**", (r) => r.fulfill({ json: { results: [] } }));
       await answerNear(page, none);
       await page.goto("/eye?lat=-33.8568&lon=151.2153&z=16&tilt=50&heading=320");
       await ready(page);
