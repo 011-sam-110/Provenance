@@ -188,6 +188,16 @@
 }
 .tn-terminal .tn-inspector-empty .tn-rail-foot { margin-left: 0; margin-right: 0; }
 
+/* ── A board with no cards, on a phone ─────────────────────────────────────────
+   The narrow pass in globals.css holds the stage at 46dvh so cards can scroll under it. With no
+   cards nothing is under it, which left a blank band of about 290 px at 390 x 844 (measured on
+   production on 2026-10-31). So the stage takes the height, and a board with cards keeps its rule. */
+@media (max-width: 900px) {
+  .tn-terminal .tn-seg.tn-rails:not(:has(.tn-seg-slot)) > .tn-cw-stage {
+    flex: 1 1 auto; align-self: stretch; height: auto;
+  }
+}
+
 /* ── The plates over the map ───────────────────────────────────────────────── */
 .tn-terminal .tn-cw-stage {
   --tn-cover: max(0px, calc(var(--rail-w, 64px) - 64px - 3 * var(--tnx-gap) - var(--tn-stage-gap, 0px)));

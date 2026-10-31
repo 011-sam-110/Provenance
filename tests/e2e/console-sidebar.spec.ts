@@ -646,6 +646,25 @@ test("a selection behind a closed panel shows a dot on the Inspector row", async
 test.describe("at 360 wide", () => {
   test.use({ viewport: { width: 360, height: 740 } });
 
+  // The narrow pass holds the stage at 46dvh so cards can scroll under it. A board with no cards
+  // (Globe ships none) had nothing under it: a blank band of about 290 px at 390 x 844, measured
+  // on production on 2026-10-31.
+  test("a board with no cards gives the map the whole screen, and the map draws at that size", async ({ page }) => {
+    await open(page);
+    await mapReady(page);
+    await expect(page.locator(".tn-seg-slot")).toHaveCount(0);
+    for (const [width, height] of [[360, 740], [390, 844], [844, 390]]) {
+      await page.setViewportSize({ width, height });
+      await expect
+        .poll(async () => {
+          const stage = (await page.locator(".tn-cw-stage").boundingBox())!;
+          const canvas = (await page.locator("canvas.maplibregl-canvas").boundingBox())!;
+          return { gap: height - (stage.y + stage.height) <= 12, fits: Math.abs(canvas.height - stage.height) <= 2 };
+        }, { message: `${width} x ${height}` })
+        .toEqual({ gap: true, fits: true });
+    }
+  });
+
   test("the ☰ and the pill share a line, nothing collides, and a row opens today's sheet", async ({ page }) => {
     await open(page);
     await mapReady(page);
