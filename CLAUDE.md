@@ -271,8 +271,7 @@ obligations and are not satisfied by the licence.
   `cameras`, `camera`, `coverage`, `planes`, `flight`, `satellites`, `signals/[id]`,
   `webcams`, `webcam-image`, `markets`, `news`, `brief`, `advisory`, `recon`, `geocode`,
   `near`, `geolocate`, `proxy`, `hls`, `discord`, `telegram`, `air-quality`, `point-weather`,
-  `status`, `presence`, `feedback`, `community` (the Discord invite's state and counts), `webcam-place`, `webcam-search`, `youtube-live`, `camera-stats`
-  (the top bar's camera stats strip, `lib/cameras/stats.ts`), `relay/[feed]`
+  `status`, `presence`, `feedback`, `community` (the Discord invite's state and counts), `webcam-place`, `webcam-search`, `youtube-live`, `relay/[feed]`
   (signed snapshots pushed from provenance-1, see `lib/relay`), `eye/streets` (TfL's road
   disruptions for `/eye`), `eye/vessels` (the boats around the God's eye view's box), `eye/planes`
   (the aircraft around it),
@@ -424,11 +423,12 @@ obligations and are not satisfied by the licence.
   `layoutOverrides` slot is not drawn by anything — do not write a new feature to it
   (the Source Catalog's ＋ used to, which is why it silently did nothing).
 - **The console top bar is exactly two board tabs — Globe and Streets — and nothing drops down from them.**
-  After them sits the camera stats strip (`components/terminal/CameraStats.tsx`, 2026-10-27):
-  video, stills, countries, operators and the time of that count, then the Windy webcams with
-  their own source, from `/api/camera-stats`. It is the one thing in the bar that opens a panel,
-  and only on a click. Its wording lives in `lib/cameras/statsView.ts`, where a test fails if
-  any string says "live"; video there counts streams that PLAYED at their last check.
+  Beside them sit the presence count, Support, Source, Settings and Account, and nothing else
+  (2026-10-31, `tests/e2e/console-navbar.spec.ts`). The camera stats strip and `/api/camera-stats`
+  left that day and the counts have no new home. Discord is at the foot of the settings drawer's
+  tab column, the theme is the first row of its Display tab, and the command palette's only door
+  is the button at the top of its Shortcuts tab: the palette has no key, because Ctrl+K opens
+  the Sources rail.
   `components/terminal/TerminalHeader.tsx` renders the tabs from `TOP_BAR_PRESET_IDS`
   (a subset of the lineup, pinned by `console-presets.test.ts`); News left the
   navbar on 2026-09-16 on request and stays a preset reachable from the Sources
@@ -475,10 +475,12 @@ obligations and are not satisfied by the licence.
 - Every upstream fetch is keyless-first and **dormant-safe**: failures resolve to `[]` / last-good / a labelled placeholder, never a 5xx, never fabricated data.
 - Keep the upstream→domain mapping in a PURE exported function with a unit test.
 - Tests are vitest, NODE environment, in `tests/unit/**/*.test.ts`. No React testing library is installed — no component tests.
-- Calm light identity; `.tn-*` CSS tokens in `app/globals.css`. The console (`/app`) has an
-  opt-in dark skin (`lib/terminal/skin.ts`, `html[data-tnx-skin="dark"]`, the DARK SKIN block in
-  `globals.css`): light by default, remembered per browser, and never read from the OS
+- Calm light identity; `.tn-*` CSS tokens in `app/globals.css`. The console (`/app`) opens in its
+  dark skin (`lib/terminal/skin.ts`, `html[data-tnx-skin="dark"]`, the DARK SKIN block in
+  `globals.css`), set before the first paint since 2026-10-31. Settings > Display switches it to
+  light; that choice is remembered per browser, and the skin is never read from the OS
   (`prefers-color-scheme` appears nowhere). It is not a `Theme`; see the header of `lib/shell/ui.ts`.
+  The landing page and the other public pages do not read it.
   `/eye` switches that dark mode on for itself, always (`app/(console)/eye/layout.tsx`,
   `lib/eye/skin.ts`, Leon's call), whatever the console is set to. Its own frame and tray have
   their own dark look and do not use the skin, and it never reads or writes the console's saved

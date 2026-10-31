@@ -375,10 +375,11 @@ export const DEFAULT_BASEMAP: BasemapKey = "satellite";
 
 // ── THE PREVIOUS DEFAULT'S REASONING, KEPT FOR ITS FACTS ───────────────────
 // STREETS was the default until 2026-09-07. It was positron, chosen as the map half of a PAIR whose
-// chrome half is DEFAULT_TERMINAL_SKIN — and that pairing still holds, because
+// chrome half was then the light DEFAULT_TERMINAL_SKIN (dark since 2026-10-31, around
+// Satellite, which breaks no such rule) — and that pairing held, because
 // Liberty is a light vector style: the constraint the pair exists to satisfy is
-// "do not wrap light chrome around a near-black map", and Streets satisfies it as
-// well as positron did. What Streets adds is named roads and 3D buildings, which
+// "do not wrap light chrome around a near-black map", and Streets satisfied it as
+// well as positron did. What Streets added is named roads and 3D buildings, which
 // is what the landing globe is now showing instead of four widgets.
 //
 // The pairing is the whole point, and it used to read the other way round. When the
@@ -390,8 +391,6 @@ export const DEFAULT_BASEMAP: BasemapKey = "satellite";
 // exists to prevent, to every first-time visitor, because that effect deliberately
 // skips its first run so a deep-linked `?base=` is never clobbered.
 //
-// tests/unit/terminal-skin.test.ts pins the two together, so the next person to
-// change either one finds out from a red test rather than from a screenshot.
 //
 // NOTHING IS ONE TAP AWAY ANY MORE, and that is why this constant now carries the
 // whole decision. The view-control cluster — the 3D/2D switch, the five basemap

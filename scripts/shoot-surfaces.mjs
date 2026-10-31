@@ -63,8 +63,14 @@ const shots = [
     // CLICKS THE BUTTON, DOES NOT PRESS Ctrl+K. That chord has opened the Sources rail
     // since #162 reassigned it, so this shot had been quietly capturing the wrong surface
     // under the right name — which is the one failure a screenshot inventory cannot
-    // tolerate. The palette has no chord of its own; .tn-palette-trigger is its only door.
-    act: async (p) => { await p.click(".tn-palette-trigger"); await p.waitForTimeout(800); },
+    // tolerate. The palette has no chord of its own; .tn-palette-trigger is its only door,
+    // at the top of Settings > Shortcuts since 2026-10-31.
+    act: async (p) => {
+      await p.click(".tn-settings-trigger");
+      await p.getByRole("tab", { name: "Shortcuts" }).click();
+      await p.click(".tn-palette-trigger");
+      await p.waitForTimeout(800);
+    },
   },
   // THREE SHOTS, NOT ONE. The drawer became tabbed, so a single picture of it now shows
   // a third of the surface — and "enumerate every pressable control from pictures alone"
@@ -135,7 +141,14 @@ const shots = [
   {
     name: "16-light-skin",
     note: "The light skin.",
-    act: async (p) => { await p.click(".tnx-hdr-skin"); await p.waitForTimeout(2000); },
+    // The console opens dark, so this is the one shot that has to ask for light.
+    act: async (p) => {
+      await p.click(".tn-settings-trigger");
+      await p.getByRole("tab", { name: "Display" }).click();
+      await p.getByRole("group", { name: "Theme" }).getByRole("button", { name: "Light" }).click();
+      await p.keyboard.press("Escape");
+      await p.waitForTimeout(2000);
+    },
   },
   {
     name: "17-board-conflict",

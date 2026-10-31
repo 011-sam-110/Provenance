@@ -402,8 +402,8 @@ export default function ConsoleShell({ feeds }: { feeds: number }) {
       <SkipLink />
       {/* Replaces StatusBar outright rather than sitting beside it: it carries the
           page's single <h1>, the `stat-line` / `a11y-status-line` spans, and the
-          `.tn-preset-pill` / `.tn-palette-trigger` / `.tn-settings-trigger`
-          classes the e2e suite drives. Mounting both would duplicate all of those in the DOM and make
+          `.tn-preset-pill` / `.tn-settings-trigger` classes the e2e suite drives, and
+          the settings drawer that holds the palette's door (`.tn-palette-trigger`). Mounting both would duplicate all of those in the DOM and make
           getByTestId("stat-line") strict-mode ambiguous in the e2e suite. */}
       <TerminalHeader onOpenPalette={() => setPaletteOpen(true)} />
       <ConsoleWorkspace />

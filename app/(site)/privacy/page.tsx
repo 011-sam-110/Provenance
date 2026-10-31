@@ -25,6 +25,11 @@ const ISSUES_URL = `${REPO_URL}/issues`;
  *     something does not change either. The route count is 57 (56, plus this one). The front
  *     page now makes this one call, once per browser; no sentence here said otherwise, and it
  *     loads nothing from Discord.
+ * WHAT CHANGED ON 2026-10-31:
+ *   - Camera stats strip: removed from the console's top bar on request, and with it
+ *     app/api/camera-stats, which nothing else read. It took no input from the visitor, read
+ *     no header and logged nothing, so no sentence on this page changes. The route count
+ *     is 57 (58, less this one).
  *
  * WHAT CHANGED ON 2026-10-29:
  *   - Vessels in the God's eye view: the view no longer reads /api/signals/ais. It asks
@@ -689,7 +694,7 @@ export default function PrivacyPage() {
           <div>
             <p className="pv-eyebrow">
               <span>The server</span>
-              <span>58 API routes</span>
+              <span>57 API routes</span>
             </p>
             <h2 className="pv-h2">What reaches our server, and where it goes.</h2>
           </div>
@@ -1084,7 +1089,7 @@ export default function PrivacyPage() {
           </div>
           <div className="pv-prose">
             <p>
-              Five log statements exist across the 58 API route files. Each records that a data
+              Five log statements exist across the 57 API route files. Each records that a data
               feed or a handler failed, with the error. None of them is given anything you typed:
               their inputs are our own feed names, a camera&rsquo;s stream address, camera
               coordinates and webcam ids. So the application&rsquo;s own code writes nothing you type

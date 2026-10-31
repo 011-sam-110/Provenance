@@ -55,11 +55,14 @@ test("Ctrl+Space is SEARCH now, and it does not touch the panel", async ({ page 
   await expect(page.locator(RAIL)).toHaveCount(0);
 });
 
-test("the SHORTCUTS button still opens the palette, now that ⌘K does not", async ({ page }) => {
-  // The palette did not lose its door, it lost its chord. If this ever fails, the
-  // palette is unreachable from anywhere.
+test("Settings > Shortcuts still opens the palette, now that ⌘K does not", async ({ page }) => {
+  // The palette did not lose its door, it lost its chord, and on 2026-10-31 the door moved
+  // from the navbar to the top of the Shortcuts tab. If this ever fails, the palette is
+  // unreachable from anywhere.
   await stampSeen(page);
   await page.goto("/app");
+  await page.locator(".tn-settings-trigger").click();
+  await page.getByRole("tab", { name: "Shortcuts" }).click();
   await page.locator(".tn-palette-trigger").click();
   await expect(page.locator(".tn-palette-root")).toBeVisible();
 });

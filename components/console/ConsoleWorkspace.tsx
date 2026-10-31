@@ -337,7 +337,8 @@ export default function ConsoleWorkspace() {
     // --tnx-* block, and it has to, because the widget bodies below it read those
     // tokens. It used to carry a `data-tnx-skin` attribute alongside — without it,
     // the inner scope re-declared the DARK palette and only the outer chrome went
-    // light. That failure mode died with the dark skin.
+    // light. Today's DARK SKIN block is keyed on <html> and reaches both scopes, so
+    // that failure mode has not come back with it.
     <div
       className="tn-cw-shell tn-terminal"
       style={railVars}

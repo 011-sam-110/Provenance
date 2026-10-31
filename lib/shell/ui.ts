@@ -12,7 +12,7 @@
 // The store stays because the shell still hydrates it and still stamps the attribute
 // before paint. It persists to localStorage, which now round-trips one value.
 //
-// THE CONSOLE'S OPT-IN DARK MODE IS NOT THIS FIELD. It is lib/terminal/skin.ts: an
+// THE CONSOLE'S DARK MODE, ITS DEFAULT, IS NOT THIS FIELD. It is lib/terminal/skin.ts: an
 // attribute of its own on <html> (`data-tnx-skin`), its own key, its own store. It cannot
 // be a second member of `Theme`, because lib/variants/store.ts calls `setTheme(v.theme)`
 // on EVERY board switch and every variant declares "light", so a theme-based dark would be

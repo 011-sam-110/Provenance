@@ -1,5 +1,11 @@
 "use client";
-// The Shortcuts tab: the keys that are yours, then the keys that are not.
+// The Shortcuts tab: the palette's door, the keys that are yours, then the keys that are not.
+//
+// THE DOOR IS HERE BECAUSE THE PALETTE HAS NO KEY. Ctrl+K moved to the Sources rail in #162, so
+// the navbar's SHORTCUTS button was its only way in, and when that left the bar on 2026-10-31
+// this button took over the job. It carries `.tn-palette-trigger`, the selector the e2e suite
+// and scripts/shoot-surfaces.mjs open the palette with. If this button goes, the palette is
+// unreachable: tests/e2e/sources-rail.spec.ts fails on exactly that.
 //
 // The rebindable half moved here verbatim from SettingsPanel. The Fixed half is new, and
 // is the reason this is a tab rather than three rows in a scroll: Escape's behaviour and
@@ -35,12 +41,20 @@ function FixedGroup({ where, title }: { where: "console" | "palette"; title: str
   );
 }
 
-export default function ShortcutsTab() {
+export default function ShortcutsTab({ onOpenPalette }: { onOpenPalette: () => void }) {
   const keymap = useKeymap();
   const [keyErr, setKeyErr] = useState<string | null>(null);
 
   return (
     <>
+      <section className="tn-settings-sec">
+        <h3 className="tn-settings-sec-title">Command palette</h3>
+        <p className="tn-settings-hint">Search actions and layers, or ask a question.</p>
+        <button type="button" className="tn-settings-tg-test tn-palette-trigger" onClick={onOpenPalette}>
+          Open command palette
+        </button>
+      </section>
+
       <section className="tn-settings-sec">
         <h3 className="tn-settings-sec-title">Yours</h3>
         {KEY_ACTIONS.map((a) => (

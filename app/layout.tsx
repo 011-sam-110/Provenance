@@ -4,6 +4,7 @@ import { BRAND, siteUrl } from "@/lib/brand";
 import "./globals.css";
 import { Suspense } from "react";
 import { Beacon } from "@/components/analytics/Beacon";
+import { SKIN_HEAD_SCRIPT } from "@/lib/terminal/skinBoot";
 
 // ONE typeface for the whole product, self-hosted by next/font (no runtime request
 // to Google, no render-blocking <link>, and a size-matched local fallback generated
@@ -88,12 +89,11 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    // Calm LIGHT by default; the shell flips data-theme on the client for the
-    // optional dark toggle. Setting it here keeps SSR markup matching first paint.
-    // data-theme is UNCHANGED on purpose — the Terminal's near-black palette is a
-    // scoped `.tn-terminal` token block in globals.css, not a theme, so it cannot
-    // fight uiStore or variantStore (which re-asserts a variant's theme on every
-    // switch and would yank a global dark default straight back to light).
+    // data-theme is always light. Setting it here keeps SSR markup matching first paint.
+    // The console's dark default is not this attribute: it is `data-tnx-skin` and a scoped
+    // `.tn-terminal` token block in globals.css, not a theme, so it cannot fight uiStore
+    // or variantStore (which re-asserts a variant's theme on every switch and would yank
+    // a theme-based dark default straight back to light).
     //
     // The font class only publishes `--tn-font-sans` on the root; nothing changes
     // typeface until globals.css consumes it. `--tn-font-mono` is NOT gone — it is
@@ -102,6 +102,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     // must still resolve to Inter rather than dropping to their fallback list.
     // suppressHydrationWarning: /app's before-paint script sets data-tnx-skin on <html> (lib/terminal/skin.ts).
     <html lang="en" data-theme="light" className={inter.variable} suppressHydrationWarning>
+      <head>
+        {/* /app's skin, before there is a body to paint. lib/terminal/skinBoot.ts says why it
+            is here, and this script does nothing on any other route. */}
+        <script dangerouslySetInnerHTML={{ __html: SKIN_HEAD_SCRIPT }} />
+      </head>
       <body>
         {/*
           WHAT COUNTS PAGE VIEWS HERE, AND WHAT DOES NOT.

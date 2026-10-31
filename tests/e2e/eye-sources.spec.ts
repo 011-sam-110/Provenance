@@ -318,7 +318,9 @@ test.describe("on a wide screen", () => {
     // Three fresh browser contexts, each loading /eye and then /app.
     test.setTimeout(150_000);
     await feeds(page);
-    // Light saved, then nothing saved: /eye is dark either way, and the console is untouched.
+    // Light saved, then nothing saved: /eye is dark either way and writes nothing, and /app
+    // then does what that browser's saved choice says: a saved light stays light, and nothing
+    // saved opens dark, the console's own default.
     for (const saved of ["light", null] as const) {
       const ctx = await page.context().browser()!.newContext({ viewport: { width: 1440, height: 900 } });
       const p = await ctx.newPage();
@@ -336,7 +338,8 @@ test.describe("on a wide screen", () => {
       // This view's own frame is its own: the design's light-on-dark ink.
       expect(headerInk).toBe("rgb(232, 236, 240)");
       await p.goto("/app");
-      await expect(p.locator("html")).not.toHaveAttribute("data-tnx-skin", "dark");
+      if (saved) await expect(p.locator("html")).not.toHaveAttribute("data-tnx-skin", "dark");
+      else await expect(p.locator("html")).toHaveAttribute("data-tnx-skin", "dark");
       const kept = await p.evaluate(() => localStorage.getItem("tn.terminal.skin.v2"));
       expect(kept).toBe(saved ? JSON.stringify({ v: 1, d: saved }) : null);
       await ctx.close();
