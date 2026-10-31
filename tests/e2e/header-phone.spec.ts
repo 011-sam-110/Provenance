@@ -55,11 +55,17 @@ for (const [w, h] of [[390, 844], [360, 780]] as const) {
       expect(small).toEqual([]);
     });
 
-    test("the button row fits the screen", async ({ page }) => {
+    test("the buttons fit the screen", async ({ page }) => {
+      // Each button, not the row: below 440px `.tnx-hdr-right` is `display: contents` and has no box.
       await open(page);
-      const row = await page.locator(".tnx-hdr-right").boundingBox();
-      expect(row!.x).toBeGreaterThanOrEqual(0);
-      expect(row!.x + row!.width).toBeLessThanOrEqual(w);
+      const off = await page.locator(".tnx-hdr-right .tnx-hdr-btn").evaluateAll(
+        (btns, vw) => btns.filter((b) => {
+          const r = b.getBoundingClientRect();
+          return r.left < 0 || r.right > vw;
+        }).map((b) => b.textContent),
+        w,
+      );
+      expect(off).toEqual([]);
     });
   });
 }

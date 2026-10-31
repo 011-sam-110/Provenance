@@ -115,7 +115,7 @@ test.describe("the navbar", () => {
 
   // The camera strip's spec swept the widths to check that nothing was cut off. The bar is
   // shorter now and the guard stays. 900 and 901 are either side of the narrow header pass.
-  for (const w of [1920, 1440, 1280, 1024, 901, 900, 720, 540, 390, 360]) {
+  for (const w of [1920, 1440, 1280, 1024, 901, 900, 720, 540, 441, 440, 390, 360, 320]) {
     test(`at ${w}px every control is on screen and nothing scrolls sideways`, async ({ page }) => {
       await page.setViewportSize({ width: w, height: 800 });
       await stampSeen(page);

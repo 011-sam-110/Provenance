@@ -3,8 +3,8 @@
    `.tn-settings` declares in app/globals.css.
 
    Wide: the third row of the tab column, the same tint and divider as the rail above it, so
-   the column reads as one piece. The text lines up with the tab labels above it (the rail's
-   8px plus the tab's 12px).
+   the column reads as one piece. The mark lines up with the tab labels above it (the rail's
+   8px plus the tab's 12px), and 12.5px is what fits the words in the rest of the column.
 
    Narrow (540px, the breakpoint at which the rail lies down as a strip): a bar across the
    bottom of the drawer, on every tab, where a thumb already is. Same element, a new grid slot,
@@ -29,11 +29,11 @@
 .link {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 6px;
   min-height: 36px;
-  padding: 0 4px 0 12px;
+  padding: 0 0 0 12px;
   border-radius: 8px;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 600;
   white-space: nowrap;
   text-decoration: none;

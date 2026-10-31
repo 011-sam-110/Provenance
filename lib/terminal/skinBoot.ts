@@ -39,8 +39,9 @@ export const SKIN_BOOT_SCRIPT =
  * after the page's stylesheet has loaded, because a stylesheet holds up the scripts after it,
  * and the body already exists by then. So the moment the stylesheet arrives the browser may
  * draw a frame of the light ground before the parser gets back to the script. That frame was
- * measured (tests/e2e/console-navbar.spec.ts records every one). In the <head> there is no body
- * to draw yet, so no such frame can exist. Only the root layout can put a script there, and
+ * caught on the dev server (tests/e2e/console-navbar.spec.ts records every one). In the <head>
+ * there is no body to draw yet, so no such frame can exist: 12 production loads on three
+ * network speeds drew hundreds of frames and none was light. Only the root layout can put a script there, and
  * it has no route of its own to read on a static page, so the script asks the address itself.
  *
  * Every other route pays one string compare. /eye has its own script and the landing page

@@ -629,6 +629,8 @@ a { color: var(--tn-accent); }
 .tn-palette-state { flex: none; font-size: 9px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 1px 6px; border-radius: 999px; background: var(--tn-chip-bg); color: var(--tn-text-faint); }
 .tn-palette-state.on { background: var(--tn-accent-soft); color: var(--tn-accent-strong); }
 .tn-palette-hint { flex: none; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--tn-text-faint); white-space: nowrap; }
+/* The faint ink on the active row's tint is 4.22:1 in the dark skin, the default. */
+.tn-palette-item.is-active .tn-palette-hint { color: var(--tn-text-muted); }
 .tn-palette-empty { padding: 16px; text-align: center; color: var(--tn-text-faint); font-size: 13px; }
 .tn-palette-foot { display: flex; gap: 14px; padding: 8px 14px; border-top: 1px solid var(--tn-border); color: var(--tn-text-faint); font-size: 11px; }
 .tn-palette-foot .tn-kbd { background: var(--tn-chip-bg); border-radius: 5px; padding: 1px 5px; margin-right: 4px; }
@@ -3111,6 +3113,7 @@ a { color: var(--tn-accent); }
 .tn-settings-board-text { display: flex; flex-direction: column; line-height: 1.2; min-width: 0; }
 .tn-settings-board-title { font-size: 13.5px; font-weight: 600; }
 .tn-settings-board-blurb { font-size: 11.5px; color: var(--tn-text-faint); }
+.tn-settings-board.is-active .tn-settings-board-blurb { color: var(--tn-text-muted); }
 .tn-settings-share { font: inherit; font-size: 13px; font-weight: 600; color: #fff; background: var(--tn-accent); border: 0; border-radius: 10px; padding: 11px 14px; cursor: pointer; }
 .tn-settings-share:hover { background: var(--tn-accent-strong); }
 .tn-settings-share.is-copied { background: var(--tn-live); }
@@ -6059,9 +6062,16 @@ body:has(.tn-terminal) { background: #d6dde6; color: #10161d; }
   .tn-terminal .tnx-hdr-brand { order: 1; }
   .tn-terminal .tnx-hdr-right > button.tnx-hdr-btn { order: 2; border-left: 1px solid var(--tnx-line); border-right: 0; }
   .tn-terminal .tn-preset-pill.tnx-hdr-boards { order: 4; flex: 0 0 auto; border-top: 0; }
-  .tn-terminal .tnx-hdr-right > a.tnx-hdr-btn { order: 5; }
+  /* Measured at 360px: the second row needs 373px at the padding above, and 345px at this. */
+  .tn-terminal .tnx-hdr-board { padding: 0 11px; }
+  .tn-terminal .tnx-hdr-right > a.tnx-hdr-btn { order: 5; padding: 0 9px; }
   .tn-terminal .tnx-hdr-right > a.tnx-hdr-btn:first-of-type { margin-left: auto; border-left: 1px solid var(--tnx-line); }
   .tn-terminal .tnx-hdr-right > a.tnx-hdr-btn:last-of-type { border-right: 0; }
+}
+/* The smallest phones trade the two glyphs for the room. The words stay: they are what makes
+   SOURCE an offer of the source, and neither link can become an empty box. */
+@media (max-width: 359px) {
+  .tn-terminal .tnx-hdr-right > a.tnx-hdr-btn > [aria-hidden] { display: none; }
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
