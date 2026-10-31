@@ -158,10 +158,12 @@ obligations and are not satisfied by the licence.
   `lib/marketing/ctaDeck.ts`, ordered by the browser's own time zone and language (read, never
   sent or stored; `/privacy` says so). When the words change, each changed character turns a
   full 360 about its own axis into the new one (`lib/marketing/ctaTurn.ts`, Web Animations on
-  transform and opacity); the words that stay only slide. Only one button turns at a time (the
-  hero's, else the close's, else the nav's), the button's width is fixed so nothing beside it
-  moves, it holds still under a pointer or keyboard focus, and with reduced motion it takes the
-  visitor's first phrase once and stays there. **A place is offered only if its buildings are
+  transform and opacity); the words that stay only slide. Every button says the same phrase: the ones
+  on screen turn together (the nav's always is), one off screen changes with no turn, and only a
+  phone's narrow nav button may show a different one, the next it can hold. The button's width is
+  fixed so nothing beside it moves, all of them hold still while a pointer or keyboard focus is on
+  any of them, and with reduced motion they take the
+  visitor's first phrase once and stay there. **A place is offered only if its buildings are
   worth seeing:** `node scripts/gen-eye-cities.mjs --write` reads each candidate from the tiles
   the map draws and writes `lib/eye/cities.data.ts`, `lib/marketing/cta-places.data.ts` and
   `docs/EYE_CITIES.md`; a person then looks at the frames, and `REFUSED` in that script holds

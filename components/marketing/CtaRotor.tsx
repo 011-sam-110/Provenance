@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { deckFor, readVisitor, SAVED_BOARD_KEY, type CtaDoor } from "@/lib/marketing/ctaDeck";
-import { glyphs, planTurn, TURN_MS } from "@/lib/marketing/ctaTurn";
+import { glyphs, planTurn, TURN_MS, type TurnPlan } from "@/lib/marketing/ctaTurn";
 
 /**
  * The landing page's button, which offers a different place every few seconds.
@@ -12,10 +12,11 @@ import { glyphs, planTurn, TURN_MS } from "@/lib/marketing/ctaTurn";
  * and the first paint get. This component renders nothing: after mount it finds the links
  * marked `data-rotor` and writes their words and their `href`. It sets no React state.
  *
- * ONE BUTTON TURNS AT A TIME. The hero's while it is on screen, else the close's, else the
- * one in the nav. A word changing in two places at once reads as noise, and a frozen button
- * keeps a link that still works. The footer's link takes the visitor's first phrase and
- * never moves.
+ * EVERY BUTTON SAYS THE SAME THING. The ones on screen turn together, and the nav's is always
+ * on screen, so two buttons in one view never disagree. One off screen takes the new words
+ * with no turn, so it is already right when it scrolls in. The only exception is the narrow
+ * button in a phone's nav: given a phrase it cannot hold, it moves on to one it can. The
+ * footer's link takes the visitor's first phrase and never moves.
  *
  * THE TURN RUNS ON THE COMPOSITOR. It is Web Animations on transform and opacity, so it adds
  * nothing to the page's one rAF loop and no scroll listener (`LandingStage.tsx` owns those
@@ -23,10 +24,10 @@ import { glyphs, planTurn, TURN_MS } from "@/lib/marketing/ctaTurn";
  * no phrase moves the button beside it and no turn costs a layout. Between turns the words
  * are one plain text node again, with the browser's own kerning and subpixel placement.
  *
- * IT STOPS WHEN IT SHOULD. While the pointer or the keyboard is on the button, so the words
- * cannot change under a click; while the tab is hidden; and until the opening intro has
- * lifted. With reduced motion there is no turn and no rotation at all: the buttons take the
- * visitor's first phrase once and stay there.
+ * IT STOPS WHEN IT SHOULD. While the pointer or the keyboard is on any of the buttons, so the
+ * words cannot change under a click and the others do not move on without it; while the tab
+ * is hidden; and until the opening intro has lifted. With reduced motion there is no turn and
+ * no rotation at all: the buttons take the visitor's first phrase once and stay there.
  */
 
 /** How long a phrase rests before the next one turns in. */
@@ -54,8 +55,8 @@ interface Measured {
 export interface CtaHandle {
   deck: readonly CtaDoor[];
   turns: number;
-  /** Which button is turning now. */
-  active(): string;
+  /** Which buttons turn at the next change; the others change with no turn. */
+  onScreen(): string[];
   /** Stop on the current phrase, or carry on. */
   hold(on: boolean): void;
 }
@@ -112,15 +113,15 @@ function face(className: string, text: string): HTMLSpanElement {
   return s;
 }
 
-/** Build the cells, run the turn, then hand back one plain text node. */
-async function turn(rotor: Rotor, door: CtaDoor, cache: Map<string, Measured>): Promise<void> {
+/** Read where every character stands, before any button is written to. */
+function planFor(rotor: Rotor, door: CtaDoor, cache: Map<string, Measured>): TurnPlan {
   const from = rotor.words;
   const box = rotor.label.clientWidth;
   const a = measure(rotor, from, cache);
   const b = measure(rotor, door.words, cache);
   const aLeft = (box - a.width) / 2;
   const bLeft = (box - b.width) / 2;
-  const plan = planTurn(
+  return planTurn(
     from,
     door.words,
     a.centres.map((x) => x + aLeft),
@@ -128,7 +129,10 @@ async function turn(rotor: Rotor, door: CtaDoor, cache: Map<string, Measured>): 
     aLeft + a.width,
     bLeft + b.width,
   );
+}
 
+/** Build the cells, run the turn, then hand back one plain text node. */
+async function turn(rotor: Rotor, door: CtaDoor, plan: TurnPlan): Promise<void> {
   const fragment = document.createDocumentFragment();
   const running: Animation[] = [];
   for (const c of plan.cells) {
@@ -211,16 +215,21 @@ export default function CtaRotor() {
     const cache = new Map<string, Measured>();
     const fits = (r: Rotor, door: CtaDoor) => measure(r, door.words, cache).width <= r.label.clientWidth;
 
-    // Everything but the hero takes the visitor's first phrase now, without a turn.
-    const settle = () => {
-      for (const r of rotors.values()) {
-        if (r === hero && !reduced) continue;
-        const door = fits(r, first) ? first : deck.find((d) => fits(r, d));
-        if (door) {
-          say(r, door);
-          rest(r);
-        }
+    /**
+     * The door at this place in the list. A button with no room for it moves on from what it
+     * says now to the next it can hold, so it never sits still waiting for a short phrase.
+     */
+    const doorAt = (r: Rotor, place: number): CtaDoor | undefined => {
+      if (fits(r, deck[place])) return deck[place];
+      const now = deck.findIndex((d) => d.words === r.words);
+      for (let n = 1; n <= deck.length; n++) {
+        const door = deck[(now + n) % deck.length];
+        if (fits(r, door)) return door;
       }
+      return undefined;
+    };
+
+    const settleFoot = () => {
       for (const a of links) {
         if (a.dataset.rotor === "foot") {
           a.textContent = first.words;
@@ -231,36 +240,33 @@ export default function CtaRotor() {
 
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduced) {
-      void document.fonts?.ready.then(settle);
+      void document.fonts?.ready.then(() => {
+        for (const r of rotors.values()) {
+          const door = doorAt(r, 0);
+          if (door) {
+            say(r, door);
+            rest(r);
+          }
+        }
+        settleFoot();
+      });
       return;
     }
 
     const onScreen = new Set<Rotor>();
-    const seen = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) {
-          const r = [...rotors.values()].find((x) => x.a === e.target);
-          if (!r) continue;
-          if (e.isIntersecting) onScreen.add(r);
-          else onScreen.delete(r);
-        }
-      },
-      { threshold: 0.9 },
-    );
-    const close = rotors.get("close");
-    const nav = rotors.get("nav");
-    seen.observe(hero.a);
-    if (close) seen.observe(close.a);
-
-    const activeRotor = (): Rotor => {
-      if (onScreen.has(hero)) return hero;
-      if (close && onScreen.has(close)) return close;
-      return nav ?? hero;
-    };
+    const seen = new IntersectionObserver((entries) => {
+      for (const e of entries) {
+        const r = [...rotors.values()].find((x) => x.a === e.target);
+        if (!r) continue;
+        if (e.isIntersecting) onScreen.add(r);
+        else onScreen.delete(r);
+      }
+    });
+    for (const r of rotors.values()) seen.observe(r.a);
 
     let held = false;
-    let pointerOn: HTMLAnchorElement | null = null;
-    let focusOn: HTMLAnchorElement | null = null;
+    let pointerOn = false;
+    let focusOn = false;
     let timer = 0;
     let turning = false;
     let index = 0;
@@ -269,7 +275,7 @@ export default function CtaRotor() {
     const handle: CtaHandle = {
       deck,
       turns: 0,
-      active: () => activeRotor().a.dataset.rotor ?? "",
+      onScreen: () => [...onScreen].map((r) => r.a.dataset.rotor ?? ""),
       hold(on) {
         held = on;
         if (!on) schedule(0);
@@ -277,7 +283,7 @@ export default function CtaRotor() {
     };
     window.__pvCta = handle;
 
-    const paused = (r: Rotor) => held || document.hidden || pointerOn === r.a || focusOn === r.a;
+    const paused = () => held || document.hidden || pointerOn || focusOn;
 
     function schedule(ms: number): void {
       window.clearTimeout(timer);
@@ -286,29 +292,37 @@ export default function CtaRotor() {
 
     async function tick(): Promise<void> {
       if (turning) return;
-      const r = activeRotor();
-      if (paused(r)) return schedule(500);
-      // The next door this button can hold that is not what it says already.
-      let door: CtaDoor | undefined;
-      for (let n = 0; n < deck.length && !door; n++) {
-        const candidate = deck[(index + n) % deck.length];
-        if (candidate.words !== r.words && fits(r, candidate)) {
-          door = candidate;
-          index = (index + n + 1) % deck.length;
+      if (paused()) return schedule(500);
+      // The next place in the list that changes a button. All the reading happens here,
+      // before the first write, so two buttons turning cost no layout between them.
+      const moves: { r: Rotor; door: CtaDoor; plan: TurnPlan | null }[] = [];
+      for (let n = 0; n < deck.length && moves.length === 0; n++) {
+        for (const r of rotors.values()) {
+          const door = doorAt(r, index);
+          if (door && door.words !== r.words) {
+            moves.push({ r, door, plan: onScreen.has(r) ? planFor(r, door, cache) : null });
+          }
         }
+        index = (index + 1) % deck.length;
       }
-      if (!door) return;
+      if (moves.length === 0) return;
       turning = true;
-      await turn(r, door, cache);
+      await Promise.all(
+        moves.map(async ({ r, door, plan }) => {
+          if (plan) return turn(r, door, plan);
+          say(r, door);
+          rest(r);
+        }),
+      );
       turning = false;
       handle.turns += 1;
       schedule(REST_MS);
     }
 
-    const onEnter = (e: Event) => (pointerOn = e.currentTarget as HTMLAnchorElement);
-    const onLeave = () => (pointerOn = null);
-    const onFocus = (e: Event) => (focusOn = e.currentTarget as HTMLAnchorElement);
-    const onBlur = () => (focusOn = null);
+    const onEnter = () => (pointerOn = true);
+    const onLeave = () => (pointerOn = false);
+    const onFocus = () => (focusOn = true);
+    const onBlur = () => (focusOn = false);
     for (const r of rotors.values()) {
       r.a.addEventListener("pointerenter", onEnter);
       r.a.addEventListener("pointerleave", onLeave);
@@ -323,7 +337,7 @@ export default function CtaRotor() {
 
     const begin = () => {
       if (stopped) return;
-      settle();
+      settleFoot();
       // A visitor for whom the served words are already right rests on them first.
       schedule(hero.words === first.words ? REST_MS : FIRST_MS);
     };

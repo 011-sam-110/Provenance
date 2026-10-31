@@ -393,8 +393,9 @@
   .lp-root .lp-hero { padding-bottom: 40px; }
   .lp-root .lp-hero .lp-ctas { margin-top: 26px; }
   .lp-root .lp-ctas .lp-btn { width: 100%; }
-  /* The nav holds the brand and this button side by side. The rotor skips what will not fit. */
-  .lp-root .lp-nav .lp-btn[data-rotor] { width: min(12.5em, calc(100vw - 2 * var(--gutter) - 148px)); padding-inline: 8px; }
+  /* The nav holds the brand and this button side by side, with a gap between them. A narrower
+     phone gets smaller words, not fewer of them, and the rotor moves on from what will not fit. */
+  .lp-root .lp-nav .lp-btn[data-rotor] { width: min(12.5em, calc(100vw - 2 * var(--gutter) - 164px)); padding-inline: 8px; font-size: clamp(.8125rem, 3.85vw, .9375rem); }
   .lp-root .lp-hero::after { width: 100%; height: 56%; background: linear-gradient(to top, rgba(5, 7, 13, .5) 62%, rgba(5, 7, 13, 0) 100%); }
   .lp-root .lp-close::after { background: radial-gradient(ellipse 90% 50% at 50% 42%, rgba(5, 7, 13, .5) 60%, rgba(5, 7, 13, 0) 100%); }
   .lp-root .lp-bridge { height: 48vh; }
