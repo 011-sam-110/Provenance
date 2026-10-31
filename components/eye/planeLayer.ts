@@ -19,8 +19,10 @@
 // front of a plane hides what it hides of a boat.
 //
 // THE FRAME is vesselLayer.ts's: metres east, north and up of an origin rebased to the map's
-// centre at every `setPlanes`, under MapLibre's own matrix. `drawnAt` reuses the last matrix drawn,
-// so a click is measured against what is on screen.
+// centre at every `setPlanes`. It is placed by the map's own `getMatrixForModel`, read at each draw,
+// because the map turns into a globe below zoom 12 and the two take different coordinates: a
+// Mercator position under the globe's matrix lands off the screen, with no error. `drawnAt` reuses
+// the last matrix drawn, so a click is measured against what is on screen.
 
 import type { CustomLayerInterface, Map as MapLibreMap } from "maplibre-gl";
 import type * as THREE from "three";
@@ -34,13 +36,15 @@ import {
   depthAlongView,
   drawnHeightM,
   drawnPlaneLengthM,
+  heightCapM,
   planeModelFile,
   planeModelFor,
   plainModelFor,
   viewGeometry,
+  type DrawnHeight,
   type ViewGeometry,
 } from "@/lib/eye/planeModels";
-import { mercator, metresPerMercatorUnit, placement, sunDirection } from "@/lib/eye/vesselModels";
+import { placement, sunDirection } from "@/lib/eye/vesselModels";
 import { EYE_LIGHT } from "@/lib/eye/look";
 
 /** The custom layer's id: the chevron layer `eye-plane` is hidden while this one is ready. */
@@ -63,6 +67,8 @@ export interface PlaneLayerStats {
 
 export interface PlaneCustomLayer extends CustomLayerInterface {
   stats(): PlaneLayerStats;
+  /** Where a plane is drawn on screen, in the map's own px, and how far its body reaches; null before a frame. */
+  drawnAt(a: Aircraft): { x: number; y: number; radiusPx: number } | null;
 }
 
 export interface PlaneLayerHandle {
@@ -71,8 +77,9 @@ export interface PlaneLayerHandle {
   /** Called on every change of state (not on registering). */
   onState(cb: (state: PlaneLayerState) => void): void;
   state(): PlaneLayerState;
-  /** Where a plane is drawn on screen, in the map's own px, and how far its body reaches; null before a frame. */
-  drawnAt(a: Aircraft): { x: number; y: number; radiusPx: number } | null;
+  drawnAt: PlaneCustomLayer["drawnAt"];
+  /** Whether the panel should say this plane is drawn lower than it reported. */
+  noteFor(a: Aircraft): DrawnHeight["note"];
   dispose(): void;
 }
 
@@ -209,11 +216,14 @@ export function createPlaneLayer(map: MapLibreMap): PlaneLayerHandle {
   let rings: THREE.InstancedMesh | null = null;
   let ringCapacity = 0;
 
-  let basis: THREE.Matrix4 | null = null;
+  /** Metres east, north and up to the axes of the map's `getMatrixForModel`: east, up, south. */
+  let axes: THREE.Matrix4 | null = null;
   let pending: readonly Aircraft[] | null = null;
-  /** The last matrix drawn, for `drawnAt`: Mercator coordinates to clip space. */
-  let lastMatrix: ArrayLike<number> | null = null;
-  let metresUnit = 1;
+  /** The set was last applied about this spot, with the camera as it was then. */
+  let origin: { lon: number; lat: number } | null = null;
+  let appliedView: ViewGeometry | null = null;
+  /** The last matrix drawn, for `drawnAt`: metres from `origin` to clip space. */
+  let lastFrame: THREE.Matrix4 | null = null;
 
   const draws: number[] = [];
   let lastSetMs = 0;
@@ -268,6 +278,8 @@ export function createPlaneLayer(map: MapLibreMap): PlaneLayerHandle {
     renderer.autoClear = false;
     scene = new three.Scene();
     camera = new three.Camera();
+    axes = new three.Matrix4().makeBasis(new three.Vector3(1, 0, 0), new three.Vector3(0, 0, -1), new three.Vector3(0, 1, 0));
+    lastFrame = new three.Matrix4();
     material = new three.MeshLambertMaterial({ vertexColors: true, flatShading: true });
     const sun = sunDirection();
     const key = new three.DirectionalLight(0xffffff, Math.PI * SUN_INTENSITY);
@@ -368,11 +380,10 @@ export function createPlaneLayer(map: MapLibreMap): PlaneLayerHandle {
     const t0 = performance.now();
     const { three } = tools;
     const centre = map.getCenter();
-    const origin = { lon: centre.lng, lat: centre.lat };
-    const om = mercator(origin.lon, origin.lat);
-    metresUnit = 1 / metresPerMercatorUnit(origin.lat);
-    basis = new three.Matrix4().makeTranslation(om.x, om.y, 0).multiply(new three.Matrix4().makeScale(metresUnit, -metresUnit, metresUnit));
+    const here = { lon: centre.lng, lat: centre.lat };
     const view = readView(map);
+    origin = here;
+    appliedView = view;
 
     interface Item {
       model: string;
@@ -392,8 +403,8 @@ export function createPlaneLayer(map: MapLibreMap): PlaneLayerHandle {
       if (choice.named && !geometries.has(choice.model)) askFile(choice.model);
       // Until a type's own file has landed, and if it never does, the plane is its plain model.
       const model = geometries.has(choice.model) ? choice.model : plainModelFor(a.classLabel);
-      const p = placement(a, origin);
-      const { heightM } = drawnHeightM(a.feet, view.cameraHeightM);
+      const p = placement(a, here);
+      const { heightM } = drawnHeightM(a.feet, heightCapM(view, p.east, p.north));
       const depth = depthAlongView(view, p.east, p.north, heightM);
       if (depth <= NEAREST_DRAWN_M) continue;
       const length = drawnPlaneLengthM(choice.lengthM, depth, view, MIN_DRAWN_PX);
@@ -510,17 +521,18 @@ export function createPlaneLayer(map: MapLibreMap): PlaneLayerHandle {
       generation++;
       if (state === "failed") return;
       teardown();
-      basis = null;
-      lastMatrix = null;
+      origin = null;
+      appliedView = null;
       emit("loading");
     },
     render(context, args) {
-      if (state !== "ready" || !renderer || !scene || !camera || !basis) return;
+      if (state !== "ready" || !renderer || !scene || !camera || !axes || !lastFrame || !origin) return;
       const t0 = performance.now();
       const main = args.defaultProjectionData.mainMatrix as unknown as number[];
-      lastMatrix = main;
+      const placed = map.transform.getMatrixForModel([origin.lon, origin.lat], 0) as unknown as number[];
       const projection = (camera as THREE.Camera).projectionMatrix;
-      projection.fromArray(main).multiply(basis);
+      projection.fromArray(main).multiply(lastFrame.fromArray(placed)).multiply(axes);
+      lastFrame.copy(projection);
       (camera as THREE.Camera).projectionMatrixInverse.copy(projection).invert();
       renderer.resetState();
       renderer.setViewport(0, 0, context.drawingBufferWidth, context.drawingBufferHeight);
@@ -531,6 +543,21 @@ export function createPlaneLayer(map: MapLibreMap): PlaneLayerHandle {
         const sorted = [...draws].sort((a, b) => a - b);
         if (sorted[WINDOW >> 1] > SLOW_MS) fail();
       }
+    },
+    drawnAt(a) {
+      if (state !== "ready" || !lastFrame || !origin || !appliedView) return null;
+      const p = placement(a, origin);
+      const { heightM } = drawnHeightM(a.feet, heightCapM(appliedView, p.east, p.north));
+      const m = lastFrame.elements;
+      const w = m[3] * p.east + m[7] * p.north + m[11] * heightM + m[15];
+      if (!(w > 0)) return null;
+      const box = map.getContainer();
+      const x = ((m[0] * p.east + m[4] * p.north + m[8] * heightM + m[12]) / w + 1) * 0.5 * box.clientWidth;
+      const y = (1 - (m[1] * p.east + m[5] * p.north + m[9] * heightM + m[13]) / w) * 0.5 * box.clientHeight;
+      const depth = depthAlongView(appliedView, p.east, p.north, heightM);
+      if (depth <= NEAREST_DRAWN_M) return null;
+      const length = drawnPlaneLengthM(planeModelFor(a).lengthM, depth, appliedView, MIN_DRAWN_PX);
+      return { x, y, radiusPx: (length * appliedView.focalPx) / depth / 2 };
     },
     stats() {
       const sorted = [...draws].sort((a, b) => a - b);
@@ -556,24 +583,11 @@ export function createPlaneLayer(map: MapLibreMap): PlaneLayerHandle {
       listeners.push(cb);
     },
     state: () => state,
-    drawnAt(a) {
-      const m = lastMatrix;
-      if (!m || state !== "ready") return null;
-      const view = readView(map);
-      const { heightM } = drawnHeightM(a.feet, view.cameraHeightM);
-      const merc = mercator(a.lon, a.lat);
-      const z = heightM * metresUnit;
-      const w = m[3] * merc.x + m[7] * merc.y + m[11] * z + m[15];
-      if (!(w > 0)) return null;
-      const box = map.getContainer();
-      const x = ((m[0] * merc.x + m[4] * merc.y + m[8] * z + m[12]) / w + 1) * 0.5 * box.clientWidth;
-      const y = (1 - (m[1] * merc.x + m[5] * merc.y + m[9] * z + m[13]) / w) * 0.5 * box.clientHeight;
-      const origin = map.getCenter();
-      const p = placement(a, { lon: origin.lng, lat: origin.lat });
-      const depth = depthAlongView(view, p.east, p.north, heightM);
-      if (depth <= NEAREST_DRAWN_M) return null;
-      const length = drawnPlaneLengthM(planeModelFor(a).lengthM, depth, view, MIN_DRAWN_PX);
-      return { x, y, radiusPx: (length * view.focalPx) / depth / 2 };
+    drawnAt: (a) => layer.drawnAt(a),
+    noteFor(a) {
+      if (state !== "ready" || !origin || !appliedView) return null;
+      const p = placement(a, origin);
+      return drawnHeightM(a.feet, heightCapM(appliedView, p.east, p.north)).note;
     },
     dispose() {
       if (disposed) return;

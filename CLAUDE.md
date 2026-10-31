@@ -106,9 +106,11 @@ obligations and are not satisfied by the licence.
   the pure half `lib/eye/planeModels.ts`, 75 packed files in `public/models/planes/` built from
   published figures by `scripts/plane-models/build.py`, fetched only for the types in view; a code
   the table does not hold gets a plain model, never a named one). Two rules are not style
-  preferences. A plane's height is capped so it stays in view (half the camera's height), with a
-  line down to a ring on its real spot, and the tag and panel always give the height it reported, the
-  panel saying "Drawn lower than its real height". And `/app` draws no models: it loads no three.js.
+  preferences. A plane's height is capped so it stays in view (the lower of half the camera's height
+  and 16% of the frame above its spot), with a line down to a ring on its real spot, and the tag and
+  panel always give the height it reported, the panel saying "Drawn lower than its real height". And
+  `/app` draws no models: it loads no three.js. The layer is placed by MapLibre's `getMatrixForModel`,
+  because the map is a globe below zoom 12 and takes different coordinates there.
   Its link flags are
   listed at the top of `EyeApp.tsx` (`overlay=0`, `motion=orbit|fly`, `record=1`, `clock=manual`), and
   `node scripts/eye-record.mjs --base=http://localhost:3000` films one move frame by

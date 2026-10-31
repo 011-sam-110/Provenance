@@ -15,10 +15,13 @@
 //
 // THE HEIGHT IS CAPPED, AND SAYS SO. At the view's opening zoom the camera is about 500 m up, and
 // 78% of aircraft are above 3 km (measured 2026-10-31), so at true height almost every plane is
-// behind the camera. A plane is drawn at its reported height up to HEIGHT_CAP_SHARE of the
-// camera's height, and higher ones at that cap. Its spot on the map never moves: a thin line runs
-// down to it. The tag and the details panel always give the height it reported, and the panel
-// says when the plane is drawn lower than that (lib/eye/detail.ts).
+// behind the camera. A plane is drawn at its reported height up to a cap, and higher ones at the
+// cap, which is the lower of HEIGHT_CAP_SHARE of the camera's height and the height that rises
+// MAX_RISE_SHARE of the frame above its spot. The camera's share alone is not enough: in a tilted
+// view it puts a plane over the top half of the frame off the top of the screen, with only its
+// line showing (looked at 2026-10-31). Its spot on the map never moves: a thin line runs down to
+// it. The tag and the details panel always give the height it reported, and the panel says when
+// the plane is drawn lower than that (lib/eye/detail.ts).
 
 import { PLANE_TYPES } from "@/lib/eye/planeTypes.data";
 import { metresPerMercatorUnit } from "@/lib/eye/vesselModels";
@@ -30,6 +33,8 @@ export type PlainModel = (typeof PLAIN_MODELS)[number];
 
 /** A plane is drawn no higher than this share of the camera's height above the ground. */
 export const HEIGHT_CAP_SHARE = 0.5;
+/** And its body rises no further than this share of the frame's height above its spot on the map. */
+export const MAX_RISE_SHARE = 0.16;
 /** A point nearer the camera than this, in metres along the view, is not drawn. */
 export const NEAREST_DRAWN_M = 20;
 export const METRES_PER_FOOT = 0.3048;
@@ -62,6 +67,8 @@ export function planeModelFor(a: { typeCode?: string; classLabel?: string }): Pl
 
 /** What the camera is doing, in metres from the view's centre, east, north and up. */
 export interface ViewGeometry {
+  /** The frame's height in px. */
+  heightPx: number;
   /** Screen pixels per metre at the view's centre on the ground. */
   groundPxPerMetre: number;
   /** Pixels from the eye to the screen. One metre, `d` metres from the eye, is `focalPx / d` px long. */
@@ -71,6 +78,8 @@ export interface ViewGeometry {
   camera: { east: number; north: number; up: number };
   /** A unit vector along the view. */
   forward: { east: number; north: number; up: number };
+  /** A unit vector to the top of the frame. */
+  screenUp: { east: number; north: number; up: number };
 }
 
 /**
@@ -94,6 +103,8 @@ export function viewGeometry(view: {
   const bearing = view.bearingDeg * DEG;
   const forward = { east: Math.sin(bearing) * Math.sin(pitch), north: Math.cos(bearing) * Math.sin(pitch), up: -Math.cos(pitch) };
   return {
+    heightPx: view.heightPx,
+    screenUp: { east: Math.sin(bearing) * Math.cos(pitch), north: Math.cos(bearing) * Math.cos(pitch), up: Math.sin(pitch) },
     groundPxPerMetre,
     focalPx,
     cameraHeightM: distance * Math.cos(pitch),
@@ -117,9 +128,29 @@ export interface DrawnHeight {
   note: "lowered" | "unsent" | null;
 }
 
+/**
+ * Pure: the highest a plane over this spot is drawn, metres. Solved exactly from the camera: with `a`
+ * and `b` the spot's distance along the frame's up and along the view, a point `h` above it is at
+ * (a + h up) / (b + h forward) on the screen, and that must be MAX_RISE_SHARE of the frame above a / b.
+ * Looking straight down a height does not rise on the screen at all, so the camera's share holds there.
+ */
+export function heightCapM(view: ViewGeometry, east: number, north: number): number {
+  const byCamera = Math.max(view.cameraHeightM, 0) * HEIGHT_CAP_SHARE;
+  const e = east - view.camera.east;
+  const n = north - view.camera.north;
+  const u = -view.camera.up;
+  const a = e * view.screenUp.east + n * view.screenUp.north + u * view.screenUp.up;
+  const b = e * view.forward.east + n * view.forward.north + u * view.forward.up;
+  if (b <= NEAREST_DRAWN_M) return byCamera;
+  const t = a / b + (MAX_RISE_SHARE * view.heightPx) / view.focalPx;
+  const under = view.screenUp.up - t * view.forward.up;
+  if (under <= 1e-6) return byCamera;
+  return Math.max(0, Math.min(byCamera, (t * b - a) / under));
+}
+
 /** Pure: how high a plane is drawn. Reported height up to the cap, the cap above it or with none sent. */
-export function drawnHeightM(feet: number | null, cameraHeightM: number): DrawnHeight {
-  const cap = Math.max(cameraHeightM, 0) * HEIGHT_CAP_SHARE;
+export function drawnHeightM(feet: number | null, capM: number): DrawnHeight {
+  const cap = Math.max(capM, 0);
   if (feet == null || !Number.isFinite(feet)) return { heightM: cap, note: "unsent" };
   const real = Math.max(feet, 0) * METRES_PER_FOOT;
   return real > cap ? { heightM: cap, note: "lowered" } : { heightM: real, note: null };

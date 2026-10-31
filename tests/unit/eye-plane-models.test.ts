@@ -9,12 +9,14 @@ import { MAX_SPAN } from "@/lib/eye/vessels";
 import { clearPlanePool, notePlanePool, readPlanePool } from "@/lib/planes/pool";
 import {
   HEIGHT_CAP_SHARE,
+  MAX_RISE_SHARE,
   METRES_PER_FOOT,
   MIN_DRAWN_PX,
   PLAIN_MODELS,
   depthAlongView,
   drawnHeightM,
   drawnPlaneLengthM,
+  heightCapM,
   plainModelFor,
   planeModelFile,
   planeModelFor,
@@ -256,31 +258,73 @@ describe("what the camera can see", () => {
   });
 });
 
+describe("the highest a plane is drawn", () => {
+  const v = viewGeometry(VIEW);
+  /** Where a point is on the screen, px above the frame's middle. */
+  const screenY = (east: number, north: number, up: number) => {
+    const e = east - v.camera.east;
+    const n = north - v.camera.north;
+    const u = up - v.camera.up;
+    const along = e * v.forward.east + n * v.forward.north + u * v.forward.up;
+    return (v.focalPx * (e * v.screenUp.east + n * v.screenUp.north + u * v.screenUp.up)) / along;
+  };
+
+  it("rises exactly its share of the frame above its spot, wherever the spot is on the screen", () => {
+    for (const [east, north] of [[0, 0], [0, 150], [0, -150], [120, 60], [-200, -40]]) {
+      const cap = heightCapM(v, east, north);
+      const rise = screenY(east, north, cap) - screenY(east, north, 0);
+      expect(rise).toBeCloseTo(MAX_RISE_SHARE * VIEW.heightPx, 6);
+    }
+  });
+
+  it("keeps a plane over the view's centre inside the frame at any height it can report", () => {
+    const { heightM } = drawnHeightM(45_000, heightCapM(v, 0, 0));
+    expect(screenY(0, 0, heightM)).toBeLessThan(VIEW.heightPx / 2);
+  });
+
+  it("is never over the camera's share, even looking straight down, where height does not rise on screen", () => {
+    const down = viewGeometry({ ...VIEW, pitchDeg: 0 });
+    expect(heightCapM(down, 0, 0)).toBeCloseTo(down.cameraHeightM * HEIGHT_CAP_SHARE, 6);
+    for (const pitchDeg of [0, 20, 45, 60, 80]) {
+      const w = viewGeometry({ ...VIEW, pitchDeg });
+      expect(heightCapM(w, 40, 90)).toBeLessThanOrEqual(w.cameraHeightM * HEIGHT_CAP_SHARE + 1e-6);
+      expect(heightCapM(w, 40, 90)).toBeGreaterThan(0);
+    }
+  });
+
+  it("keeps its px at a wide zoom, so the line stays short while real heights show", () => {
+    const wide = viewGeometry({ ...VIEW, zoom: 11 });
+    const cap = heightCapM(wide, 0, 0);
+    expect(cap).toBeGreaterThan(heightCapM(v, 0, 0) * 16);
+    // A 3,000 ft approach is under the cap out here, so it is drawn at its real height.
+    expect(drawnHeightM(3_000, cap).note).toBeNull();
+  });
+});
+
 describe("how high a plane is drawn", () => {
-  const CAMERA_M = 500;
-  const CAP = CAMERA_M * HEIGHT_CAP_SHARE;
+  const CAP = 250;
 
   it("is its reported height while that is under the cap, with no note", () => {
-    expect(drawnHeightM(0, CAMERA_M)).toEqual({ heightM: 0, note: null });
-    expect(drawnHeightM(500, CAMERA_M)).toEqual({ heightM: 500 * METRES_PER_FOOT, note: null });
+    expect(drawnHeightM(0, CAP)).toEqual({ heightM: 0, note: null });
+    expect(drawnHeightM(500, CAP)).toEqual({ heightM: 500 * METRES_PER_FOOT, note: null });
   });
 
   it("is the cap above that, and says it was lowered", () => {
-    expect(drawnHeightM(37_000, CAMERA_M)).toEqual({ heightM: CAP, note: "lowered" });
+    expect(drawnHeightM(37_000, CAP)).toEqual({ heightM: CAP, note: "lowered" });
   });
 
   it("is the cap with no altitude sent, and says so differently", () => {
-    expect(drawnHeightM(null, CAMERA_M)).toEqual({ heightM: CAP, note: "unsent" });
-    expect(drawnHeightM(Number.NaN, CAMERA_M)).toEqual({ heightM: CAP, note: "unsent" });
+    expect(drawnHeightM(null, CAP)).toEqual({ heightM: CAP, note: "unsent" });
+    expect(drawnHeightM(Number.NaN, CAP)).toEqual({ heightM: CAP, note: "unsent" });
   });
 
   it("does not sink a plane below the ground for a negative altitude", () => {
-    expect(drawnHeightM(-200, CAMERA_M).heightM).toBe(0);
+    expect(drawnHeightM(-200, CAP).heightM).toBe(0);
   });
 
   it("keeps every drawn plane in front of a camera at the opening view", () => {
     const v = viewGeometry(VIEW);
-    const { heightM } = drawnHeightM(37_000, v.cameraHeightM);
+    const { heightM } = drawnHeightM(37_000, heightCapM(v, 0, 0));
     expect(depthAlongView(v, 0, 0, heightM)).toBeGreaterThan(0);
     expect(heightM).toBeLessThan(v.cameraHeightM);
   });
@@ -612,6 +656,14 @@ describe("the layer's source rules", () => {
     };
     for (const dir of ["app", "components", "lib"]) walk(dir);
     expect(importers).toEqual(["components/eye/EyeOverlay.tsx"]);
+  });
+
+  it("is placed by the map's own model matrix, so it stays on the screen when the map turns into a globe", () => {
+    const src = code(layer);
+    const from = src.indexOf("render(context, args)");
+    const body = src.slice(from, src.indexOf("drawnAt(a)", from));
+    expect(body).toContain("map.transform.getMatrixForModel(");
+    expect(src).not.toContain("makeTranslation");
   });
 
   it("is a custom layer in 3d, and the Planes switch hides it with the chevrons", () => {

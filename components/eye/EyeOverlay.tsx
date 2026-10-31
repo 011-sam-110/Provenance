@@ -147,8 +147,7 @@ import { CameraIcon } from "./cameraIcon";
 import { Tag, tagSize } from "./tag";
 import DetailPanel, { type AlsoHere, type DetailSubject } from "./DetailPanel";
 import { VESSEL_LAYER_ID, createVesselLayer, type VesselLayerHandle, type VesselLayerState } from "./vesselLayer";
-import { PLANE_LAYER_ID, createPlaneLayer, readView, type PlaneLayerHandle, type PlaneLayerState } from "./planeLayer";
-import { drawnHeightM } from "@/lib/eye/planeModels";
+import { PLANE_LAYER_ID, createPlaneLayer, type PlaneLayerHandle, type PlaneLayerState } from "./planeLayer";
 import { EYE_PLANES_EVERY_MS } from "@/lib/eye/planes";
 
 export interface OverlayReport {
@@ -1457,7 +1456,7 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
         return [{ id: c.id, kind: c.kind, name, metres: haversineKm(centre.lat, centre.lon, m.lat, m.lon) * 1000 }];
       });
     /** What the details panel says about a plane's drawn height; null while the chevrons stand in. */
-    const drawnNote = (a: Aircraft) => (planeState.current === "ready" ? drawnHeightM(a.feet, readView(map).cameraHeightM).note : null);
+    const drawnNote = (a: Aircraft) => (planeState.current === "ready" ? (planeLayer.current?.noteFor(a) ?? null) : null);
     const subjectOf = (kind: Kind, item: Item): DetailSubject =>
       kind === "ship"
         ? { kind, v: item as Vessel }
