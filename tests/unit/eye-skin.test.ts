@@ -5,12 +5,11 @@ import { EYE_SKIN_ATTR, EYE_SKIN_SCRIPT } from "@/lib/eye/skin";
 import { SKIN_ATTR, SKIN_PERSIST_KEY } from "@/lib/terminal/skin";
 
 /**
- * In the God's eye view the Sources tray, the Sources button, "Show all" and the pins are
- * ALWAYS the console's dark mode, whatever the console is set to (Leon, 29 Oct 2026). It is
- * the console's own attribute on <html>, switched on before paint by /eye's own layout. These
- * pin the things that fail SILENTLY: a script that reads the console's saved choice, a layout
- * that goes dynamic, the skin store imported into the view, and a `.tn-terminal` scope that
- * leaks onto the view's own frame.
+ * The God's eye view is ALWAYS the console's dark mode, whatever the console is set to (Leon,
+ * 29 Oct 2026). It is the console's own attribute on <html>, switched on before paint by /eye's
+ * own layout. These pin the things that fail SILENTLY: a script that reads the console's saved
+ * choice, a layout that goes dynamic, the skin store imported into the view, and a `.tn-terminal`
+ * scope that brings the console's skin onto the view's own frame.
  */
 
 const ROOT = resolve(__dirname, "../..");
@@ -90,15 +89,12 @@ describe("the view never touches the console's skin", () => {
     }
   });
 
-  it("puts `tn-terminal` on the tray and the controls bar only, and nowhere else", () => {
+  it("puts `tn-terminal` nowhere: the frame and the tray have the HUD's own look", () => {
     const hits: string[] = [];
     for (const f of eyeFiles) {
       const src = code(f.slice(ROOT.length + 1));
       if (/tn-terminal/.test(src)) hits.push(f.slice(ROOT.length + 1));
     }
-    expect(hits.sort()).toEqual(["components/eye/EyeHud.tsx", "components/eye/EyeSources.tsx"]);
-    expect(code("components/eye/EyeHud.tsx").match(/tn-terminal/g)).toHaveLength(1);
-    expect(code("components/eye/EyeSources.tsx").match(/tn-terminal/g)).toHaveLength(1);
-    expect(code("components/eye/EyeHud.tsx")).toMatch(/\$\{styles\.controls\}[^`]*tn-terminal/);
+    expect(hits).toEqual([]);
   });
 });

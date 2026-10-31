@@ -147,7 +147,7 @@ test("the Sources tray's Ships switch hides the models, and shows them again", a
   await ready(page);
   expect((await layerState(page)).modelsVisibility).not.toBe("none");
 
-  await page.getByRole("button", { name: /^Sources/ }).click();
+  await page.getByRole("button", { name: "Sources & layers" }).click();
   const ships = page.locator("aside#eye-sources").getByRole("switch", { name: /^Show Ships/ });
   await ships.click();
   await expect(ships).toHaveAttribute("aria-checked", "false");

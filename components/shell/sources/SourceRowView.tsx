@@ -9,7 +9,7 @@
 //   - the console's ＋ places a widget on the dashboard, its switch paints the map layer,
 //     its row lights its marks while you point at it (SourceRow's `rowProps`), and its
 //     popover is drawn in the shell, beside the rail;
-//   - the tray's ＋ pins the source to the bar, its switch shows it in this view, and its
+//   - the tray's ＋ pins the source to the sidebar, its switch shows it in this view, and its
 //     popover hangs under the row.
 // So the view holds NO state of its own: the popover's open state, its id and its handlers
 // are the caller's, because the console's decides things this view cannot see (a preview, a
@@ -36,7 +36,7 @@ export interface SourceRowViewRow {
 
 /** The ＋ beside the label. */
 export interface SourceRowSlot {
-  /** Filled (`data-placed`): the console's widget is open, or the tray's pin is on the bar. */
+  /** Filled (`data-placed`): the console's widget is open, or the tray's pin is in the sidebar. */
   placed: boolean;
   disabled?: boolean;
   ariaLabel: string;
@@ -87,7 +87,7 @@ export default function SourceRowView({
   onPointerDown?: (e: React.PointerEvent<HTMLDivElement>) => void;
   /** A phone's drag handle (⋮⋮) before the dot. */
   grip?: boolean;
-  /** After the label: a short note ("3 here"). */
+  /** After the label: the tray's detail line. */
   extra?: ReactNode;
   rowRef?: React.Ref<HTMLDivElement>;
   rowProps?: SourceRowProps;

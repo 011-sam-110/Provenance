@@ -101,32 +101,47 @@ export interface LedgerRow {
   id?: string;
 }
 
-// ── The Sources tray, the way out to the console, and the place picker ───────────────
+// ── The sidebar, the Sources tray and the search ─────────────────────────────────────
 //
-// Sources opens the console's own rail as a tray in this view (components/eye/EyeSources.tsx),
-// with a way out to the full console at the foot of it (lib/console/sourcesLink.ts). Its
-// counts are read at build time from RAIL_SOURCES by app/(console)/eye/page.tsx: never typed
-// here, and the words below take them as arguments.
+// The sidebar is components/rail/SideRail.tsx; these are its rows in this view. "Sources &
+// layers" opens the Sources tray beside it (components/eye/EyeSources.tsx).
 
-/** The button, and the tray's name. */
+/** The sidebar's accessible name, and the word beside its three bars when it is open. */
+export const RAIL_NAME = "Map tools";
+export const RAIL_MENU_WORD = "Provenance";
+
+export const AUTO_TURN_LABEL = "Auto-turn";
+export const CONTROLS_LABEL = "Controls";
+
+/** The sidebar's row, and the tray's name. */
 export function sourcesName(): string {
-  return "Sources";
+  return "Sources & layers";
 }
-
-/** The accessible name of the footer link, which says where it goes. */
-export function fullMapName(count: number): string {
-  return `Open the full map with all ${count} sources`;
-}
-
-/** The footer link's visible words. */
-export const FULL_MAP_LABEL = "Open the full map";
 
 /**
- * The way out of this view to the console, top left beside the name (EyeHud.tsx): the
- * console at the spot on screen, with its rail as the visitor left it. Sentence case,
- * like every control in the console.
+ * The way out of this view to the console, at the foot of the sidebar (EyeHud.tsx): the console
+ * at the spot on screen, with its rail as the visitor left it.
  */
-export const EXIT_LABEL = "Exit to main dashboard";
+export const EXIT_LABEL = "Exit to dashboard";
+
+/** The way to the landing page, in the credits pop-up, for a visitor who came from a reel. */
+export const HOME_LABEL = "About Provenance";
+
+export const CREDITS_LABEL = "© Credits";
+
+export const EYE_SEARCH_PLACEHOLDER = "Search places, cameras, vessels";
+export const EYE_SEARCH_NAME = "Search places, cameras and vessels";
+export const CLEAR_SEARCH = "Clear search";
+export const SEARCH_RESULTS_NAME = "Search results";
+export const NO_MATCHES = "No matches";
+export const SEARCHING_PLACES = "Searching places";
+export const SEARCH_DOWN = "Place search is not answering";
+/** The word at the end of a result's row. */
+export const SEARCH_KIND_WORD: Readonly<Record<"place" | "camera" | "vessel", string>> = {
+  place: "Place",
+  camera: "Camera",
+  vessel: "Vessel",
+};
 
 /** The first section of the tray: this view's own seven. */
 export const THIS_VIEW = "This view";
@@ -167,29 +182,20 @@ export function drawnAsText(precision: "exact" | "facility" | "area" | "country"
 /** The road rows' switch and popover outside London, where TfL has nothing to say. */
 export const LONDON_ONLY = "London only in this view";
 
-/** "3 here": what a switched-on row has in the view now. */
-export function hereText(n: number): string {
-  return `${n} here`;
-}
-
-/** The line when a bar is full. */
+/** The line when the sidebar has no room for another pin. */
 export function pinCapText(cap: number): string {
-  return `The bar holds ${cap}. Unpin one first.`;
+  return `The sidebar holds ${cap}. Unpin one first.`;
 }
 
-/** The search found nothing. */
-export function noMatchText(query: string, total: number): string {
-  return `No source here is called \u201c${query}\u201d. Open the full map for all ${total}.`;
+/** The tray's search found nothing. */
+export function noMatchText(query: string): string {
+  return `No source here is called \u201c${query}\u201d.`;
 }
 
-/** After the link in the tray's foot: how many sources there are, and how many this view leaves out. */
-export function leftOutText(total: number, left: { country: number; widget: number }): string {
-  const n = left.country + left.widget;
-  if (n === 0) return `all ${total} sources.`;
-  const parts: string[] = [];
-  if (left.country > 0) parts.push(`${left.country} country-wide`);
-  if (left.widget > 0) parts.push(`${left.widget} headlines ${left.widget === 1 ? "widget" : "widgets"}`);
-  return `all ${total} sources. ${n} ${n === 1 ? "is" : "are"} not drawn here: ${parts.join(", ")}.`;
+/** The tray's foot: what this view leaves out, by reason, and where it is. Null when nothing is. */
+export function leftOutText(left: { country: number; widget: number }): string | null {
+  const parts = [...(left.country > 0 ? ["country-wide layers"] : []), ...(left.widget > 0 ? ["the headlines"] : [])];
+  return parts.length > 0 ? `Not drawn here: ${parts.join(" and ")}. The dashboard has them.` : null;
 }
 
 /**
@@ -207,7 +213,7 @@ export function signalLedgerRow(
   return { kind: "signal", id: row.id, count, label: row.label, detail, short: row.label, color: row.color };
 }
 
-// ── Pins on the bar, said aloud and on the drag ghost ──────────────────────────────
+// ── Pins in the sidebar, said aloud ─────────────────────────────────────────────────
 
 /** The tray's section strip and its two views. */
 export const SECTIONS_TAB = "Sections";
@@ -216,39 +222,17 @@ export const SEARCH_PLACEHOLDER = "Search sources\u2026";
 export const CLOSE_SOURCES = "Close sources";
 
 export function pinName(label: string, pinned: boolean): string {
-  return pinned ? `Unpin ${label} from the bar` : `Pin ${label} to the bar`;
+  return pinned ? `Unpin ${label} from the sidebar` : `Pin ${label} to the sidebar`;
 }
 
 export function switchName(label: string): string {
   return `Show ${label} in this view`;
 }
 
-export function liftedText(label: string): string {
-  return `Picked up ${label}. Drop it on the bar to pin it, or press Escape.`;
-}
-
-export function pinnedText(label: string, place: number, of: number): string {
-  return `Pinned ${label}, ${place} of ${of}.`;
-}
-
-export function movedPinText(label: string, place: number, of: number): string {
-  return `${label} moved to ${place} of ${of}.`;
+export function pinnedText(label: string): string {
+  return `Pinned ${label} to the sidebar.`;
 }
 
 export function unpinnedText(label: string): string {
   return `Unpinned ${label}.`;
 }
-
-export const DROPPED_NOTHING = "Dropped. Nothing was pinned.";
-export const DRAG_CANCELLED = "Cancelled.";
-
-/** The ghost of a pin dragged off the bar. */
-export function unpinGhostText(label: string): string {
-  return `Unpin ${label}`;
-}
-
-export const PIN_MOVE_LEFT = "Move left";
-export const PIN_MOVE_RIGHT = "Move right";
-export const PIN_UNPIN = "Unpin";
-
-export const PLACES_LABEL = "Places";

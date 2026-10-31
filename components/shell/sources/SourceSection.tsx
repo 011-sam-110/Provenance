@@ -8,8 +8,8 @@
 // and you want to know why.
 //
 // The row is the CALLER's (`renderRow`), not imported here: the console passes SourceRow
-// (components/shell/SourceCatalog.tsx), the God's eye view passes its own pins-and-counts
-// row built on SourceRowView. A section that imported SourceRow would pull the widget
+// (components/shell/SourceCatalog.tsx), the God's eye view passes its own row built on
+// SourceRowView. A section that imported SourceRow would pull the widget
 // registry into /eye's bundle with it.
 
 import { Fragment, useEffect, useRef } from "react";

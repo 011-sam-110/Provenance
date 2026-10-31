@@ -14,7 +14,7 @@ import { describe, expect, it } from "vitest";
 const ROOT = resolve(__dirname, "../..");
 const read = (p: string) => readFileSync(resolve(ROOT, p), "utf8");
 const CSS = read("components/eye/eye.module.css");
-const HUD = read("components/eye/EyeHud.tsx");
+const HUD = read("components/eye/EyeHud.tsx") + read("components/eye/EyeFilmFrame.tsx");
 
 describe("the God's eye view's frame", () => {
   it("draws no scan lines", () => {
@@ -28,7 +28,9 @@ describe("the God's eye view's frame", () => {
     expect(HUD).not.toContain("styles.corner");
   });
 
-  it("keeps the vignette and the scrims under the words", () => {
+  it("keeps the vignette and the scrims under the words, on the frame and on a film's", () => {
+    expect(read("components/eye/EyeHud.tsx")).toContain("className={styles.hud}");
+    expect(read("components/eye/EyeFilmFrame.tsx")).toContain("${styles.hud} ${styles.film}");
     const rules = CSS.match(/\.hud::before\s*\{[^}]*\}/g) ?? [];
     expect(rules).toHaveLength(3); // wide, phone, 9:16 recording
     for (const rule of rules) {

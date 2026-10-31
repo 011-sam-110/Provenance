@@ -1,24 +1,23 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { expect, test, type Locator, type Page } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 /**
- * The God's eye view's Sources tray (/eye): the console's own rail as a tray, with
- * "Show all", pins on the bar, and a drag to pin. Always the console's dark mode.
+ * The God's eye view's Sources tray (/eye): the console's rows as the design's pop-over beside
+ * the sidebar, with "Show all", and pins that are switch rows in the sidebar.
  *
- *   1  the tray is the console's rail: This view's seven rows, in two columns; Ships off
- *      leaves no vessels row and no ship tags, and on brings them back
- *   2  Show all, search, a console layer on: its ledger row, its credit, no Marks key
- *   3  a mouse drag pins a row onto the bar, between Turn and Sources
- *   4  the same without dragging: the ＋, Alt+Left, Delete
- *   5  a pin dragged off the bar is unpinned
- *   6  what is on and pinned is remembered, apart from the console's board
- *   7  Escape closes the tray and focus goes back to Sources
- *   8  a phone: a pop-up above the bar, a grip that carries a row, 44 px hit boxes
- *   9  outside London the three road switches are off and say why
- *   10 dark while the console is light, and /app keeps its own setting
- *   11 the console's own rail is unchanged
- *   (and the control hint steps aside for the tray, and its ? closes the tray)
+ *   1  the tray: This view's seven rows, in one column, each a name and a detail line with no
+ *      count; Ships off leaves no ship tags, and on brings them back
+ *   2  Show all, search, a console layer on: its credit, no Marks key
+ *   3  the ＋ pins a row as a switch in the sidebar, which switches the source
+ *   4  the same from the keyboard, in the order pressed; the state holds six
+ *   5  what is on and pinned is remembered, apart from the console's board
+ *   6  Escape closes the tray and focus goes back to its row
+ *   7  a phone: a pop-up under the search, 44 px hit boxes, pins behind the menu
+ *   8  outside London the three road switches are off and say why, and a road pin waits
+ *   9  the HUD's own dark look while the console is light, and /app keeps its own setting
+ *   10 the console's own rail is unchanged
+ *   (and the control hint steps aside for the tray, and Controls closes the tray)
  *
  * THE FEEDS ARE ANSWERED FROM CAPTURES (tests/fixtures/eye-*.json), routed by pathname on
  * both vessel routes, so a keyless dev server still has boats. UK street crime is answered
@@ -61,44 +60,23 @@ async function feeds(page: Page): Promise<string[]> {
   return errors;
 }
 
-const sourcesButton = (page: Page) => page.getByRole("button", { name: /^Sources/ });
+const sourcesButton = (page: Page) => page.locator('[data-rail="eye"] [data-rail-entry="sources"]');
 const tray = (page: Page) => page.locator("aside#eye-sources");
-const bar = (page: Page) => page.getByRole("navigation", { name: "View controls" });
+const railPin = (page: Page, id: string) => page.locator(`[data-rail="eye"] [data-rail-entry="pin-${id}"]`);
+const railPins = (page: Page) => page.locator('[data-rail="eye"] [data-rail-entry^="pin-"]');
 const row = (page: Page, id: string) => tray(page).locator(`.tn-src-row[data-source-row="${id}"]`);
-const pin = (page: Page, id: string) => bar(page).locator(`[data-pin="${id}"]`);
-const ledger = (page: Page) => page.locator('section[aria-label="What this view shows"]');
+const menu = (page: Page) => page.locator('[data-rail="eye"] [data-rail-menu]');
 
 async function openTray(page: Page) {
+  if ((page.viewportSize()?.width ?? 0) <= 900) await menu(page).click();
   await sourcesButton(page).click();
   await expect(tray(page)).toBeVisible();
-}
-
-/** The centre of an element, in page pixels. */
-async function centre(el: Locator): Promise<{ x: number; y: number }> {
-  const b = (await el.boundingBox())!;
-  return { x: b.x + b.width / 2, y: b.y + b.height / 2 };
-}
-
-/** A mouse drag in small steps, so the pointer is seen on its way. */
-async function drag(page: Page, from: { x: number; y: number }, to: { x: number; y: number }) {
-  await page.mouse.move(from.x, from.y);
-  await page.mouse.down();
-  await page.mouse.move(from.x + 8, from.y + 6, { steps: 3 });
-  await page.mouse.move(to.x, to.y, { steps: 16 });
-  await page.mouse.up();
-}
-
-/** The gap between Turn and Sources: where a drop lands before Sources. */
-async function gapBeforeSources(page: Page) {
-  const turn = (await bar(page).getByRole("button", { name: "Turn" }).boundingBox())!;
-  const src = (await sourcesButton(page).boundingBox())!;
-  return { x: (turn.x + turn.width + src.x) / 2, y: src.y + src.height / 2 };
 }
 
 test.describe("on a wide screen", () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
-  test("the tray is the console's rail: this view's seven rows, in two columns, and Ships switches off and on", async ({ page }) => {
+  test("the tray: this view's seven rows, in one column, a detail line under each, and Ships switches off and on", async ({ page }) => {
     const errors = await feeds(page);
     await page.goto("/eye?place=westminster");
     await ready(page);
@@ -106,37 +84,41 @@ test.describe("on a wide screen", () => {
     await expect(sourcesButton(page)).toHaveAttribute("aria-expanded", "false");
     await openTray(page);
     await expect(sourcesButton(page)).toHaveAttribute("aria-expanded", "true");
-    // The console's own panel, in the console's token scope.
-    await expect(page.locator(".tn-terminal aside.tn-rail#eye-sources")).toHaveCount(1);
+    // The HUD's own look, out of the console's token scope.
+    await expect(page.locator(".tn-terminal aside#eye-sources")).toHaveCount(0);
     await expect(tray(page)).toHaveAttribute("role", "dialog");
-    await expect(page.locator("aside#eye-sources .tn-src-sec-head .tn-src-sec-name")).toHaveText("This view");
+    await expect(tray(page)).toHaveAttribute("data-eye-keep", "");
 
     const rows = tray(page).locator(".tn-src-row");
     await expect(rows).toHaveCount(7);
     const ids = await rows.evaluateAll((els) => els.map((e) => e.getAttribute("data-source-row")));
     expect(ids).toEqual(["livecams", "staticcams", "ais", "planes", "road-works", "road-incidents", "road-closures"]);
-    // Two columns: two distinct left edges.
+    // One column: one left edge.
     const lefts = new Set(await rows.evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().left))));
-    expect(lefts.size).toBe(2);
+    expect(lefts.size).toBe(1);
+    // Each row has its detail line, and nothing says how many.
+    for (const r of await rows.all()) {
+      const lines = (await r.innerText()).split("\n").map((l) => l.trim()).filter(Boolean);
+      expect(lines.length, await r.getAttribute("data-source-row") ?? "").toBeGreaterThanOrEqual(2);
+    }
+    expect(await tray(page).innerText()).not.toMatch(/\b\d+\s+(here|named|nearby|moving|in view)\b/);
+    await expect(row(page, "ais")).toContainText("AIS heard in the last 20 min");
 
-    // Ships: on at first, with its words in the ledger and tags on the water.
+    // Ships: on at first, with tags on the water.
     const ships = tray(page).getByRole("switch", { name: /^Show Ships/ });
     await expect(ships).toHaveAttribute("aria-checked", "true");
-    await expect(ledger(page).locator('p[data-k="ship"]')).toHaveCount(1);
     await expect(page.locator('[data-kind="ship"]').first()).toBeAttached();
 
     await ships.click();
     await expect(ships).toHaveAttribute("aria-checked", "false");
-    await expect(ledger(page).locator('p[data-k="ship"]')).toHaveCount(0);
     await expect(page.locator('[data-kind="ship"]')).toHaveCount(0);
 
     await ships.click();
-    await expect(ledger(page).locator('p[data-k="ship"]')).toHaveCount(1);
     await expect(page.locator('[data-kind="ship"]').first()).toBeAttached({ timeout: 15_000 });
     expect(errors).toEqual([]);
   });
 
-  test("Show all: search, a console layer on has its ledger row and credit, and there is no Marks key", async ({ page }) => {
+  test("Show all: search, a console layer on has its credit, and there is no Marks key", async ({ page }) => {
     const errors = await feeds(page);
     await page.goto("/eye?place=westminster");
     await ready(page);
@@ -148,10 +130,10 @@ test.describe("on a wide screen", () => {
     await expect(tray(page).locator(".tn-src-row")).toHaveCount(1);
     await tray(page).getByRole("switch", { name: "Show UK street crime in this view" }).click();
 
-    const crimeRow = ledger(page).locator('p[data-k="signal"]', { hasText: "UK street crime" });
-    await expect(crimeRow).toHaveCount(1);
-    await expect(crimeRow).toContainText("data.police.uk");
+    await expect(row(page, "crime")).toContainText("data.police.uk");
+    await page.getByRole("button", { name: "© Credits" }).click();
     await expect(page.locator("footer")).toContainText("data.police.uk");
+    await page.getByRole("button", { name: "© Credits" }).click();
     await expect(page.locator('[data-testid="mark-legend"]')).toHaveCount(0);
 
     // A row that is a map LAYER (the borders), not a signal, switches the layer the console's
@@ -168,36 +150,44 @@ test.describe("on a wide screen", () => {
     await tray(page).getByRole("switch", { name: "Show Borders & names in this view" }).click();
     await expect.poll(() => borders("country-borders")).toBe("none");
 
-    // Nothing matches: it says so, and says where the rest is.
+    // Nothing matches: it says so.
     await search.fill("zzzz");
-    await expect(tray(page)).toContainText("No source here is called “zzzz”. Open the full map for all");
+    await expect(tray(page)).toContainText("No source here is called “zzzz”.");
+    // The foot says what this view leaves out, with no count.
+    await expect(tray(page)).toContainText("Not drawn here: country-wide layers");
     expect(errors).toEqual([]);
   });
 
-  test("a mouse drag pins a row onto the bar, between Turn and Sources", async ({ page }) => {
+  test("the plus pins a row as a switch in the sidebar, which switches the source", async ({ page }) => {
     await feeds(page);
     await page.goto("/eye?place=westminster");
     await ready(page);
     await openTray(page);
     await tray(page).getByRole("tab", { name: "Security" }).click();
-    const protests = row(page, "protests");
-    await expect(protests).toBeVisible();
-    await drag(page, await centre(protests.locator(".tn-src-label")), await gapBeforeSources(page));
+    const plus = row(page, "protests").locator(".tn-src-add");
+    await expect(plus).toHaveAttribute("aria-label", "Pin Protests to the sidebar");
+    await plus.click();
+    await expect(plus).toHaveAttribute("aria-pressed", "true");
+    await expect(plus).toHaveAttribute("aria-label", "Unpin Protests from the sidebar");
+    await expect(page.getByRole("status").filter({ hasText: "Pinned Protests to the sidebar." })).toHaveCount(1);
 
-    const pinned = bar(page).getByRole("button", { name: /^Protests/ });
-    await expect(pinned).toHaveCount(1);
-    const turn = (await bar(page).getByRole("button", { name: "Turn" }).boundingBox())!;
-    const at = (await pinned.boundingBox())!;
-    const src = (await sourcesButton(page).boundingBox())!;
-    expect(at.x).toBeGreaterThan(turn.x);
-    expect(at.x).toBeLessThan(src.x);
-    await expect(row(page, "protests").locator(".tn-src-add")).toHaveAttribute("aria-pressed", "true");
-    // Dropped elsewhere, nothing is pinned.
-    await drag(page, await centre(row(page, "conflict").locator(".tn-src-label")), { x: 300, y: 500 });
-    await expect(bar(page).locator("[data-pin]")).toHaveCount(1);
+    // In the sidebar, under Sources & layers.
+    const pinned = railPin(page, "protests");
+    await expect(pinned).toHaveAttribute("role", "switch");
+    await expect(pinned).toHaveAttribute("aria-checked", "false");
+    const [a, b] = [(await sourcesButton(page).boundingBox())!, (await pinned.boundingBox())!];
+    expect(b.y).toBeGreaterThan(a.y);
+    // It and the tray's switch are one state.
+    await pinned.click();
+    await expect(pinned).toHaveAttribute("aria-checked", "true");
+    await expect(tray(page).getByRole("switch", { name: "Show Protests in this view" })).toHaveAttribute("aria-checked", "true");
+
+    await plus.click();
+    await expect(railPins(page)).toHaveCount(0);
+    await expect(page.getByRole("status").filter({ hasText: "Unpinned Protests." })).toHaveCount(1);
   });
 
-  test("without dragging: the plus pins, Alt+Left moves, Delete unpins", async ({ page }) => {
+  test("the keyboard pins in the order pressed, and the sidebar holds six", async ({ page }) => {
     await feeds(page);
     await page.goto("/eye?place=westminster");
     await ready(page);
@@ -210,48 +200,32 @@ test.describe("on a wide screen", () => {
     await expect(gliders).toHaveAttribute("aria-pressed", "true");
     await expect(gliders).toHaveAttribute("aria-label", /^Unpin Gliders/);
     await row(page, "crime").locator(".tn-src-add").click();
-    const order = () => bar(page).locator("[data-pin]").evaluateAll((els) => els.map((e) => e.getAttribute("data-pin")));
-    expect(await order()).toEqual(["gliders", "crime"]);
+    const order = () => railPins(page).evaluateAll((els) => els.map((e) => e.getAttribute("data-rail-entry")));
+    expect(await order()).toEqual(["pin-gliders", "pin-crime"]);
 
-    await pin(page, "crime").focus();
-    await page.keyboard.press("Alt+ArrowLeft");
-    await expect.poll(order).toEqual(["crime", "gliders"]);
-    await expect(pin(page, "crime")).toBeFocused();
-
-    await page.keyboard.press("Delete");
-    await expect.poll(order).toEqual(["gliders"]);
-
-    // The right-click menu does the same three things.
-    await pin(page, "gliders").click({ button: "right" });
-    const menu = page.getByRole("menu");
-    await expect(menu).toBeVisible();
-    await expect(menu.getByRole("menuitem")).toHaveText(["Move left", "Move right", "Unpin"]);
-    await page.keyboard.press("Escape");
-    await expect(menu).toHaveCount(0);
-    await expect(tray(page)).toBeVisible();
-    await pin(page, "gliders").click({ button: "right" });
-    await menu.getByRole("menuitem", { name: "Unpin" }).click();
-    await expect(bar(page).locator("[data-pin]")).toHaveCount(0);
+    for (const id of ["protests", "conflict", "earthquakes", "wildfires"]) await row(page, id).locator(".tn-src-add").click();
+    await expect(railPins(page)).toHaveCount(6);
+    // Full: the seventh is refused, in words.
+    await row(page, "military-air").locator(".tn-src-add").click();
+    await expect(page.getByRole("status").filter({ hasText: "The sidebar holds 6. Unpin one first." })).toHaveCount(1);
+    await expect(railPins(page)).toHaveCount(6);
+    await expect(row(page, "military-air").locator(".tn-src-add")).toHaveAttribute("aria-pressed", "false");
   });
 
-  test("a pin dragged off the bar is unpinned, and the bar holds five", async ({ page }) => {
+  test("a short window keeps the sidebar's foot on screen, and the rest stay pinned in the tray", async ({ page }) => {
+    await page.addInitScript(() =>
+      localStorage.setItem("tn.eye.sources.v1", JSON.stringify({ v: 1, d: { ownOff: [], consoleOn: [], pins: ["ais", "planes", "livecams", "staticcams", "gliders", "crime"] } })),
+    );
     await feeds(page);
+    await page.setViewportSize({ width: 1440, height: 560 });
     await page.goto("/eye?place=westminster");
     await ready(page);
+    expect(await railPins(page).count()).toBeLessThan(6);
+    const controls = (await page.locator('[data-rail="eye"] [data-rail-entry="controls"]').boundingBox())!;
+    expect(controls.y + controls.height).toBeLessThanOrEqual(560);
     await openTray(page);
     await tray(page).getByRole("tab", { name: "Show all" }).click();
-    for (const id of ["gliders", "crime", "protests", "conflict", "earthquakes"]) {
-      await row(page, id).locator(".tn-src-add").click();
-    }
-    await expect(bar(page).locator("[data-pin]")).toHaveCount(5);
-    // Full: the sixth is refused, in words.
-    await row(page, "wildfires").locator(".tn-src-add").click();
-    await expect(page.getByRole("status").filter({ hasText: "The bar holds 5. Unpin one first." })).toHaveCount(1);
-    await expect(bar(page).locator("[data-pin]")).toHaveCount(5);
-
-    await drag(page, await centre(pin(page, "crime")), { x: 300, y: 560 });
-    await expect(pin(page, "crime")).toHaveCount(0);
-    await expect(bar(page).locator("[data-pin]")).toHaveCount(4);
+    await expect(row(page, "crime").locator(".tn-src-add")).toHaveAttribute("aria-pressed", "true");
   });
 
   test("what is on and pinned is remembered, and the console's own board is not touched", async ({ page }) => {
@@ -266,10 +240,9 @@ test.describe("on a wide screen", () => {
 
     await page.reload();
     await ready(page);
-    await expect(pin(page, "crime")).toHaveAttribute("aria-pressed", "true");
+    await expect(railPin(page, "crime")).toHaveAttribute("aria-checked", "true");
     await openTray(page);
     await expect(tray(page).getByRole("switch", { name: /^Show Planes/ })).toHaveAttribute("aria-checked", "false");
-    await expect(ledger(page).locator('p[data-k="plane"]')).toHaveCount(0);
 
     const stored = await page.evaluate(() => ({
       mine: localStorage.getItem("tn.eye.sources.v1"),
@@ -281,7 +254,7 @@ test.describe("on a wide screen", () => {
     expect(stored.inspector).toBeNull();
   });
 
-  test("Escape closes the tray and focus goes back to Sources", async ({ page }) => {
+  test("Escape closes the tray and focus goes back to its row", async ({ page }) => {
     await feeds(page);
     await page.goto("/eye?place=westminster");
     await ready(page);
@@ -296,7 +269,7 @@ test.describe("on a wide screen", () => {
     await expect(tray(page)).toHaveCount(0);
   });
 
-  test("the hint stays out of the tray's way, and its ? closes the tray", async ({ page }) => {
+  test("the hint stays out of the tray's way, and Controls closes the tray", async ({ page }) => {
     await feeds(page);
     await page.goto("/eye?place=westminster");
     await ready(page);
@@ -304,8 +277,8 @@ test.describe("on a wide screen", () => {
     await expect(plate).toBeVisible();
     await openTray(page);
     await expect(plate).toHaveCount(0);
-    // The ? beside the clock brings the hint back, and the tray gives way to it.
-    await page.locator("[data-hint-toggle]").click();
+    // The sidebar's Controls row brings the hint back, and the tray gives way to it.
+    await page.locator('[data-rail="eye"] [data-rail-entry="controls"]').click();
     await expect(tray(page)).toHaveCount(0);
     await expect(plate).toBeVisible();
   });
@@ -328,7 +301,20 @@ test.describe("on a wide screen", () => {
     await expect(tray(page).getByRole("switch", { name: /^Show Planes/ })).toBeEnabled();
   });
 
-  test("always the console's dark mode, while the console is set to light; /app keeps its own", async ({ page }) => {
+  test("outside London a road pin waits in the tray, with no switch that does nothing", async ({ page }) => {
+    await page.addInitScript(() =>
+      localStorage.setItem("tn.eye.sources.v1", JSON.stringify({ v: 1, d: { ownOff: [], consoleOn: [], pins: ["road-works", "ais"] } })),
+    );
+    await feeds(page);
+    await page.goto("/eye?lat=60.17&lon=24.94");
+    await ready(page);
+    await expect(railPin(page, "ais")).toHaveCount(1);
+    await expect(railPin(page, "road-works")).toHaveCount(0);
+    await openTray(page);
+    await expect(row(page, "road-works").locator(".tn-src-add")).toHaveAttribute("aria-pressed", "true");
+  });
+
+  test("the HUD's own dark look, while the console is set to light; /app keeps its own", async ({ page }) => {
     // Three fresh browser contexts, each loading /eye and then /app.
     test.setTimeout(150_000);
     await feeds(page);
@@ -346,11 +332,9 @@ test.describe("on a wide screen", () => {
       const headerInk = await p.locator("h1").evaluate((el) => getComputedStyle(el).color);
       await openTray(p);
       const trayBg = await tray(p).evaluate((el) => getComputedStyle(el).backgroundColor);
-      const btnBg = await sourcesButton(p).evaluate((el) => getComputedStyle(el).backgroundColor);
-      expect(trayBg).toBe("rgb(21, 23, 15)");
-      expect(btnBg).toBe("rgb(21, 23, 15)");
-      // This view's own frame is its own: the same light-on-dark ink as before.
-      expect(headerInk).toBe("rgb(238, 243, 241)");
+      expect(trayBg).toBe("rgb(12, 15, 19)");
+      // This view's own frame is its own: the design's light-on-dark ink.
+      expect(headerInk).toBe("rgb(232, 236, 240)");
       await p.goto("/app");
       await expect(p.locator("html")).not.toHaveAttribute("data-tnx-skin", "dark");
       const kept = await p.evaluate(() => localStorage.getItem("tn.terminal.skin.v2"));
@@ -366,7 +350,7 @@ test.describe("on a wide screen", () => {
     await p.goto("/eye?place=westminster");
     await ready(p);
     await openTray(p);
-    expect(await tray(p).evaluate((el) => getComputedStyle(el).backgroundColor)).toBe("rgb(21, 23, 15)");
+    expect(await tray(p).evaluate((el) => getComputedStyle(el).backgroundColor)).toBe("rgb(12, 15, 19)");
     await p.goto("/app");
     await expect(p.locator("html")).toHaveAttribute("data-tnx-skin", "dark");
     await ctx.close();
@@ -376,21 +360,16 @@ test.describe("on a wide screen", () => {
 test.describe("on a phone", () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
 
-  test("a pop-up above the bar, a grip that carries a row, and a hit box of 44 px on every control", async ({ page }) => {
+  test("a pop-up under the search, a hit box of 44 px on every control, and pins behind the menu", async ({ page }) => {
     const errors = await feeds(page);
     await page.goto("/eye?place=westminster");
     await ready(page);
-    const src = (await sourcesButton(page).boundingBox())!;
-    expect(src.height).toBeGreaterThanOrEqual(44);
-    await sourcesButton(page).tap();
-    await expect(tray(page)).toBeVisible();
+    await openTray(page);
     const t = (await tray(page).boundingBox())!;
-    const barBox = (await bar(page).boundingBox())!;
-    // 10 px inside the screen edges, its bottom 8 px above the bar.
+    // 10 px inside the screen edges, under the pill.
     expect(Math.round(t.x)).toBe(10);
     expect(Math.round(390 - (t.x + t.width))).toBe(10);
-    expect(Math.round(barBox.y - (t.y + t.height))).toBe(8);
-    expect(t.height).toBeLessThanOrEqual(470);
+    expect(t.y).toBeGreaterThanOrEqual(58);
     for (const r of await tray(page).locator(".tn-src-row").all()) {
       expect(Math.round((await r.boundingBox())!.height)).toBeGreaterThanOrEqual(44);
     }
@@ -399,15 +378,15 @@ test.describe("on a phone", () => {
     await tray(page).getByRole("tab", { name: "Show all" }).tap();
     const all = (await tray(page).boundingBox())!;
     expect(all.height).toBeGreaterThan(t.height + 40);
-    expect(all.y).toBeLessThan(120);
     // Every ＋ and switch in view has a hit box of 44 x 44: a point 18 px off the painted
     // centre still lands on it.
     const misses = await tray(page).evaluate((el) => {
       const out: string[] = [];
-      const box = el.getBoundingClientRect();
+      // Only rows whose hit box is whole inside the part that scrolls.
+      const box = el.querySelector('[role="tabpanel"]')!.getBoundingClientRect();
       for (const c of el.querySelectorAll<HTMLElement>(".tn-src-add, .tn-src-toggle")) {
         const r = c.getBoundingClientRect();
-        if (r.bottom < box.top + 120 || r.top > box.bottom - 60) continue;
+        if (r.top - 22 < box.top || r.bottom + 22 > box.bottom) continue;
         const cx = r.left + r.width / 2;
         const cy = r.top + r.height / 2;
         for (const [dx, dy] of [[18, 0], [-18, 0], [0, 18], [0, -18]]) {
@@ -419,37 +398,21 @@ test.describe("on a phone", () => {
     });
     expect(misses).toEqual([]);
 
-    // A row's grip carries it, by touch, onto the bar.
-    const client = await page.context().newCDPSession(page);
-    const gripEl = tray(page).locator('.tn-src-row[data-source-row="gliders"] .tn-src-grip');
-    await gripEl.scrollIntoViewIfNeeded();
-    const grip = await centre(gripEl);
-    const bar2 = (await bar(page).boundingBox())!;
-    const to = { x: bar2.x + bar2.width / 2, y: bar2.y + bar2.height / 2 };
-    const touch = (type: string, x: number, y: number) =>
-      client.send("Input.dispatchTouchEvent", { type, touchPoints: type === "touchEnd" ? [] : [{ x, y }] });
-    await touch("touchStart", grip.x, grip.y);
-    for (let i = 1; i <= 14; i++) await touch("touchMove", grip.x + ((to.x - grip.x) * i) / 14, grip.y + ((to.y - grip.y) * i) / 14);
-    await touch("touchEnd", to.x, to.y);
-    await expect(bar(page).locator('[data-pin="gliders"]')).toHaveCount(1);
-
-    // The bar scrolls sideways once it holds more than it shows; the page never does.
-    await tray(page).getByRole("tab", { name: "Sections" }).tap();
-    for (const id of ["crime", "protests", "conflict", "earthquakes", "wildfires"]) {
-      await tray(page).getByRole("tab", { name: "Show all" }).tap();
-      await row(page, id).locator(".tn-src-add").scrollIntoViewIfNeeded();
-      await row(page, id).locator(".tn-src-add").tap();
-    }
-    expect(await bar(page).locator("[data-pin]").count()).toBe(6);
-    const scrolls = await page.evaluate(() => {
-      const strip = document.querySelector<HTMLElement>('nav[aria-label="View controls"] > div');
-      return strip ? strip.scrollWidth > strip.clientWidth : false;
-    });
-    expect(scrolls).toBe(true);
+    // The ＋ pins, and the pin is a switch in the sheet behind the menu.
+    const plus = row(page, "gliders").locator(".tn-src-add");
+    await plus.scrollIntoViewIfNeeded();
+    await plus.tap();
+    await expect(plus).toHaveAttribute("aria-pressed", "true");
+    await menu(page).tap();
+    await expect(railPin(page, "gliders")).toBeVisible();
+    expect((await railPin(page, "gliders").boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    await railPin(page, "gliders").tap();
+    await expect(railPin(page, "gliders")).toHaveAttribute("aria-checked", "true");
+    await page.keyboard.press("Escape");
     expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
 
-    // A tap on the scene outside closes the pop-up.
-    await page.touchscreen.tap(195, 56);
+    // A tap outside closes the pop-up.
+    await page.touchscreen.tap(195, 30);
     await expect(tray(page)).toHaveCount(0);
     expect(errors).toEqual([]);
   });
@@ -459,8 +422,7 @@ test.describe("on a phone", () => {
     await page.setViewportSize({ width: 360, height: 780 });
     await page.goto("/eye?place=westminster");
     await ready(page);
-    await sourcesButton(page).tap();
-    await expect(tray(page)).toBeVisible();
+    await openTray(page);
     expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
     const t = (await tray(page).boundingBox())!;
     expect(t.x).toBeGreaterThanOrEqual(0);

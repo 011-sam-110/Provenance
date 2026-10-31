@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 /**
  * The God's eye view draws no sweep down the frame when a feed refreshes: Leon asked
- * for it to go (2026-10-28). The "refreshed N s ago" line under the ledger stays.
+ * for it to go (2026-10-28). The "refreshed N s ago" line stays, in the Sources tray.
  */
 
 const ROOT = resolve(__dirname, "../..");
@@ -16,7 +16,13 @@ describe("/eye has no sweep", () => {
     expect(code("components/eye/eye.module.css")).not.toMatch(/sweep/i);
   });
 
-  it("its frame mounts no sweep element", () => {
+  it("its frames mount no sweep element", () => {
     expect(code("components/eye/EyeHud.tsx")).not.toMatch(/styles\.sweep/);
+    expect(code("components/eye/EyeFilmFrame.tsx")).not.toMatch(/styles\.sweep/);
+  });
+
+  it("its tray still says how long ago the feeds arrived, and a film's frame too", () => {
+    expect(code("components/eye/EyeSources.tsx")).toContain("refreshedText(");
+    expect(code("components/eye/EyeFilmFrame.tsx")).toContain("refreshedText(");
   });
 });

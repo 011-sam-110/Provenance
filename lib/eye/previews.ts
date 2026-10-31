@@ -36,14 +36,7 @@ export function previewsInEffect(stored: boolean, ctx: { record: boolean; film: 
 }
 
 // The words. A still is never called live, so none of these says "live".
-export const PREVIEWS_LABEL = "Previews";
-/**
- * The word on the phone's switch, in place of its camera icon (Leon, 30 Oct 2026). The
- * switch's accessible name is built from what is drawn, so on a phone it reads "Cameras
- * previews": it holds the word on the screen (a voice command can say it) and still says
- * what the switch does. On a wide screen the name stays "Previews".
- */
-export const PREVIEWS_PHONE_WORD = "Cameras";
+export const PREVIEWS_LABEL = "Camera previews";
 export const showLabel = (name: string): string => `Show ${name}`;
 export const closeLabel = (name: string): string => `Close ${name}`;
 
