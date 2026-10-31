@@ -243,7 +243,10 @@ test("Escape runs in order: popover, field, draw, tool, object, then the panel",
 
   // And a dialog outside the panel keeps the key: the palette closes, the panel stays.
   await row(page, "settings").click();
-  await page.locator(".tn-palette-trigger").click();
+  // Its door is on the Shortcuts tab of Settings.
+  await page.locator(".tnx-hdr").getByRole("button", { name: /settings/i }).click();
+  await page.getByRole("tab", { name: "Shortcuts" }).click();
+  await page.getByRole("button", { name: "Open command palette" }).click();
   await expect(page.locator(".tn-palette-root")).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(page.locator(".tn-palette-root")).toHaveCount(0);

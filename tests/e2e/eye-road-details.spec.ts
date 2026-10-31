@@ -83,9 +83,10 @@ async function feeds(
   await page.route((url) => url.pathname === "/api/eye/vessels", (route) =>
     route.fulfill(json(JSON.stringify({ ok: true, stream: "live", features: [] }))),
   );
-  await page.route((url) => url.pathname === "/api/planes", (route) => {
+  await page.route((url) => url.pathname === "/api/eye/planes", (route) => {
+    const box = new URL(route.request().url()).searchParams.get("bbox")!.split(",").map(Number);
     const planes = plane ? [{ ...PLANES.planes[0], lon: plane[0], lat: plane[1] }] : [];
-    return route.fulfill(json(JSON.stringify({ ...PLANES, count: planes.length, planes })));
+    return route.fulfill(json(JSON.stringify({ ...PLANES, ok: true, box, sampled: false, count: planes.length, planes })));
   });
   return { errors, setPlane: (at) => (plane = at), setNotices: (list) => (notices = list ?? NOTICES) };
 }

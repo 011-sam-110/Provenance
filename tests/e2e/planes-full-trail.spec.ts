@@ -121,17 +121,16 @@ async function openConsole(page: Page) {
   );
 }
 
-/** The console's rail, the way a person opens it. */
-async function openRail(page: Page) {
-  if (await page.locator(".tn-rail").isVisible()) return;
-  await page.keyboard.press("ControlOrMeta+k");
-  await expect(page.locator(".tn-rail")).toBeVisible();
+/** One panel beside the console's sidebar, the way a person opens it. */
+async function openPanel(page: Page, row: "sources" | "settings") {
+  const entry = page.locator(`nav[data-rail="console"] [data-rail-entry="${row}"]`);
+  if ((await entry.getAttribute("aria-expanded")) !== "true") await entry.click();
+  await expect(entry).toHaveAttribute("aria-expanded", "true");
 }
 
 /** The Planes row of the Sources rail: the layer is off on a fresh console. */
 async function turnPlanesOn(page: Page) {
-  await openRail(page);
-  await page.click("#tn-rail-tab-sources");
+  await openPanel(page, "sources");
   const search = page.getByLabel("Search sources");
   await search.fill("Planes");
   const toggle = page.locator('.tn-src-row[data-source-row="planes"] .tn-src-toggle');
@@ -142,9 +141,7 @@ async function turnPlanesOn(page: Page) {
 }
 
 async function openMapSettings(page: Page) {
-  await openRail(page);
-  await page.click("#tn-rail-tab-inspector");
-  await page.locator("#inspector-rail").getByRole("button", { name: "Map settings" }).click();
+  await openPanel(page, "settings");
   return page.getByRole("switch", { name: "Full flight trail" });
 }
 
