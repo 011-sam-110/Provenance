@@ -80,13 +80,13 @@ obligations and are not satisfied by the licence.
   static, and its store writes stay in the tab (`EyeApp.tsx` says why). Two rules are not
   style preferences. A still is never called live: `mediaLabel` says "Live" only while a
   stream plays, and a still or a clip says its operator's own age. And there is no road
-  speed in it, because no open feed for London publishes one: the ledger says so, and
-  nothing draws an invented flow (`lib/eye/streets.ts`). Its vessels come from
+  speed in it, because no open feed for London publishes one: the Sources tray and a film's
+  ledger say so, and nothing draws an invented flow (`lib/eye/streets.ts`). Its vessels come from
   `/api/eye/vessels?bbox=`, not from the console's Ships layer: the whole world, Class A
   and B, the 500 nearest the middle of the view, asked every minute and again once the
   view settles outside the box it holds (`lib/eye/vessels.ts`, `lib/eye/vesselFeed.ts`);
   the console's Ships layer (`/api/signals/ais`) stays the 11 chokepoints, Class A only.
-  The HUD's vessel number counts every boat drawn inside the frame. Vessels are stylised 3D
+  A film's vessel number counts every boat drawn inside the frame. Vessels are stylised 3D
   models (`components/eye/vesselLayer.ts`, a MapLibre custom layer with three.js loaded lazily,
   ten packed files in `public/models/vessels/`, a bare hull for an untyped boat), drawn at their
   AIS length with a 28 px minimum; the chevrons are the fallback, and the licences are in
@@ -100,34 +100,43 @@ obligations and are not satisfied by the licence.
   than it plays. And while the view moves only one card's clip plays (`clipsToPlay`):
   three at once halved the frame rate, measured 2026-10-25.
   **Since 2026-10-27 it is the map behind every "Open the map" door** (the landing page,
-  `/privacy`), and `/` stays the landing page with no MapLibre and no /api call. Its
-  Sources button opens the console's own rail as a tray in this view (Sections, Show all,
-  a ＋ that pins a source to the bar, remembered in this browser as `tn.eye.sources.v1`),
-  built from `SourceSection` and `SourceRowView` inside a `.tn-terminal` token scope
-  (`components/eye/EyeSources.tsx`; the rows are built on the server by
+  `/privacy`), and `/` stays the landing page with no MapLibre and no /api call.
+  **Its frame is HUD v2 (`components/eye/EyeHud.tsx`), and a film has its own.** The frame is
+  the shared sidebar (`components/rail/SideRail.tsx`: Camera previews, Auto-turn, Sources &
+  layers, pinned sources, Exit to dashboard, Controls), the pill search (`EyeSearch.tsx`, pure
+  half `lib/eye/search.ts`: the three places, the cameras and vessels in the scene, and
+  `/api/geocode`; a typed IP or domain never reaches the geocoder), the place and the UTC clock,
+  the compass along the bottom edge (`EyeCompass.tsx`, `lib/eye/compass.ts`: one strip moved by a
+  transform, no React render per frame) and the coordinates with © Credits, whose pop-up holds
+  every source and the link to the landing page, beside the always-visible Source and AGPL links.
+  `record=1` and `clock=manual` draw `EyeFilmFrame.tsx` instead: the evidence ledger of counts,
+  heading and tilt, and every credit in full, because reels are filmed from it. The normal view
+  says no counts; the ledger's sources and cadences are the tray's detail lines (`trayDetail`).
+  Everything beside the sidebar moves with `--rail-w`. Its Sources & layers row opens the tray
+  (`components/eye/EyeSources.tsx`: Sections, Show all, a ＋ that pins a source as a switch in the
+  sidebar, remembered in this browser as `tn.eye.sources.v1`), built from `SourceSection` and
+  `SourceRowView` with the HUD's own look (the rows are built on the server by
   `lib/eye/sourceRows.ts`, so the widget registry stays out of the page's bundle). Console
   layers that are switched on draw through WorldMap with this view's own paint pass
-  (`eyeSignalPaintOps`), their own ledger line and credit; the country-level layers and the
+  (`eyeSignalPaintOps`) and bring their own credit; the country-level layers and the
   headlines widget are left out by rule (their `precision`, `widgetOnly`), not by a list.
-  The tray's "Open the full map" goes to the console at the spot on screen with its Sources
-  rail open (`getSourcesHref()`; `sources=open`, read once after mount by ConsoleShell,
-  `lib/console/sourcesLink.ts`); on a phone Sources is the console's own "≡ Sources" thumb
-  control, first in the bar. A browser with no saved board also gets `layers=` and `base=`
-  so the console does not open empty; a saved board (`tn.variant.v1`) keeps its own. `tests/unit/landing-doors.test.ts` holds
+  The console's `sources=open` (read once after mount by ConsoleShell,
+  `lib/console/sourcesLink.ts`) is now the landing page's alone. A browser with no saved board
+  also gets `layers=` and `base=` from this view's way out, so the console does not open empty;
+  a saved board (`tn.variant.v1`) keeps its own. `tests/unit/landing-doors.test.ts` holds
   the doors. The same link carries `eye=`, the view's own link (place or camera, centre,
   zoom, heading, tilt): ConsoleShell reads it once after mount through `parseEyeReturn`,
   which rebuilds it from checked values and never uses it as a URL, drops it from the
   address, and the console's map then shows "God's eye view / Back to <place>" at its top
   left for the rest of that visit (`components/console/EyeReturn.tsx`, in memory only, so
-  a reload drops it). "Exit to main dashboard" (2026-10-30) is the view's always-visible way
-  out: a plate beside the name at its top left, under the place on a phone (the ledger moves
-  down by that row). It is the same link without `sources=open` (`getDashboardHref()`), so
-  the console opens at the spot on screen with its rail as the visitor left it, plus the
-  way back; a recording or a film draws none (`tests/e2e/eye-exit.spec.ts`).
+  a reload drops it). "Exit to dashboard" is the view's way out, in the sidebar's foot and in
+  the sheet behind the menu on a phone (`getDashboardHref()`), so the console opens at the spot
+  on screen with its rail as the visitor left it, plus the way back; a recording or a film
+  draws none (`tests/e2e/eye-exit.spec.ts`).
   **Both map pages ask for WebGL before they mount MapLibre**
   (`lib/map/webgl.ts`, `components/map/*`): without it they show a plain fallback with the
   camera directory and the source link, not Next's "Application error" page.
-  The "Previews" switch beside Turn turns the camera pictures off: each camera is then an
+  The sidebar's "Camera previews" switch turns the camera pictures off: each camera is then an
   icon that fetches nothing, one tapped icon opens that one card (a close button, Esc),
   the choice is kept in this browser under `tn.eye.v1`, and a film or a recording ignores it.
   A TfL road notice (works, incident or closure) can be clicked like a vessel: its
@@ -410,9 +419,9 @@ obligations and are not satisfied by the licence.
   `globals.css`): light by default, remembered per browser, and never read from the OS
   (`prefers-color-scheme` appears nowhere). It is not a `Theme`; see the header of `lib/shell/ui.ts`.
   `/eye` switches that dark mode on for itself, always (`app/(console)/eye/layout.tsx`,
-  `lib/eye/skin.ts`, Leon's call), so its Sources tray, Sources button and pins are dark
-  whatever the console is set to. Its own frame does not use the skin, and it never reads or
-  writes the console's saved choice.
+  `lib/eye/skin.ts`, Leon's call), whatever the console is set to. Its own frame and tray have
+  their own dark look and do not use the skin, and it never reads or writes the console's saved
+  choice.
 - **ONE typeface: Inter, everywhere — with two route-scoped exceptions.** Loaded once, self-hosted by next/font in
   `app/layout.tsx`, published as `--tn-font-sans` on `<html>`. Nothing else loads
   Inter — `(site)/layout.tsx` reads that same variable rather than loading its own copy.
