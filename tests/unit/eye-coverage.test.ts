@@ -372,8 +372,7 @@ describe("the route's body", () => {
     expect(cold.cells[0][3]).toBe(0);
   });
 
-  it("is under its budget at production's size: 9,700 cells, 452 KB raw, 129 KB gzipped", () => {
-    // The route's measured size is in the report. This holds the row's shape to six fields.
+  it("holds a row to six fields, because a seventh goes out 9,700 times", () => {
     expect(fixture.cells[0]).toHaveLength(6);
   });
 });

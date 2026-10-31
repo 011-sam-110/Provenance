@@ -619,6 +619,7 @@ export default function EyePerson() {
         const timeout = new Promise<null>((resolve) => later(() => resolve(null), DROP_WAIT_MS));
         endPress();
         setPhase("dropped");
+        syncOverlay();
         void Promise.race([loadCoverage(), timeout]).then(() => {
           const outcome = decide();
           if (outcome.kind === "open") window.location.assign(outcome.href);
@@ -914,9 +915,9 @@ export default function EyePerson() {
   // Leaving the map (a Streets wall) ends everything.
   useEffect(() => {
     if (slot || !onRef.current) return;
-    onRef.current = false;
-    setOnState(false);
     setPreview(null);
+    setCoverage(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slot]);
 
   useEffect(
