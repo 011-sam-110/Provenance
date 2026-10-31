@@ -203,13 +203,15 @@ test.describe("1440 px", () => {
     });
     const late = await box(page.locator("#late-control"));
     expect(await box(person(page))).toEqual(before);
-    expect(late.y + late.height + 8).toBeCloseTo(before.y, 0);
+    expect(late.y + late.height).toBeLessThanOrEqual(before.y);
     expect(Math.abs(centre(late).x - centre(before).x)).toBeLessThanOrEqual(0.5);
-    // In the corner's stack: the late control, the person's slot, the credit.
+    // In the corner's stack the person's slot stays directly before the credit, and the late
+    // control goes first. PR #339's compass, once it is merged, is a third name between them.
     const order = await page.locator(".maplibregl-ctrl-bottom-right > *").evaluateAll((els) =>
-      els.map((el) => (el.id === "late-control" ? "late" : el.hasAttribute("data-eye-person-slot") ? "slot" : el.classList.contains("maplibregl-ctrl-attrib") ? "credit" : "?")),
+      els.map((el) => (el.id === "late-control" ? "late" : el.hasAttribute("data-eye-person-slot") ? "slot" : el.classList.contains("maplibregl-ctrl-attrib") ? "credit" : "other")),
     );
-    expect(order).toEqual(["late", "slot", "credit"]);
+    expect(order[0]).toBe("late");
+    expect(order.slice(-2)).toEqual(["slot", "credit"]);
   });
 
   for (const skin of ["dark", "light"] as Skin[]) {
