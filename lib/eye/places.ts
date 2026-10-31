@@ -17,6 +17,8 @@
 // the preset's name: the way back from the console (`eyeLinkQuery`, `parseEyeReturn`).
 // Anything else, including a link with a broken number in it, opens the first preset.
 
+import { EYE_CITY_ROWS, type EyeCityRow } from "@/lib/eye/cities.data";
+
 /** One camera position. MapLibre's own terms: tilt is pitch, heading is bearing. */
 export interface EyeView {
   lat: number;
@@ -77,9 +79,32 @@ export const EYE_PLACES: readonly EyePlace[] = [
 
 export const DEFAULT_PLACE: EyePlace = EYE_PLACES[0];
 
+/** A phone sees a narrower frame, so it stands a little further back. */
+const CITY_TALL_ZOOM_OUT = 0.2;
+const CITY_TILT = 58;
+
+function cityPlace([id, name, area, lat, lon, zoom, heading]: EyeCityRow): EyePlace {
+  return {
+    id,
+    name,
+    area,
+    wide: { lat, lon, zoom, tilt: CITY_TILT, heading },
+    tall: { lat, lon, zoom: zoom - CITY_TALL_ZOOM_OUT, tilt: CITY_TILT, heading },
+  };
+}
+
+/**
+ * The places the landing page's button offers, measured and framed by
+ * scripts/gen-eye-cities.mjs (docs/EYE_CITIES.md). A link can open them; the HUD's own list
+ * stays EYE_PLACES, the three framed by hand.
+ */
+export const EYE_CITIES: readonly EyePlace[] = EYE_CITY_ROWS.map(cityPlace);
+
+const PLACE_BY_ID = new Map<string, EyePlace>([...EYE_PLACES, ...EYE_CITIES].map((p) => [p.id, p]));
+
 export function placeById(id: string | null | undefined): EyePlace | undefined {
   if (!id) return undefined;
-  return EYE_PLACES.find((p) => p.id === id);
+  return PLACE_BY_ID.get(id);
 }
 
 /**

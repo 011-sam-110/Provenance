@@ -12,12 +12,15 @@ import {
   forcedFromSearch,
   gateContext,
   initialHoldMs,
+  isTypingTarget,
   loadCommunityState,
   markResolved,
   qualifies,
   recordVisit,
+  reviewRequested,
   saveCommunityState,
   shouldInvite,
+  shouldOpenInvite,
   type CommunityState,
 } from "@/lib/shell/community";
 import { BRAND } from "@/lib/brand";
@@ -34,7 +37,8 @@ function memoryStorage() {
   };
 }
 
-const OPEN_CTX = { bootPlaying: false, diveActive: false };
+const OPEN_CTX = { bootPlaying: false, diveActive: false, otherDialog: false, typing: false, automated: false };
+const ctxWith = (over: Partial<typeof OPEN_CTX>) => ({ ...OPEN_CTX, ...over });
 
 function stateWith(over: Partial<CommunityState> = {}): CommunityState {
   return { ...EMPTY_COMMUNITY_STATE, ...over };
@@ -72,6 +76,25 @@ describe("community state persistence", () => {
       JSON.stringify({ v: COMMUNITY_VERSION + 1, d: { visits: 9, activeMs: 999_999 } }),
     );
     expect(loadCommunityState(store)).toEqual(EMPTY_COMMUNITY_STATE);
+  });
+
+  test("an answer to the old corner card does not stop the pop-up", () => {
+    // Everyone who pressed Join between 7 and 30 October reached a dead invite and is stored
+    // as "joined" in a version 1 envelope. They are the people the pop-up is for. If this
+    // goes red, the bump in COMMUNITY_VERSION has been undone and they would never see it.
+    for (const resolved of ["joined", "dismissed"]) {
+      const store = memoryStorage();
+      store.setItem(COMMUNITY_KEY, JSON.stringify({ v: 1, d: { visits: 12, activeMs: 900_000, resolved } }));
+      const loaded = loadCommunityState(store);
+      expect(loaded.resolved).toBeUndefined();
+      expect(shouldInvite({ ...loaded, activeMs: QUALIFY_ACTIVE_MS }, OPEN_CTX)).toBe(true);
+    }
+  });
+
+  test("an answer to the pop-up itself is kept", () => {
+    const store = memoryStorage();
+    saveCommunityState(markResolved(EMPTY_COMMUNITY_STATE, "joined"), store);
+    expect(loadCommunityState(store).resolved).toBe("joined");
   });
 });
 
@@ -128,15 +151,30 @@ describe("the gate", () => {
 
   test("the boot plate and a cinematic dive each hold it back", () => {
     const qualified = stateWith({ activeMs: QUALIFY_ACTIVE_MS });
-    expect(blockedBy(qualified, { bootPlaying: true, diveActive: false })).toBe("boot");
-    expect(blockedBy(qualified, { bootPlaying: false, diveActive: true })).toBe("dive");
+    expect(blockedBy(qualified, ctxWith({ bootPlaying: true }))).toBe("boot");
+    expect(blockedBy(qualified, ctxWith({ diveActive: true }))).toBe("dive");
     expect(blockedBy(qualified, OPEN_CTX)).toBeNull();
-    expect(shouldInvite(qualified, { bootPlaying: true, diveActive: false })).toBe(false);
-    expect(shouldInvite(qualified, { bootPlaying: false, diveActive: true })).toBe(false);
+    expect(shouldInvite(qualified, ctxWith({ bootPlaying: true }))).toBe(false);
+    expect(shouldInvite(qualified, ctxWith({ diveActive: true }))).toBe(false);
+  });
+
+  test("it waits for another dialog, for someone typing, and for no automation at all", () => {
+    const qualified = stateWith({ activeMs: QUALIFY_ACTIVE_MS });
+    expect(blockedBy(qualified, ctxWith({ otherDialog: true }))).toBe("dialog");
+    expect(blockedBy(qualified, ctxWith({ typing: true }))).toBe("typing");
+    expect(blockedBy(qualified, ctxWith({ automated: true }))).toBe("automated");
+  });
+
+  test("a field that takes typed words counts as typing, and a button does not", () => {
+    expect(isTypingTarget({ tagName: "INPUT", isContentEditable: false })).toBe(true);
+    expect(isTypingTarget({ tagName: "TEXTAREA", isContentEditable: false })).toBe(true);
+    expect(isTypingTarget({ tagName: "DIV", isContentEditable: true })).toBe(true);
+    expect(isTypingTarget({ tagName: "BUTTON", isContentEditable: false })).toBe(false);
+    expect(isTypingTarget(null)).toBe(false);
   });
 
   test("a recorded resolution outranks every other reason", () => {
-    expect(blockedBy(stateWith({ resolved: "joined" }), { bootPlaying: true, diveActive: true })).toBe("joined");
+    expect(blockedBy(stateWith({ resolved: "joined" }), ctxWith({ bootPlaying: true, diveActive: true }))).toBe("joined");
   });
 });
 
@@ -149,14 +187,23 @@ describe("the landing surface", () => {
 
   test("the landing has no boot plate to wait for, so its hold is short and fixed", () => {
     expect(initialHoldMs("landing", CONSOLE_HOLD)).toBe(LANDING_HOLD_MS);
-    // A normal visitor still cannot qualify inside the hold: the bar is forty seconds.
+    // A normal visitor still cannot qualify inside the hold.
     expect(LANDING_HOLD_MS).toBeLessThan(QUALIFY_ACTIVE_MS);
   });
 
+
   test("the landing is never held back by a boot plate or a dive, because it has neither", () => {
-    expect(gateContext("landing", { bootPlaying: true, diveActive: true })).toEqual(OPEN_CTX);
-    const live = { bootPlaying: true, diveActive: false };
+    expect(gateContext("landing", ctxWith({ bootPlaying: true, diveActive: true }))).toEqual(OPEN_CTX);
+    const live = ctxWith({ bootPlaying: true });
     expect(gateContext("console", live)).toEqual(live);
+  });
+
+  test("the other holds apply on every surface", () => {
+    for (const surface of ["console", "landing"] as const) {
+      expect(gateContext(surface, ctxWith({ otherDialog: true })).otherDialog).toBe(true);
+      expect(gateContext(surface, ctxWith({ typing: true })).typing).toBe(true);
+      expect(gateContext(surface, ctxWith({ automated: true })).automated).toBe(true);
+    }
   });
 
   test("one answer covers both surfaces: they share one persisted state", () => {
@@ -177,6 +224,41 @@ describe("the ?discord=1 review override", () => {
     expect(forcedFromSearch("?discord=0")).toBe(false);
     expect(forcedFromSearch("?feedback=1")).toBe(false);
     expect(forcedFromSearch("")).toBe(false);
+  });
+
+  test("it opens the pop-up over a recorded answer, so a review by reloading always shows it", () => {
+    expect(shouldOpenInvite(stateWith({ resolved: "dismissed" }), OPEN_CTX, true)).toBe(true);
+    expect(shouldOpenInvite(stateWith({ resolved: "dismissed" }), OPEN_CTX, false)).toBe(false);
+  });
+
+  test("it works under automation and before the bar, which is how a test asks for it", () => {
+    expect(shouldOpenInvite(stateWith(), ctxWith({ automated: true }), true)).toBe(true);
+    expect(shouldOpenInvite(stateWith(), ctxWith({ automated: true }), false)).toBe(false);
+  });
+
+  test("it still will not land on a dive or on top of another dialog", () => {
+    expect(shouldOpenInvite(stateWith(), ctxWith({ diveActive: true }), true)).toBe(false);
+    expect(shouldOpenInvite(stateWith(), ctxWith({ otherDialog: true }), true)).toBe(false);
+  });
+
+  test("it stays on for the tab, because the console drops the param from its address", () => {
+    const tab = memoryStorage();
+    expect(reviewRequested("", tab)).toBe(false);
+    expect(reviewRequested("?discord=1", tab)).toBe(true);
+    expect(reviewRequested("?lat=1&lon=2", tab)).toBe(true);
+    expect(reviewRequested("?discord=0", tab)).toBe(false);
+    expect(reviewRequested("", tab)).toBe(false);
+  });
+
+  test("a browser that refuses session storage still honours the param itself", () => {
+    const refuses = {
+      getItem: () => { throw new Error("denied"); },
+      setItem: () => { throw new Error("denied"); },
+      removeItem: () => { throw new Error("denied"); },
+    };
+    expect(reviewRequested("?discord=1", refuses)).toBe(true);
+    expect(reviewRequested("", refuses)).toBe(false);
+    expect(reviewRequested("?discord=1", null)).toBe(true);
   });
 });
 

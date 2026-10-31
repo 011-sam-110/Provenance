@@ -108,7 +108,7 @@ obligations and are not satisfied by the licence.
   than it plays. And while the view moves only one card's clip plays (`clipsToPlay`):
   three at once halved the frame rate, measured 2026-10-25.
   **Since 2026-10-27 it is the map behind every "Open the map" door** (the landing page,
-  `/privacy`), and `/` stays the landing page with no MapLibre and no /api call. Its
+  `/privacy`), and `/` stays the landing page with no MapLibre and no /api call on load. Its
   Sources button opens the console's own rail as a tray in this view (Sections, Show all,
   a ＋ that pins a source to the bar, remembered in this browser as `tn.eye.sources.v1`),
   built from `SourceSection` and `SourceRowView` inside a `.tn-terminal` token scope
@@ -149,9 +149,26 @@ obligations and are not satisfied by the licence.
   listener and nothing may set React state per frame: a new effect is computed in
   that loop from the same value. Pins are CSS `position: sticky`. The page's styles are
   `app/landing.css`, imported by `app/(site)/page.tsx` alone, with every rule under
-  `.lp-root` so none can reach `/privacy` or the console (the two rules outside it,
-  `html:has(.lp-root)` and the Discord note's corner, match only while this page is
-  mounted).
+  `.lp-root` so none can reach `/privacy` or the console (the one rule outside it,
+  `html:has(.lp-root)`, matches only while this page is mounted).
+- **The landing page's main button offers a different place every few seconds** (2026-10-31).
+  The server prints plain links saying "See London in 3D"; `components/marketing/CtaRotor.tsx`
+  renders nothing, finds the links marked `data-rotor` after mount and rewrites their words and
+  `href`, with no React state, no scroll listener and no `/api` call. The list is
+  `lib/marketing/ctaDeck.ts`, ordered by the browser's own time zone and language (read, never
+  sent or stored; `/privacy` says so). When the words change, each changed character turns a
+  full 360 about its own axis into the new one (`lib/marketing/ctaTurn.ts`, Web Animations on
+  transform and opacity); the words that stay only slide. Only one button turns at a time (the
+  hero's, else the close's, else the nav's), the button's width is fixed so nothing beside it
+  moves, it holds still under a pointer or keyboard focus, and with reduced motion it takes the
+  visitor's first phrase once and stays there. **A place is offered only if its buildings are
+  worth seeing:** `node scripts/gen-eye-cities.mjs --write` reads each candidate from the tiles
+  the map draws and writes `lib/eye/cities.data.ts`, `lib/marketing/cta-places.data.ts` and
+  `docs/EYE_CITIES.md`; a person then looks at the frames, and `REFUSED` in that script holds
+  what the numbers passed and a person turned down. `/eye?place=<id>` opens a city by name; the
+  HUD's own list stays the three framed London presets (`EYE_PLACES`). A topic names its layers
+  under `needs`: `npx vite-node -c vitest.config.ts scripts/check-cta-deck.mts` asks production
+  for each and fails on an empty one. `tests/e2e/landing-cta.spec.ts` holds the browser half.
 - **The globe on `/` draws ONE saved snapshot, on two stacked canvases. It is not a map
   and it is not live.** `lib/marketing/landingGlobe.ts` is the choreography and the 2D
   painter, and touches no DOM: scroll position in, plain state objects out, pixels on a
@@ -175,7 +192,9 @@ obligations and are not satisfied by the licence.
   along a shared route, because that is how Chrome's 2D canvas draws a hairline and the
   design was approved looking at it.
   It draws `public/marketing/globe-snapshot.json` and nothing else. **The landing page
-  makes no `/api` call and loads no MapLibre**: no style and no tile. `/privacy` states
+  makes no `/api` call on load and loads no MapLibre**: no style and no tile. The one call
+  it ever makes is the Discord pop-up's `/api/community`, after 15 seconds of visible time,
+  at most once per browser, and never in a browser driven by automation. `/privacy` states
   the no-tiles half in public, `tests/unit/privacy-page.test.ts` pins the imports behind it, and
   `tests/e2e/landing.spec.ts` watches the network for both halves (not in the gate).
   The snapshot is written only by `node scripts/gen-landing-snapshot.mjs`, which reads
@@ -197,13 +216,12 @@ obligations and are not satisfied by the licence.
   mounts it, held still, behind the hero and the close). `app/provenance.css` is not dead
   either: `(site)/layout.tsx` still imports it and wraps `/`, `/privacy` and
   `/account/confirm` in `.pv-root`, `/privacy` is built from its `.pv-doc` / `.pv-block` /
-  `.pv-ledger` rules, the email-link page from `.pv-doc` and its own `.pv-account*` rules,
-  and the Discord note on `/` is styled by its `.pv-root .tn-note` block, which
-  `community-mounts.test.ts` pins. Delete the landing-only rules, never the file.
+  `.pv-ledger` rules, and the email-link page from `.pv-doc` and its own `.pv-account*`
+  rules. Delete the landing-only rules, never the file.
 - **Never type a count into the landing page.** `lib/marketing/wall.ts` and the source
   wall it fed are gone; the rule outlived them, and it outlived the 2026-10-05 rebuild
-  too. Every figure on `/` comes from one of three committed files, each of which can
-  be re-derived: `camera-facts.data.ts` (measured, pinned by a test that recomputes
+  too. Every figure the page prints comes from one of three committed files, each of which
+  can be re-derived (the Discord pop-up shows Discord's own live counts, and types none): `camera-facts.data.ts` (measured, pinned by a test that recomputes
   it), `coverage-audit.data.ts` (GENERATED by `scripts/gen-landing-audit.mjs` from a
   production run of `scripts/country-event-breakdown.mts` — never hand-edit it; it
   carries its own `AUDIT_MEASURED_AT`) and `globe-snapshot.meta.ts` (GENERATED, above).
@@ -229,7 +247,7 @@ obligations and are not satisfied by the licence.
   `cameras`, `camera`, `coverage`, `planes`, `flight`, `satellites`, `signals/[id]`,
   `webcams`, `webcam-image`, `markets`, `news`, `brief`, `advisory`, `recon`, `geocode`,
   `near`, `geolocate`, `proxy`, `hls`, `discord`, `telegram`, `air-quality`, `point-weather`,
-  `status`, `presence`, `feedback`, `webcam-place`, `webcam-search`, `youtube-live`, `camera-stats`
+  `status`, `presence`, `feedback`, `community` (the Discord invite's state and counts), `webcam-place`, `webcam-search`, `youtube-live`, `camera-stats`
   (the top bar's camera stats strip, `lib/cameras/stats.ts`), `relay/[feed]`
   (signed snapshots pushed from provenance-1, see `lib/relay`), `eye/streets` (TfL's road
   disruptions for `/eye`), `eye/vessels` (the boats around the God's eye view's box),
@@ -249,6 +267,14 @@ obligations and are not satisfied by the licence.
   Hovering a Sources rail row or section heading fades every other app mark through ONE MapLibre global-state key (`srcHover`, `lib/map/sourceHighlight.ts`); every map source is classed there as fading or never fading, and a test fails on an unclassed one.
   The lit marks also get a glow drawn under them (`srchl-*` layers, filtered by the same key, so they hold nothing at rest). A switched-off source previews while you point at it through `lib/shell/sourcePreview.ts`, which writes no store, layout or link and keeps its own 5-minute cache.
 - `components/shell/*` — thin console chrome (StatusBar, CommandPalette, BreakingBanner, panels).
+- **The Discord pop-up** (`components/shell/CommunityNote.tsx`, `app/community.css`, gate in
+  `lib/shell/community.ts`) shows once per browser, on `/` and `/app`, never on `/eye`, after 15
+  seconds of visible time. Two rules are not style preferences. It says "the link works again", so it opens
+  only after `/api/community` (`lib/community/invite.ts`) has not called the invite dead; an
+  expired invite keeps it shut and spends nothing. And every figure on it is Discord's: with no
+  answer it opens with no number, and the globe draws one dot per member
+  (`lib/community/memberGlobe.ts`). `?discord=1` opens it for review and stays on for the tab
+  (`?discord=0` ends that). Automation never gets it unasked (`navigator.webdriver`).
 - **The command palette reads a typed question into filters, with rules and no model.**
   `lib/shell/ask.ts` (pure, `parseAsk`) turns "fires in Spain last 24h" into a layer, a
   place, a time window and a precision rule, and gives back the words it did not
@@ -437,7 +463,7 @@ obligations and are not satisfied by the licence.
   on `.lp-root`, where `app/landing.css` reads it. It is loaded in the PAGE, not in a
   layout, so no other route downloads it: not `/app`, and not `/privacy`, which shares
   the `(site)` layout. It is credited in the landing footer beside Inter, which still
-  sets the Discord note there.
+  sets the Discord pop-up there.
   **Permanent Marker was the first exception and is now a leftover.** `(site)/layout.tsx`
   still loads it as `--pv-font-marker`, but the graffiti it was for left `/` with the
   surveillance section on 2026-10-05, so nothing on `/` or `/privacy` uses it and the

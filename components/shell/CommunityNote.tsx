@@ -1,79 +1,144 @@
 "use client";
-// The Discord invitation — a small card in the bottom-left corner of the console,
-// shown once to anyone who has stayed about a minute, and never again after they
-// answer it either way.
+// The Discord pop-up: it says the Discord link works again, shows the server's real member
+// count, and says what is in there. Each browser sees it once, after 15 seconds of visible
+// time, on the landing page and in the console. God's eye view does not carry it, by request.
 //
-// IT IS A NOTE, NOT A MODAL, AND THAT IS THE WHOLE DESIGN. FeedbackPrompt next
-// door dims the console, traps focus and asks four questions, because it is asking
-// for work and has to be answered to be got rid of. This is asking for nothing: it
-// is a door being pointed at. So it takes no veil, no focus trap and no
-// aria-modal, it never moves focus, and every control behind it stays live while
-// it is on screen. A person who ignores it entirely loses nothing.
+// IT IS A MODAL, AND IT WAS NOT ALWAYS. Until 2026-10-30 this was a quiet corner card. The
+// invite then expired on 7 October and every Discord link on the site went dead for three
+// weeks, so this has something to announce, and a loud pop-up was asked for to say so. It takes
+// the veil and the focus trap FeedbackPrompt and DevNotice use. It is still easy to leave:
+// the Escape key, the veil, the X and "Not now" all close it, and nothing asks twice.
 //
-// Every decision about WHETHER to show lives in lib/shell/community.ts as pure
-// functions over an injectable store, so the gate is unit-tested in the node
-// environment. This file is the thin shell around it: a ticker, a card, two
-// buttons.
+// IT ONLY SAYS THE LINK WORKS IF DISCORD JUST AGREED. Before it opens it asks /api/community
+// (lib/community/invite.ts). A dead invite keeps it closed, and the visitor keeps their one
+// showing for the day the invite is repaired. A fault opens it without any figure. The
+// figures on screen are Discord's: nothing here types a count.
 //
-// ON STACKING WITH THE FEEDBACK PROMPT — deliberately NOT wired together. `.tn-note`
-// sits at z-index 1050, below `.tn-fb`'s 1100, so if the feedback modal does open
-// while this is still up, its veil dims this card along with the rest of the
-// console and the modal reads as the one live thing. That is the correct outcome
-// and it falls out of the z-order, so there is no cross-component subscription to
-// keep in sync and no ordering bug to have.
+// Every decision about WHETHER to show lives in lib/shell/community.ts as pure functions over
+// an injectable store, so the gate is unit-tested in the node environment.
+//
+// THE PORTAL. It mounts in the (site) layout's `.pv-root` and the console's `.tn-terminal`, two
+// sheets with two ideas of what a paragraph looks like. In <body>, with its own tokens in
+// app/community.css, it looks the same on both.
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
+import { createPortal } from "react-dom";
 import { BRAND } from "@/lib/brand";
 import { BOOT_FADE_MS, BOOT_MS } from "@/lib/terminal/boot";
 import { cinematic } from "@/lib/cinematic/store";
+import { UNKNOWN_INVITE, coerceInviteStatus, type InviteStatus } from "@/lib/community/invite";
 import DiscordMark from "@/components/brand/DiscordMark";
+import MemberGlobe from "@/components/shell/MemberGlobe";
 import {
+  type CommunityResolution,
   type CommunityState,
   type CommunitySurface,
   addActiveMs,
-  forcedFromSearch,
   gateContext,
   initialHoldMs,
+  isTypingTarget,
   loadCommunityState,
   markResolved,
   recordVisit,
+  reviewRequested,
   saveCommunityState,
-  shouldInvite,
+  shouldOpenInvite,
 } from "@/lib/shell/community";
+import "@/app/community.css";
 
-/** Long enough for the cold-start plate and its fade to be gone. BOOT_MS is the
- *  boot's ceiling — the plate usually leaves sooner, when the map is ready — so
- *  this holds for the worst case and is never early. Same reasoning, and the same
- *  constants, as FeedbackPrompt's hold. */
+/** Long enough for the console's cold-start plate and its fade to be gone. BOOT_MS is the
+ *  boot's ceiling, so this holds for the worst case and is never early. */
 const INITIAL_HOLD_MS = BOOT_MS + BOOT_FADE_MS + 500;
-/** Small enough that someone crossing the 40-second mark is asked during that
- *  visit rather than several seconds late. */
-const TICK_MS = 5_000;
+/** Small enough that someone crossing the 15-second mark is asked at about that moment. */
+const TICK_MS = 2_500;
+/** A slow answer must not hold the pop-up: past this it opens without the figures. */
+const ASK_TIMEOUT_MS = 2_500;
+/** Matches `.tn-join.is-closing` in app/community.css. */
+const CLOSE_MS = 150;
+/** The pop-up arrives while people are using the page, so a click already on its way must
+ *  not land on the veil and spend their only showing before they read a word. */
+const VEIL_GRACE_MS = 800;
+/** The keys that would scroll the page behind the pop-up. */
+const SCROLL_KEYS = new Set([" ", "ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End"]);
+
+const FACTS: ReadonlyArray<readonly [string, string]> = [
+  ["The community is open.", "Anyone can join. Accept the rules and you can post."],
+  ["The devs are active.", `The people who build ${BRAND.name} read and reply in the server.`],
+  ["We would love your feedback.", `Tell us what to fix and what to add. It helps us build ${BRAND.name} out.`],
+];
 
 /**
- * `?discord=1`, read AT MODULE SCOPE rather than inside the mount effect.
- *
- * THE QUERY STRING DOES NOT SURVIVE TO FIRST EFFECT. The map syncs its camera into
- * the URL (`?lat=…&lon=…&z=…&layers=&base=…`) with a history replace, which drops
- * every param it does not own — `discord=1` included. Read from inside useEffect,
- * the override therefore worked or did not depending on which effect ran first,
- * which is the kind of bug that looks like "the flag is broken sometimes".
- *
- * Module bodies evaluate at import time, strictly before React renders anything and
- * so strictly before any effect can rewrite the URL. Capturing here removes the race
- * rather than winning it. Guarded for SSR, where there is no window at all.
+ * `?discord=1`, read AT MODULE SCOPE rather than inside the mount effect, because the map
+ * syncs its camera into the URL with a history replace, which drops every param it does not
+ * own. Module bodies evaluate strictly before any effect can rewrite the URL. It also stays
+ * on for the tab (see reviewRequested), so a plain reload shows the pop-up again.
  */
-const FORCED = typeof window === "undefined" ? false : forcedFromSearch(window.location.search);
+const FORCED =
+  typeof window === "undefined"
+    ? false
+    : reviewRequested(
+        window.location.search,
+        (() => {
+          try {
+            return window.sessionStorage;
+          } catch {
+            return null;
+          }
+        })(),
+      );
+
+/** Ask once, and never take long about it. */
+function askDiscord(): Promise<InviteStatus> {
+  return fetch("/api/community", { signal: AbortSignal.timeout(ASK_TIMEOUT_MS) })
+    .then((res) => (res.ok ? res.json() : null))
+    .then(coerceInviteStatus)
+    .catch(() => UNKNOWN_INVITE);
+}
+
+/** Each digit is a reel of 0 to 9, twice over, that spins to its place. Only the reel's
+ *  transform moves, and the rightmost digit spins longest, as on an odometer. */
+function CountReel({ value }: { value: number }) {
+  const chars = [...value.toLocaleString("en-GB")];
+  return (
+    <span className="tn-join-count" data-digits={chars.length} aria-hidden>
+      {chars.map((c, i) =>
+        /\d/.test(c) ? (
+          <span
+            key={i}
+            className="tn-join-reel"
+            style={{ "--d": Number(c), "--i": i } as CSSProperties}
+          >
+            <span className="tn-join-strip">
+              {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((n, k) => (
+                <span key={k}>{n}</span>
+              ))}
+            </span>
+          </span>
+        ) : (
+          <span key={i} className="tn-join-sep">
+            {c}
+          </span>
+        ),
+      )}
+    </span>
+  );
+}
 
 /**
- * `surface` is "console" in ConsoleShell and "landing" on the home page. The two share
- * one persisted state (see lib/shell/community.ts), so an answer on either is final on
- * both. Only the hold and the gate context differ, and the console's are unchanged.
+ * `surface` is "console" in ConsoleShell and "landing" on the home page. The two share one
+ * persisted state (lib/shell/community.ts), so an answer on one is final on the other.
  */
 export default function CommunityNote({ surface = "console" }: { surface?: CommunitySurface } = {}) {
-  const [open, setOpen] = useState(false);
+  const [invite, setInvite] = useState<InviteStatus | null>(null);
+  const [closing, setClosing] = useState(false);
+  const open = invite !== null;
 
   const state = useRef<CommunityState | null>(null);
+  const openedAt = useRef(0);
+  const restoreFocus = useRef<HTMLElement | null>(null);
+  const root = useRef<HTMLDivElement>(null);
+  const card = useRef<HTMLDivElement>(null);
+  const sheet = useRef<HTMLDivElement>(null);
 
   /* ── The gate ─────────────────────────────────────────────────────────── */
 
@@ -83,16 +148,24 @@ export default function CommunityNote({ surface = "console" }: { surface?: Commu
     saveCommunityState(s);
 
     const hold = initialHoldMs(surface, INITIAL_HOLD_MS);
-    let last = Date.now();
-    const started = last;
+    const started = Date.now();
+    let last = started;
+    let answer: InviteStatus | "asking" | null = null;
+    let finished = false;
+    let timer = 0;
+
+    const stop = () => {
+      finished = true;
+      window.clearInterval(timer);
+    };
 
     const tick = () => {
+      if (finished) return;
       const now = Date.now();
       const elapsed = now - last;
       last = now;
 
-      // Only VISIBLE time counts — see the note in lib/shell/community.ts about
-      // why a background tab must not burn a one-shot impression.
+      // Only VISIBLE time counts: a tab left open behind others means nobody looked at it.
       if (document.visibilityState === "visible" && state.current) {
         state.current = addActiveMs(state.current, elapsed);
         saveCommunityState(state.current);
@@ -105,92 +178,217 @@ export default function CommunityNote({ surface = "console" }: { surface?: Commu
       const ctx = gateContext(surface, {
         bootPlaying: false, // held out by the hold above, not by a racy read
         diveActive: cinematic.get().phase !== "idle",
+        otherDialog: document.querySelector('[role="dialog"]') !== null,
+        typing: isTypingTarget(document.activeElement as HTMLElement | null),
+        automated: navigator.webdriver === true,
       });
+      if (!shouldOpenInvite(cur, ctx, FORCED)) return;
 
-      // The override forces the card for review but still respects a recorded
-      // resolution, so a review pass cannot silently re-ask someone who said no.
-      const show = FORCED ? !cur.resolved && !ctx.diveActive : shouldInvite(cur, ctx);
-      if (show) setOpen(true);
+      if (answer === "asking") return;
+      if (answer === null) {
+        answer = "asking";
+        void askDiscord().then((status) => {
+          answer = status;
+          tick();
+        });
+        return;
+      }
+
+      // A dead invite spends nothing: this page stops asking, and the next visit asks again.
+      if (answer.state === "dead" && !FORCED) {
+        stop();
+        return;
+      }
+      stop();
+      openedAt.current = now;
+      restoreFocus.current = document.activeElement as HTMLElement | null;
+      setInvite(answer.state === "dead" ? UNKNOWN_INVITE : answer);
     };
 
-    const timer = window.setInterval(tick, TICK_MS);
-    // One early evaluation so a forced review does not wait a full tick past the
-    // hold. A normal visitor cannot qualify this early — the hold is under six
-    // seconds and the bar is forty — so this costs nothing.
+    timer = window.setInterval(tick, TICK_MS);
+    // One early evaluation so a forced review does not wait a full tick past the hold.
     const first = window.setTimeout(tick, hold + 100);
     return () => {
-      window.clearInterval(timer);
+      stop();
       window.clearTimeout(first);
     };
   }, [surface]);
 
   /* ── Resolution ───────────────────────────────────────────────────────── */
 
-  const resolve = useCallback((how: "joined" | "dismissed") => {
+  const resolve = useCallback((how: CommunityResolution) => {
     if (state.current) {
       state.current = markResolved(state.current, how);
       saveCommunityState(state.current);
     }
-    setOpen(false);
+    setClosing(true);
+    const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.setTimeout(() => {
+      setInvite(null);
+      setClosing(false);
+      restoreFocus.current?.focus?.();
+    }, still ? 0 : CLOSE_MS);
   }, []);
 
-  /* ── Render ───────────────────────────────────────────────────────────── */
+  /* ── Focus and scroll ─────────────────────────────────────────────────── */
 
-  // THE LIVE REGION IS MOUNTED ALWAYS, EMPTY WHEN IDLE, for the reason the toast
-  // in ConsoleShell.tsx documents: a live region has to already be in the
-  // accessibility tree when its content changes for the change to be announced,
-  // and one that arrives *carrying* its message is announced inconsistently across
-  // browser/screen-reader pairs. `.tn-note-live:empty` has no box, so the idle
-  // wrapper costs nothing visually — but it must NOT be display:none, which would
-  // take it back out of the tree and undo the fix.
-  return (
-    <div className="tn-note-live" role="status" aria-live="polite">
-      {open && (
-        <div className="tn-note">
-          <div className="tn-note-icon" aria-hidden>
-            <DiscordMark size={16} />
-          </div>
-          <div className="tn-note-body">
-            <p className="tn-note-title">Join our Discord!</p>
-            {/* This used to lead with "say what is broken", which the live-build notice
-                (components/shell/DevNotice.tsx) now asks for directly and at much greater
-                length, on arrival. Two cards competing for the same request trains people
-                to skim both, so this one drops the duplicate and keeps the half the notice
-                does NOT cover: the people. The "new and quiet" line stays — being honest
-                that it is small reads as an invitation rather than a claim to be checked. */}
-            <p className="tn-note-text">
-              Join if you want to chat about the project and meet the people using it. It is
-              new and quiet — come and make it less so.
+  // Focus lands on the card, not on "Join the Discord". The pop-up arrives unasked, so a
+  // keyboard user's next Enter must not join a server they have not read about yet.
+  //
+  // THE KEYS ARE HEARD ON THE DOCUMENT, IN THE CAPTURE PHASE, not on the dialog. A handler on the
+  // dialog hears a key only while focus is inside it, and focus can leave: a click on the veil
+  // during its grace period drops it on <body>, and then Escape did nothing and Tab walked out
+  // into the page. Measured: 2 of 10 runs of the Escape test failed that way. A layout effect,
+  // so that the key is heard from the moment the pop-up is on screen.
+  useLayoutEffect(() => {
+    if (!open) return;
+    card.current?.focus({ preventScroll: true });
+    const onKey = (e: KeyboardEvent) => {
+      e.stopPropagation();
+      if (e.key === "Escape") {
+        resolve("dismissed");
+        return;
+      }
+      const c = card.current;
+      if (!c) return;
+      const here = document.activeElement;
+      if (SCROLL_KEYS.has(e.key)) {
+        // Space still presses a focused button or link, and a sheet that scrolls still scrolls.
+        const pressing = e.key === " " && here instanceof HTMLElement && here.matches("a[href], button");
+        const s = sheet.current;
+        if (!pressing && (!s || s.scrollHeight <= s.clientHeight)) e.preventDefault();
+        return;
+      }
+      if (e.key !== "Tab") return;
+      const focusable = Array.from(c.querySelectorAll<HTMLElement>("a[href], button"));
+      if (focusable.length === 0) return;
+      const firstEl = focusable[0];
+      const lastEl = focusable[focusable.length - 1];
+      const inside = here !== null && here !== c && c.contains(here);
+      if (e.shiftKey && (!inside || here === firstEl)) {
+        e.preventDefault();
+        lastEl.focus();
+      } else if (!e.shiftKey && (!inside || here === lastEl)) {
+        e.preventDefault();
+        firstEl.focus();
+      }
+    };
+    document.addEventListener("keydown", onKey, true);
+    return () => document.removeEventListener("keydown", onKey, true);
+  }, [open, resolve]);
+
+  // The landing page scrolls behind this, and its scroll drives the globe. Wheel and touch
+  // stop here unless the sheet itself has to scroll, which it does on a short screen.
+  useEffect(() => {
+    const el = root.current;
+    if (!open || !el) return;
+    const hold = (e: Event) => {
+      const s = sheet.current;
+      if (s && e.target instanceof Node && s.contains(e.target) && s.scrollHeight > s.clientHeight) return;
+      e.preventDefault();
+    };
+    el.addEventListener("wheel", hold, { passive: false });
+    el.addEventListener("touchmove", hold, { passive: false });
+    return () => {
+      el.removeEventListener("wheel", hold);
+      el.removeEventListener("touchmove", hold);
+    };
+  }, [open]);
+
+  if (!open) return null;
+
+  const members = invite.state === "live" ? invite.members : null;
+  const online = invite.state === "live" ? invite.online : null;
+
+  return createPortal(
+    <div
+      ref={root}
+      className={`tn-join${closing ? " is-closing" : ""}`}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="tn-join-title"
+      aria-describedby="tn-join-why"
+    >
+      <div
+        className="tn-join-veil"
+        aria-hidden
+        onClick={() => {
+          if (Date.now() - openedAt.current >= VEIL_GRACE_MS) resolve("dismissed");
+        }}
+      />
+      <div className="tn-join-flash" aria-hidden />
+      <div ref={card} className="tn-join-card" tabIndex={-1}>
+        <div ref={sheet} className="tn-join-sheet">
+          <div className="tn-join-poster">
+            <h2 className="tn-join-title" id="tn-join-title">
+              The Discord link works again.
+            </h2>
+            <p className="tn-join-why" id="tn-join-why">
+              <span>The old invite expired on 7 October.</span> <span>The new one does not expire.</span>
             </p>
-            <div className="tn-note-actions">
-              <a
-                className="tn-note-btn is-primary"
-                href={BRAND.discordUrl}
-                target="_blank"
-                rel="noreferrer noopener"
-                onClick={() => resolve("joined")}
-              >
-                <DiscordMark size={13} />
-                <span>Join the Discord</span>
-              </a>
-              <button type="button" className="tn-note-btn is-ghost" onClick={() => resolve("dismissed")}>
-                No thanks
-              </button>
-            </div>
           </div>
-          {/* A second way out, in the corner, because the card is dismissible and a
-              ✕ is where a hand goes first. It resolves identically to "No thanks" —
-              there is no quiet third state. */}
-          <button
-            type="button"
-            className="tn-note-x"
-            onClick={() => resolve("dismissed")}
-            aria-label="Close, and do not show this again"
-          >
-            ×
-          </button>
+          <ul className="tn-join-facts">
+            {FACTS.map(([lead, line]) => (
+              <li key={lead}>
+                <b>{lead}</b> {line}
+              </li>
+            ))}
+          </ul>
+          <div className="tn-join-actions">
+            <a
+              className="tn-join-cta"
+              href={BRAND.discordUrl}
+              target="_blank"
+              rel="noreferrer noopener"
+              onClick={() => resolve("joined")}
+            >
+              <DiscordMark size={20} />
+              <span>Join the Discord</span>
+            </a>
+            <button type="button" className="tn-join-later" onClick={() => resolve("dismissed")}>
+              Not now
+            </button>
+          </div>
         </div>
-      )}
-    </div>
+        {/* After the sheet, so it stands over it and can leave the card at the corner. It
+            takes no pointer events, so nothing under it stops being clickable. */}
+        <div className="tn-join-orb">
+          <span className="tn-join-ring" aria-hidden />
+          <span className="tn-join-ring is-late" aria-hidden />
+          <MemberGlobe members={members} online={online} />
+          {/* With no count the planet is only a shape, so it carries the mark, not an empty middle. */}
+          {members === null && (
+            <div className="tn-join-stats">
+              <DiscordMark size={104} />
+            </div>
+          )}
+          {members !== null && (
+            <div className="tn-join-stats">
+              <CountReel value={members} />
+              <p className="tn-join-members">
+                {/* The reel is hidden from screen readers, so the number is said here. */}
+                <span className="tn-join-sr">{members.toLocaleString("en-GB")} </span>
+                members
+              </p>
+              {online !== null && (
+                <p className="tn-join-online">
+                  <i aria-hidden />
+                  {online.toLocaleString("en-GB")} online
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+        <button
+          type="button"
+          className="tn-join-x"
+          onClick={() => resolve("dismissed")}
+          aria-label="Close, and do not show this again"
+        >
+          ×
+        </button>
+      </div>
+    </div>,
+    document.body,
   );
 }

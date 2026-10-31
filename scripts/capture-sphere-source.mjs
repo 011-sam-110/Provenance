@@ -55,7 +55,7 @@ async function main() {
   await page.goto(`${BASE}/?tune&fs=2&ms=6&sz=0.91`, { waitUntil: "load" });
   await page.waitForFunction(() => (window.__pvIntro?.control?.screens ?? 0) > 0, null, { timeout: 180000 });
   const r0 = await page.evaluate(() => {
-    document.querySelectorAll(".lp-tune-panel, .lp-tune-pill, .tn-note-live, nextjs-portal").forEach((n) => {
+    document.querySelectorAll(".lp-tune-panel, .lp-tune-pill, .tn-join, nextjs-portal").forEach((n) => {
       n.style.display = "none";
     });
     const c = window.__pvIntro.control;

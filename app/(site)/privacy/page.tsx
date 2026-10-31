@@ -15,6 +15,17 @@ const ISSUES_URL = `${REPO_URL}/issues`;
  * rule for writing it: verify first, then write, and if you cannot verify it either
  * leave it out or say plainly that you do not know.
  *
+ * WHAT CHANGED ON 2026-10-30:
+ *   - The Discord pop-up: app/api/community asks Discord (discord.com, the public invite
+ *     endpoint) whether the invite is alive and how many members it reports, and keeps the
+ *     answer in memory for five minutes. The handler takes no parameter, so it reads nothing
+ *     from the visitor's request, and the request to Discord carries the invite code and this
+ *     project's name. No browser talks to Discord unless its owner presses the link, so the
+ *     third-party cards do not change. It takes no input, so the table of routes that receive
+ *     something does not change either. The route count is 57 (56, plus this one). The front
+ *     page now makes this one call, once per browser; no sentence here said otherwise, and it
+ *     loads nothing from Discord.
+ *
  * WHAT CHANGED ON 2026-10-29:
  *   - Vessels in the God's eye view: the view no longer reads /api/signals/ais. It asks
  *     /api/eye/vessels?bbox=west,south,east,north (app/api/eye/vessels/route.ts,
@@ -24,6 +35,11 @@ const ISSUES_URL = `${REPO_URL}/issues`;
  *     access log, which keeps the whole address, never holds a place finer than that. The
  *     access-log paragraph now names ?bbox=, and the route count is 56 (55 with M4's
  *     camera-road, plus this one).
+ *
+ * WHAT CHANGED ON 2026-10-31:
+ *   - The front page's main button reads the browser's time zone and language
+ *     (components/marketing/CtaRotor.tsx) to order the places it offers. Neither is stored or
+ *     sent. "What your own browser keeps" gained a row saying so.
  *
  * WHAT CHANGED ON 2026-10-27:
  *   - Camera roads (M4 of the live road data plan): app/api/camera-road answers what the road
@@ -348,7 +364,7 @@ export default function PrivacyPage() {
             <p className="pv-eyebrow">
               <span>Privacy</span>
               <span>
-                Last updated <time dateTime="2026-10-27">27 October 2026</time>
+                Last updated <time dateTime="2026-10-31">31 October 2026</time>
               </span>
             </p>
             <h1 className="pv-h2">What this site knows about you.</h1>
@@ -530,6 +546,14 @@ export default function PrivacyPage() {
               </thead>
               <tbody>
                 <tr>
+                  <td>
+                    Your browser&rsquo;s time zone and language, which the front page&rsquo;s main
+                    button reads to choose which places to offer you first
+                  </td>
+                  <td>Read on the page, not stored</td>
+                  <td>No</td>
+                </tr>
+                <tr>
                   <td>Console layout, boards, presets, saved monitor profiles</td>
                   <td>Local storage</td>
                   <td>No</td>
@@ -658,7 +682,7 @@ export default function PrivacyPage() {
           <div>
             <p className="pv-eyebrow">
               <span>The server</span>
-              <span>56 API routes</span>
+              <span>57 API routes</span>
             </p>
             <h2 className="pv-h2">What reaches our server, and where it goes.</h2>
           </div>
@@ -1053,7 +1077,7 @@ export default function PrivacyPage() {
           </div>
           <div className="pv-prose">
             <p>
-              Five log statements exist across the 56 API route files. Each records that a data
+              Five log statements exist across the 57 API route files. Each records that a data
               feed or a handler failed, with the error. None of them is given anything you typed:
               their inputs are our own feed names, a camera&rsquo;s stream address, camera
               coordinates and webcam ids. So the application&rsquo;s own code writes nothing you type
@@ -1181,14 +1205,14 @@ export default function PrivacyPage() {
             <p className="pv-eyebrow">
               <span>Changes</span>
               <span>
-                <time dateTime="2026-10-27">27 October 2026</time>
+                <time dateTime="2026-10-31">31 October 2026</time>
               </span>
             </p>
             <h2 className="pv-h2">This page has a version history.</h2>
           </div>
           <div className="pv-prose">
             <p>
-              This describes the code as deployed on 27 October 2026. When the behaviour changes this
+              This describes the code as deployed on 31 October 2026. When the behaviour changes this
               page is supposed to change with it, and if it has not then that is a bug worth
               reporting. Both histories live in the same public repository, so the two can be read
               against each other.

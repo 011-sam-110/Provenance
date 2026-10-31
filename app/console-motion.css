@@ -344,16 +344,14 @@
    5 · HEADER + CHROME — the controls outside the board
    ═══════════════════════════════════════════════════════════════════════════ */
 
-.tn-terminal .tnx-hdr-btn,
-.tn-terminal .tn-note-btn {
+.tn-terminal .tnx-hdr-btn {
   transition:
     color var(--tn-mo-fast) var(--tn-mo-ease-io),
     background-color var(--tn-mo-fast) var(--tn-mo-ease-io),
     border-color var(--tn-mo-fast) var(--tn-mo-ease-io),
     transform var(--tn-mo-exit) var(--tn-mo-ease-io);
 }
-.tn-terminal .tnx-hdr-btn:active,
-.tn-terminal .tn-note-btn:active {
+.tn-terminal .tnx-hdr-btn:active {
   transform: scale(calc(1 - var(--tn-mo-travel) * 0.06));
 }
 
